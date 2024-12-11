@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>UIBackgroundModes</key>
+	<array/>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>The workout related data will be used to display a user&apos;s finished workout stats.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Volleyball workouts tracked by this app on Apple Watch will be saved to HealthKit.</string>
+</dict>
+</plist>
