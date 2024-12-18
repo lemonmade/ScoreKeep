@@ -14,18 +14,48 @@ struct StartView: View {
     var workoutTypes: [HKWorkoutActivityType] = [.volleyball]
 
     var body: some View {
-        List(workoutTypes) { workoutType in
-            NavigationLink(
-                workoutType.name,
-                destination: SessionPagingView(),
-                tag: workoutType,
-                selection: $workoutManager.selectedWorkout
-            ).padding(
-                EdgeInsets(top: 15, leading: 5, bottom: 15, trailing: 5)
-            )
+        List(selection: $workoutManager.selectedWorkout) {
+            ForEach(workoutTypes) { workoutType in
+                NavigationLink {
+                    SessionPagingView()
+                } label: {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Image(systemName: "figure.volleyball")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 50, height: 50)
+                            .foregroundColor(.green)
+                        Text(workoutType.name)
+                            .font(.headline)
+                        Text("Best-of-5, first to 25")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                    
+                }
+                .padding(
+                        EdgeInsets(top: 15, leading: 5, bottom: 15, trailing: 5)
+                    )
+                .listRowBackground(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.green.opacity(0.2))
+                )
+            }
+            NavigationLink {
+                GameTemplateCreateView()
+            } label: {
+                Text("New game rules")
+                    .frame(maxWidth: .infinity)
+            }
+            NavigationLink {
+                GameHistoryView()
+            } label: {
+                Text("Game history")
+                    .frame(maxWidth: .infinity)
+            }
         }
         .listStyle(.carousel)
-        .navigationBarTitle("Workouts")
+        .navigationBarTitle("ScoreKeep")
         .onAppear {
             workoutManager.requestAuthorization()
         }
@@ -40,7 +70,7 @@ extension HKWorkoutActivityType: Identifiable {
     var name: String {
         switch self {
         case .volleyball:
-            return "Volleyball"
+            return "Indoor volleyball"
         default:
             return ""
         }
@@ -49,4 +79,5 @@ extension HKWorkoutActivityType: Identifiable {
 
 #Preview {
     StartView()
+        .environmentObject(WorkoutManager())
 }

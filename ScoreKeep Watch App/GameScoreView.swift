@@ -66,6 +66,7 @@ struct GameScoreTeamScoreView: View {
             }
             Text("\(score)")
                 .font(.system(size: 80, weight: .bold))
+                .contentTransition(.numericText(value: Double(score)))
         }
         .monospacedDigit()
         // Fill the container

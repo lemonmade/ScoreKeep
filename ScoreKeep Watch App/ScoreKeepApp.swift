@@ -6,11 +6,24 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct ScoreKeep_Watch_AppApp: App {
     @StateObject var workoutManager = WorkoutManager()
-    
+
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            GameScore.self,
+            GameScoreRuleset.self,
+            GameSetScore.self,
+        ])
+        let configuration = ModelConfiguration(
+            schema: schema, isStoredInMemoryOnly: false)
+
+        return try! ModelContainer(for: schema, configurations: [configuration])
+    }()
+
     var body: some Scene {
         WindowGroup {
             NavigationView {
@@ -20,6 +33,7 @@ struct ScoreKeep_Watch_AppApp: App {
                 SummaryView()
             }
             .environmentObject(workoutManager)
+            .modelContainer(sharedModelContainer)
         }
     }
 }

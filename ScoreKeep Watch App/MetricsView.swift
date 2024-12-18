@@ -1,5 +1,5 @@
 //
-//  SessionPagingView.swift
+//  MetricsView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-10.
