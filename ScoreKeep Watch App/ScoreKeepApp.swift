@@ -18,8 +18,11 @@ struct ScoreKeep_Watch_AppApp: App {
             GameScoreRuleset.self,
             GameSetScore.self,
         ])
+
         let configuration = ModelConfiguration(
-            schema: schema, isStoredInMemoryOnly: false)
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
 
         return try! ModelContainer(for: schema, configurations: [configuration])
     }()
@@ -28,9 +31,6 @@ struct ScoreKeep_Watch_AppApp: App {
         WindowGroup {
             NavigationView {
                 StartView()
-            }
-            .sheet(isPresented: $workoutManager.showingSummaryView) {
-                SummaryView()
             }
             .environmentObject(workoutManager)
             .modelContainer(sharedModelContainer)

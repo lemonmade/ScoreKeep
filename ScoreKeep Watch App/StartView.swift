@@ -10,72 +10,89 @@ import SwiftUI
 
 struct StartView: View {
     @EnvironmentObject var workoutManager: WorkoutManager
+    private let gameNavigation = GameNavigationManager()
     
-    var workoutTypes: [HKWorkoutActivityType] = [.volleyball]
-
     var body: some View {
-        List(selection: $workoutManager.selectedWorkout) {
-            ForEach(workoutTypes) { workoutType in
-                NavigationLink {
-                    SessionPagingView()
-                } label: {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Image(systemName: "figure.volleyball")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 50, height: 50)
-                            .foregroundColor(.green)
-                        Text(workoutType.name)
-                            .font(.headline)
-                        Text("Best-of-5, first to 25")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    }
-                    
-                }
-                .padding(
-                        EdgeInsets(top: 15, leading: 5, bottom: 15, trailing: 5)
-                    )
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.green.opacity(0.2))
-                )
-            }
-            NavigationLink {
-                GameTemplateCreateView()
-            } label: {
-                Text("New game rules")
-                    .frame(maxWidth: .infinity)
-            }
-            NavigationLink {
-                GameHistoryView()
-            } label: {
-                Text("Game history")
-                    .frame(maxWidth: .infinity)
+        List {
+            StartGameNavigationLinkView(name: "Indoor volleyball")
+            
+            StartGameRulesCreateLinkView()
+        }
+        .navigationBarTitle("ScoreKeep")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                StartGameHistoryLinkView()
             }
         }
         .listStyle(.carousel)
-        .navigationBarTitle("ScoreKeep")
         .onAppear {
             workoutManager.requestAuthorization()
         }
+        .environment(gameNavigation)
     }
 }
 
-extension HKWorkoutActivityType: Identifiable {
-    public var id: UInt {
-        rawValue
-    }
+struct StartGameNavigationLinkView: View {
+    var name: String
+    @Environment(GameNavigationManager.self) private var gameNavigation
+    
+    var body: some View {
+        @Bindable var gameNavigation = gameNavigation
+        
+        NavigationLink(isActive: $gameNavigation.isActive) {
+            GameView()
+                .environment(gameNavigation)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                Image(systemName: "figure.volleyball")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .foregroundStyle(.tint)
 
-    var name: String {
-        switch self {
-        case .volleyball:
-            return "Indoor volleyball"
-        default:
-            return ""
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(name)
+                        .font(.headline)
+                    Text("Best-of-5, first to 25")
+                        .font(.caption)
+                        .foregroundStyle(.tint)
+                }
+            }
+            
+        }
+        .padding(
+            EdgeInsets(top: 15, leading: 5, bottom: 15, trailing: 5)
+        )
+        .tint(.green)
+        .listRowBackground(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.green.opacity(0.2))
+        )
+    }
+}
+
+struct StartGameHistoryLinkView: View {
+    var body: some View {
+        NavigationLink() {
+            GameHistoryView()
+        } label: {
+            Image(systemName: "calendar")
+        }
+        .accessibilityLabel("Finished games")
+    }
+}
+
+struct StartGameRulesCreateLinkView: View {
+    var body: some View {
+        NavigationLink {
+            GameRulesCreateView()
+        } label: {
+            Text("New game")
+                .frame(maxWidth: .infinity)
         }
     }
 }
+
 
 #Preview {
     StartView()

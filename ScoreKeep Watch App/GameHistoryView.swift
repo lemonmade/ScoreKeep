@@ -44,6 +44,13 @@ struct GameHistoryView: View {
                             .font(.caption2)
                     }
                 }
+                .swipeActions {
+                    Button(role: .destructive) {
+                        gamesContext.delete(game)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
         }
             .listStyle(.carousel)
