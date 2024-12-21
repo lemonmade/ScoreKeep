@@ -9,7 +9,7 @@ import SwiftUI
 import WatchKit
 
 struct GameView: View {
-    @State private var game: GameScore?
+    @State private var game: Game?
     @Environment(\.modelContext) private var context
 
     var body: some View {
@@ -27,7 +27,7 @@ struct GameView: View {
     
     private func createAndSaveGame() {
         if game == nil {
-            let newGame = GameScore(
+            let newGame = Game(
                 ruleset: GameScoreRuleset(winScore: 25),
                 sets: [GameSetScore()],
                 startedAt: Date()
@@ -41,7 +41,7 @@ struct GameView: View {
 }
 
 struct GameTabView: View {
-    @Bindable var game: GameScore
+    @Bindable var game: Game
     @Environment(GameNavigationManager.self) private var gameNavigation
     
     var body: some View {

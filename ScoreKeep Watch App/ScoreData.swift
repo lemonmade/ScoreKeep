@@ -9,17 +9,22 @@ import Foundation
 import SwiftUI
 import SwiftData
 
+enum GameSport {
+    case volleyball
+}
+
 @Model
-final class GameScore {
-    var ruleset: GameScoreRuleset
-    var sets: [GameSetScore]
+final class Game {
+    var rules: GameRules
+    var sets: [GameSet]
     var startedAt: Date
     var endedAt: Date?
+    var sport: GameSport
     
-    var latestSet: GameSetScore? { sets.last }
+    var latestSet: GameSet? { sets.last }
     
-    init(ruleset: GameScoreRuleset, sets: [GameSetScore] = [], startedAt: Date = Date(), endedAt: Date? = nil) {
-        self.ruleset = ruleset
+    init(rules: GameRules, sets: [GameSet] = [], startedAt: Date = Date(), endedAt: Date? = nil) {
+        self.rules = rules
         self.sets = sets
         self.startedAt = startedAt
         self.endedAt = endedAt
@@ -30,8 +35,8 @@ final class GameScore {
         
         set.score0 += 1
         
-        if (set.score0 < ruleset.winScore) { return }
-        if (set.score0 - set.score1 < ruleset.winBy) { return }
+        if (set.score0 < rules.winScore) { return }
+        if (set.score0 - set.score1 < rules.winBy) { return }
         
         set.endedAt = Date()
     }
@@ -41,15 +46,15 @@ final class GameScore {
         
         set.score1 += 1
         
-        if (set.score1 < ruleset.winScore) { return }
-        if (set.score1 - set.score0 < ruleset.winBy) { return }
+        if (set.score1 < rules.winScore) { return }
+        if (set.score1 - set.score0 < rules.winBy) { return }
         
         set.endedAt = Date()
     }
 }
 
 @Model
-class GameSetScore {
+class GameSet {
     var score0: Int
     var score1: Int
     var startedAt: Date
@@ -66,12 +71,23 @@ class GameSetScore {
 }
 
 @Model
-class GameScoreRuleset {
+class GameRules {
     var winScore: Int
     var winBy: Int
     
     init(winScore: Int, winBy: Int = 1) {
         self.winScore = winScore
         self.winBy = winBy
+    }
+}
+
+@Model
+class GameTemplate {
+    var sport: GameSport
+    var rules: GameRules
+    
+    init(_ sport: GameSport = .volleyball, rules: GameRules) {
+        self.sport = sport
+        self.rules = rules
     }
 }
