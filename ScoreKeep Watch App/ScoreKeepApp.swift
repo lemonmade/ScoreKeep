@@ -10,13 +10,11 @@ import SwiftData
 
 @main
 struct ScoreKeep_Watch_AppApp: App {
-    @StateObject var workoutManager = WorkoutManager()
-
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            GameScore.self,
-            GameScoreRuleset.self,
-            GameSetScore.self,
+            Game.self,
+            GameRules.self,
+            GameSet.self,
         ])
 
         let configuration = ModelConfiguration(
@@ -32,7 +30,6 @@ struct ScoreKeep_Watch_AppApp: App {
             NavigationView {
                 StartView()
             }
-            .environmentObject(workoutManager)
             .modelContainer(sharedModelContainer)
         }
     }

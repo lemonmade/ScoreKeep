@@ -9,12 +9,25 @@ import HealthKit
 import SwiftUI
 
 struct StartView: View {
-    @EnvironmentObject var workoutManager: WorkoutManager
     private let gameNavigation = GameNavigationManager()
+    
+    private let indoorVolleyball = GameTemplate(
+        .volleyball,
+        indoor: true,
+        rules: GameRules(winScore: 25)
+    )
+    
+    private let beachVolleyball = GameTemplate(
+        .volleyball,
+        indoor: false,
+        rules: GameRules(winScore: 15)
+    )
     
     var body: some View {
         List {
-            StartGameNavigationLinkView(name: "Indoor volleyball")
+            StartGameNavigationLinkView(template: indoorVolleyball)
+            
+            StartGameNavigationLinkView(template: beachVolleyball)
             
             StartGameRulesCreateLinkView()
         }
@@ -25,22 +38,33 @@ struct StartView: View {
             }
         }
         .listStyle(.carousel)
-        .onAppear {
-            workoutManager.requestAuthorization()
-        }
         .environment(gameNavigation)
     }
 }
 
 struct StartGameNavigationLinkView: View {
-    var name: String
+    var template: GameTemplate
     @Environment(GameNavigationManager.self) private var gameNavigation
+    
+    private var sportName: String {
+        switch template.sport {
+            case .volleyball:
+                return template.indoor ? "Indoor volleyball" : "Beach volleyball"
+        }
+    }
+    
+    private var tintColor: Color {
+        switch template.sport {
+            case .volleyball:
+                return template.indoor ? .blue : .yellow
+        }
+    }
     
     var body: some View {
         @Bindable var gameNavigation = gameNavigation
         
         NavigationLink(isActive: $gameNavigation.isActive) {
-            GameView()
+            GameView(template: template)
                 .environment(gameNavigation)
         } label: {
             VStack(alignment: .leading, spacing: 8) {
@@ -51,9 +75,9 @@ struct StartGameNavigationLinkView: View {
                     .foregroundStyle(.tint)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(name)
+                    Text(sportName)
                         .font(.headline)
-                    Text("Best-of-5, first to 25")
+                    Text("Best-of-5, first to \(template.rules.winScore)")
                         .font(.caption)
                         .foregroundStyle(.tint)
                 }
@@ -63,10 +87,10 @@ struct StartGameNavigationLinkView: View {
         .padding(
             EdgeInsets(top: 15, leading: 5, bottom: 15, trailing: 5)
         )
-        .tint(.green)
+        .tint(tintColor)
         .listRowBackground(
             RoundedRectangle(cornerRadius: 20)
-                .fill(.green.opacity(0.2))
+                .fill(tintColor.opacity(0.2))
         )
     }
 }
@@ -96,5 +120,4 @@ struct StartGameRulesCreateLinkView: View {
 
 #Preview {
     StartView()
-        .environmentObject(WorkoutManager())
 }

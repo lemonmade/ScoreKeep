@@ -9,24 +9,22 @@ import SwiftUI
 import SwiftData
 
 struct GameHistoryView: View {
-    @Query(sort: \GameScore.startedAt, order: .reverse) private var games: [GameScore]
+    @Query(sort: \Game.startedAt, order: .reverse) private var games: [Game]
     @Environment(\.modelContext) private var gamesContext
     
     var body: some View {
         List {
             Button {
-                print("Adding game...")
-                
-                let newGame = GameScore(
-                    ruleset: GameScoreRuleset(winScore: 25),
+                let newGame = Game(
+                    rules: GameRules(winScore: 25),
                     sets: [
-                        GameSetScore(score0: Int.random(in: 0...24), score1: 25, startedAt: Date()),
-                        GameSetScore(score0: Int.random(in: 0...24), score1: 25, startedAt: Date())
-                    ],
-                    startedAt: Date()
+                        GameSet(us: Int.random(in: 0...24), them: 25),
+                        GameSet(us: Int.random(in: 0...24), them: 25)
+                    ]
                 )
                 
                 gamesContext.insert(newGame)
+                try? gamesContext.save()
             } label: {
                 Text("Add Game")
             }
@@ -36,7 +34,7 @@ struct GameHistoryView: View {
                     Text(game.id.storeIdentifier ?? "Unknown")
                 } label: {
                     VStack(alignment: .leading) {
-                        Text("\(game.sets.map { "\($0.score0)-\($0.score1)"}.joined(separator: ", "))")
+                        Text("\(game.sets.map { "\($0.scoreUs)-\($0.scoreThem)"}.joined(separator: ", "))")
                             .font(.headline)
                         Text(
                             (game.endedAt ?? game.startedAt).description
@@ -66,15 +64,15 @@ struct GameHistoryView: View {
 let previewContainer: ModelContainer = {
     do {
         let container = try ModelContainer(
-            for: GameScore.self,
+            for: Game.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
         
-//        let game0 = GameScore(
-//            ruleset: GameScoreRuleset(winScore: 25),
+//        let game0 = Game(
+//            ruleset: GameRules(winScore: 25),
 //            sets: [
-//                GameSetScore(score0: 15, score1: 25, startedAt: Date()),
-//                GameSetScore(score0: 10, score1: 25, startedAt: Date()),
+//                GameSet(score0: 15, score1: 25, startedAt: Date()),
+//                GameSet(score0: 10, score1: 25, startedAt: Date()),
 //            ],
 //            startedAt: Date()
 //        )

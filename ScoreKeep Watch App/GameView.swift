@@ -9,6 +9,7 @@ import SwiftUI
 import WatchKit
 
 struct GameView: View {
+    var template: GameTemplate
     @State private var game: Game?
     @Environment(\.modelContext) private var context
 
@@ -27,15 +28,14 @@ struct GameView: View {
     
     private func createAndSaveGame() {
         if game == nil {
-            let newGame = Game(
-                ruleset: GameScoreRuleset(winScore: 25),
-                sets: [GameSetScore()],
-                startedAt: Date()
-            )
+            let newGame = Game(from: template)
             
             game = newGame
 
             context.insert(newGame)
+            
+            // TODO
+            try? context.save()
         }
     }
 }
@@ -67,6 +67,12 @@ struct GameTabView: View {
 }
 
 #Preview {
-    GameView()
+    GameView(
+        template: GameTemplate(
+            .volleyball,
+            indoor: true,
+            rules: GameRules(winScore: 25)
+        )
+    )
         .environment(GameNavigationManager())
 }

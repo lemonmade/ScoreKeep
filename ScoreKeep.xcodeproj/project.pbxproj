@@ -515,6 +515,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G8U72MPU96;
 				INFOPLIST_KEY_CFBundleDisplayName = ScoreKeep;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep;
@@ -529,6 +530,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G8U72MPU96;
 				INFOPLIST_KEY_CFBundleDisplayName = ScoreKeep;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep;
