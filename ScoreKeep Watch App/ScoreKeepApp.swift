@@ -12,9 +12,10 @@ import SwiftData
 struct ScoreKeep_Watch_AppApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Game.self,
-            GameRules.self,
-            GameSet.self,
+            Match.self,
+            MatchSet.self,
+            MatchGame.self,
+            MatchTemplate.self,
         ])
 
         let configuration = ModelConfiguration(

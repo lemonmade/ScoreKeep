@@ -8,31 +8,26 @@
 import SwiftUI
 
 struct GameScoreKeepView: View {
-    @Environment(Game.self) private var game
+    @Environment(Match.self) private var match
     
     var body: some View {
-//        VStack {
-//            Button("Team 0: \(game.latestSet!.score0)") {
-//                game.scoreTeam0()
-//            }
-//            .disabled(game.latestSet!.isFinished)
-//            
-//            Button("Team 1: \(game.latestSet!.score1)") {
-//                game.scoreTeam1()
-//            }
-//            .disabled(game.latestSet!.isFinished)
-//        }
-        GameScoreView(game: game)
+        if let game = match.latestGame {
+            GameScoreView(match: match, game: game)
+        } else {
+            // TODO
+            EmptyView()
+        }
     }
 }
 
 struct GameScoreView: View {
-    var game: Game
+    var match: Match
+    var game: MatchGame
     
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: 0) {
-                GameScoreTeamButtonView(team: .us, game: game)
+                GameScoreTeamButtonView(team: .us, match: match, game: game)
                     .frame(
                         width: geometry.size.width,
                         height: geometry.size.height / 2
@@ -40,7 +35,7 @@ struct GameScoreView: View {
 
                 Divider().padding(.horizontal)
 
-                GameScoreTeamButtonView(team: .them, game: game)
+                GameScoreTeamButtonView(team: .them, match: match, game: game)
                     .frame(
                         width: geometry.size.width,
                         height: geometry.size.height / 2
@@ -52,18 +47,19 @@ struct GameScoreView: View {
 }
 
 struct GameScoreTeamButtonView: View {
-    var team: GameTeam
-    var game: Game
+    var team: MatchTeam
+    var match: Match
+    var game: MatchGame
     
     var body: some View {
         Button(action: {
-            game.score(team)
+            match.score(team)
         }) {
-            GameScoreTeamScoreView(score: game.latestSet?.scoreFor(team) ?? 0)
+            GameScoreTeamScoreView(score: game.scoreFor(team))
                 .foregroundStyle(team == .us ? .blue : .red)
         }
             .buttonStyle(.plain)
-            .disabled(game.latestSet?.hasEnded ?? false)
+            .disabled(game.hasEnded)
     }
 }
 
@@ -92,9 +88,17 @@ struct GameScoreTeamScoreView: View {
 #Preview {
     GameScoreKeepView()
         .environment(
-            Game(
-                rules: GameRules(winScore: 10),
-                sets: [GameSet()]
+            Match(
+                .volleyball,
+                scoring: MatchScoringRules(
+                    setsWinAt: 5,
+                    setScoring: MatchSetScoringRules(
+                        gamesWinAt: 5,
+                        gameScoring: MatchGameScoringRules(
+                            winScore: 25
+                        )
+                    )
+                )
             )
         )
 }

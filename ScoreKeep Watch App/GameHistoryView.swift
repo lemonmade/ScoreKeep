@@ -9,42 +9,56 @@ import SwiftUI
 import SwiftData
 
 struct GameHistoryView: View {
-    @Query(sort: \Game.startedAt, order: .reverse) private var games: [Game]
-    @Environment(\.modelContext) private var gamesContext
+    @Query(sort: \Match.startedAt, order: .reverse) private var matches: [Match]
+    @Environment(\.modelContext) private var matchesContext
     
     var body: some View {
         List {
             Button {
-                let newGame = Game(
-                    rules: GameRules(winScore: 25),
+                let newGame = Match(
                     sets: [
-                        GameSet(us: Int.random(in: 0...24), them: 25),
-                        GameSet(us: Int.random(in: 0...24), them: 25)
-                    ]
+                        MatchSet(
+                            games: [
+                                MatchGame(us: Int.random(in: 0...24), them: 25, startedAt: Date(), endedAt: Date()),
+                                MatchGame(us: Int.random(in: 0...24), them: 25, startedAt: Date(), endedAt: Date())
+                            ],
+                            startedAt: Date(),
+                            endedAt: Date()
+                        )
+                    ],
+                    scoring: MatchScoringRules(
+                        setsWinAt: 1,
+                        setScoring: MatchSetScoringRules(
+                            gamesWinAt: 2,
+                            gameScoring: MatchGameScoringRules(
+                                winScore: 25
+                            )
+                        )
+                    )
                 )
                 
-                gamesContext.insert(newGame)
-                try? gamesContext.save()
+                matchesContext.insert(newGame)
+                try? matchesContext.save()
             } label: {
                 Text("Add Game")
             }
             
-            ForEach(games) { game in
+            ForEach(matches) { match in
                 NavigationLink {
-                    Text(game.id.storeIdentifier ?? "Unknown")
+                    Text(match.id.storeIdentifier ?? "Unknown")
                 } label: {
                     VStack(alignment: .leading) {
-                        Text("\(game.sets.map { "\($0.scoreUs)-\($0.scoreThem)"}.joined(separator: ", "))")
+                        GameMatchSummaryView(match: match)
                             .font(.headline)
                         Text(
-                            (game.endedAt ?? game.startedAt).description
+                            (match.endedAt ?? match.startedAt).description
                         )
                             .font(.caption2)
                     }
                 }
                 .swipeActions {
                     Button(role: .destructive) {
-                        gamesContext.delete(game)
+                        matchesContext.delete(match)
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
@@ -52,6 +66,14 @@ struct GameHistoryView: View {
             }
         }
             .listStyle(.carousel)
+    }
+}
+
+struct GameMatchSummaryView: View {
+    var match: Match
+
+    var body: some View {
+        Text("\((match.latestSet?.games ?? []).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))")
     }
 }
 
@@ -64,20 +86,9 @@ struct GameHistoryView: View {
 let previewContainer: ModelContainer = {
     do {
         let container = try ModelContainer(
-            for: Game.self,
+            for: Match.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
-        
-//        let game0 = Game(
-//            ruleset: GameRules(winScore: 25),
-//            sets: [
-//                GameSet(score0: 15, score1: 25, startedAt: Date()),
-//                GameSet(score0: 10, score1: 25, startedAt: Date()),
-//            ],
-//            startedAt: Date()
-//        )
-//        
-//        container.mainContext.insert(game0)
         
         return container
     } catch {

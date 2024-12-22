@@ -11,16 +11,34 @@ import SwiftUI
 struct StartView: View {
     private let gameNavigation = GameNavigationManager()
     
-    private let indoorVolleyball = GameTemplate(
+    private let indoorVolleyball = MatchTemplate(
         .volleyball,
-        indoor: true,
-        rules: GameRules(winScore: 25)
+        name: "Indoor volleyball",
+        environment: .indoor,
+        scoring: MatchScoringRules(
+            setsWinAt: 3,
+            setScoring: MatchSetScoringRules(
+                gamesWinAt: 6,
+                gameScoring: MatchGameScoringRules(
+                    winScore: 25
+                )
+            )
+        )
     )
     
-    private let beachVolleyball = GameTemplate(
+    private let beachVolleyball = MatchTemplate(
         .volleyball,
-        indoor: false,
-        rules: GameRules(winScore: 15)
+        name: "Beach volleyball",
+        environment: .outdoor,
+        scoring: MatchScoringRules(
+            setsWinAt: 1,
+            setScoring: MatchSetScoringRules(
+                gamesWinAt: 3,
+                gameScoring: MatchGameScoringRules(
+                    winScore: 25
+                )
+            )
+        )
     )
     
     var body: some View {
@@ -43,20 +61,13 @@ struct StartView: View {
 }
 
 struct StartGameNavigationLinkView: View {
-    var template: GameTemplate
+    var template: MatchTemplate
     @Environment(GameNavigationManager.self) private var gameNavigation
-    
-    private var sportName: String {
-        switch template.sport {
-            case .volleyball:
-                return template.indoor ? "Indoor volleyball" : "Beach volleyball"
-        }
-    }
     
     private var tintColor: Color {
         switch template.sport {
             case .volleyball:
-                return template.indoor ? .blue : .yellow
+            return template.environment == .indoor ? .blue : .yellow
         }
     }
     
@@ -75,9 +86,9 @@ struct StartGameNavigationLinkView: View {
                     .foregroundStyle(.tint)
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(sportName)
+                    Text(template.name)
                         .font(.headline)
-                    Text("Best-of-5, first to \(template.rules.winScore)")
+                    Text("Best-of-\(template.scoring.setScoring.gamesMaximum), first to \(template.scoring.setScoring.gameScoring.maximumScore)")
                         .font(.caption)
                         .foregroundStyle(.tint)
                 }

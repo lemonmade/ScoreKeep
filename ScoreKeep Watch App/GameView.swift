@@ -9,30 +9,28 @@ import SwiftUI
 import WatchKit
 
 struct GameView: View {
-    var template: GameTemplate
-    @State private var game: Game?
+    var template: MatchTemplate
+    @State private var match: Match?
     @Environment(\.modelContext) private var context
 
     var body: some View {
         VStack {
-            if let game = game {
-                GameTabView(game: game)
+            if let match = match {
+                MatchTabView(match: match)
             } else {
                 Text("Creating game...")
             }
         }
         .onAppear {
-            createAndSaveGame()
+            createAndSaveMatch()
         }
     }
     
-    private func createAndSaveGame() {
-        if game == nil {
-            let newGame = Game(from: template)
-            
-            game = newGame
+    private func createAndSaveMatch() {
+        if match == nil {
+            match = template.createMatch()
 
-            context.insert(newGame)
+            context.insert(match!)
             
             // TODO
             try? context.save()
@@ -40,8 +38,8 @@ struct GameView: View {
     }
 }
 
-struct GameTabView: View {
-    @Bindable var game: Game
+struct MatchTabView: View {
+    @Bindable var match: Match
     @Environment(GameNavigationManager.self) private var gameNavigation
     
     var body: some View {
@@ -62,16 +60,25 @@ struct GameTabView: View {
         }
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(gameNavigation.tab == .nowPlaying)
-        .environment(game)
+        .environment(match)
     }
 }
 
 #Preview {
     GameView(
-        template: GameTemplate(
+        template: MatchTemplate(
             .volleyball,
-            indoor: true,
-            rules: GameRules(winScore: 25)
+            name: "Indoor volleyball",
+            environment: .indoor,
+            scoring: MatchScoringRules(
+                setsWinAt: 3,
+                setScoring: MatchSetScoringRules(
+                    gamesWinAt: 6,
+                    gameScoring: MatchGameScoringRules(
+                        winScore: 25
+                    )
+                )
+            )
         )
     )
         .environment(GameNavigationManager())
