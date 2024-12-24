@@ -15,10 +15,14 @@ enum GameNavigationTab {
 @Observable
 class GameNavigationManager {
     var tab: GameNavigationTab = .main
-    var isActive = false
+    
+    var path = NavigationPath()
+    
+    func start() {
+        tab = .main
+    }
     
     func end() {
-        print("Ending game...")
-        isActive = false
+        path.removeLast(path.count)
     }
 }

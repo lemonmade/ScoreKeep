@@ -14,35 +14,6 @@ struct GameHistoryView: View {
     
     var body: some View {
         List {
-            Button {
-                let newGame = Match(
-                    sets: [
-                        MatchSet(
-                            games: [
-                                MatchGame(us: Int.random(in: 0...24), them: 25, startedAt: Date(), endedAt: Date()),
-                                MatchGame(us: Int.random(in: 0...24), them: 25, startedAt: Date(), endedAt: Date())
-                            ],
-                            startedAt: Date(),
-                            endedAt: Date()
-                        )
-                    ],
-                    scoring: MatchScoringRules(
-                        setsWinAt: 1,
-                        setScoring: MatchSetScoringRules(
-                            gamesWinAt: 2,
-                            gameScoring: MatchGameScoringRules(
-                                winScore: 25
-                            )
-                        )
-                    )
-                )
-                
-                matchesContext.insert(newGame)
-                try? matchesContext.save()
-            } label: {
-                Text("Add Game")
-            }
-            
             ForEach(matches) { match in
                 NavigationLink {
                     Text(match.id.storeIdentifier ?? "Unknown")

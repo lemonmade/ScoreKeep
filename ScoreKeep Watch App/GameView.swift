@@ -12,6 +12,7 @@ struct GameView: View {
     var template: MatchTemplate
     @State private var match: Match?
     @Environment(\.modelContext) private var context
+    @Environment(GameNavigationManager.self) private var gameNavigation
 
     var body: some View {
         VStack {
@@ -22,18 +23,15 @@ struct GameView: View {
             }
         }
         .onAppear {
-            createAndSaveMatch()
-        }
-    }
-    
-    private func createAndSaveMatch() {
-        if match == nil {
-            match = template.createMatch()
-
-            context.insert(match!)
+            if match != nil { return }
             
+            let newMatch = template.createMatch()
+            context.insert(newMatch)
             // TODO
             try? context.save()
+            
+            gameNavigation.start()
+            match = newMatch
         }
     }
 }

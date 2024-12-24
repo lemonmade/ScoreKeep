@@ -11,6 +11,21 @@ import SwiftUI
 struct StartView: View {
     private let gameNavigation = GameNavigationManager()
     
+    private let shortVolleyball = MatchTemplate(
+        .volleyball,
+        name: "Short volleyball",
+        environment: .indoor,
+        scoring: MatchScoringRules(
+            setsWinAt: 1,
+            setScoring: MatchSetScoringRules(
+                gamesWinAt: 2,
+                gameScoring: MatchGameScoringRules(
+                    winScore: 10
+                )
+            )
+        )
+    )
+    
     private let indoorVolleyball = MatchTemplate(
         .volleyball,
         name: "Indoor volleyball",
@@ -42,27 +57,54 @@ struct StartView: View {
     )
     
     var body: some View {
-        List {
-            StartGameNavigationLinkView(template: indoorVolleyball)
-            
-            StartGameNavigationLinkView(template: beachVolleyball)
-            
-            StartGameRulesCreateLinkView()
-        }
-        .navigationBarTitle("ScoreKeep")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                StartGameHistoryLinkView()
+        @Bindable var gameNavigation = gameNavigation
+        
+        NavigationStack(path: $gameNavigation.path) {
+            List {
+                StartGameNavigationLinkView(template: shortVolleyball)
+
+                StartGameNavigationLinkView(template: indoorVolleyball)
+                
+                StartGameNavigationLinkView(template: beachVolleyball)
+                
+                StartGameRulesCreateLinkView()
             }
+            .navigationBarTitle("ScoreKeep")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    StartGameHistoryLinkView()
+                }
+            }
+            .listStyle(.carousel)
+            // Had to lift this up from `StartGameNavigationLinkView`, because the list
+            // creates views lazily
+            .navigationDestination(for: MatchTemplate.self) { template in
+                // Interesting that I have to pass down context; without this, the context
+                // is missing and throws an error within this view.
+                GameView(template: template)
+                    .environment(gameNavigation)
+            }
+            .navigationDestination(for: MatchHistoryNavigationDestination.self) { _ in
+                GameHistoryView()
+            }
+            .navigationDestination(for: MatchCreateTemplateNavigationDestination.self) { _ in
+                GameRulesCreateView()
+            }
+            .environment(gameNavigation)
         }
-        .listStyle(.carousel)
-        .environment(gameNavigation)
     }
+}
+
+struct MatchHistoryNavigationDestination: Hashable {
+    
+}
+
+struct MatchCreateTemplateNavigationDestination: Hashable {
+    
 }
 
 struct StartGameNavigationLinkView: View {
     var template: MatchTemplate
-    @Environment(GameNavigationManager.self) private var gameNavigation
     
     private var tintColor: Color {
         switch template.sport {
@@ -72,12 +114,7 @@ struct StartGameNavigationLinkView: View {
     }
     
     var body: some View {
-        @Bindable var gameNavigation = gameNavigation
-        
-        NavigationLink(isActive: $gameNavigation.isActive) {
-            GameView(template: template)
-                .environment(gameNavigation)
-        } label: {
+        NavigationLink(value: template) {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: "figure.volleyball")
                     .resizable()
@@ -108,22 +145,17 @@ struct StartGameNavigationLinkView: View {
 
 struct StartGameHistoryLinkView: View {
     var body: some View {
-        NavigationLink() {
-            GameHistoryView()
-        } label: {
-            Image(systemName: "calendar")
+        NavigationLink(value: MatchHistoryNavigationDestination()) {
+            Label("Finished games", systemImage: "calendar")
         }
-        .accessibilityLabel("Finished games")
     }
 }
 
 struct StartGameRulesCreateLinkView: View {
     var body: some View {
-        NavigationLink {
-            GameRulesCreateView()
-        } label: {
-            Text("New game")
-                .frame(maxWidth: .infinity)
+        NavigationLink(value: MatchCreateTemplateNavigationDestination()) {
+            Text("New match")
+                .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 }

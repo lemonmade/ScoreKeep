@@ -29,17 +29,58 @@ class Match {
     var startedAt: Date
     var endedAt: Date?
     var scoring: MatchScoringRules
+    var template: MatchTemplate?
+    
+    var hasEnded: Bool { endedAt != nil }
     
     var latestSet: MatchSet? { sets.last }
     var latestGame: MatchGame? { latestSet?.latestGame }
     
-    init(_ sport: MatchSport = .volleyball, environment: MatchEnvironment = .indoor, sets: [MatchSet] = [MatchSet()], startedAt: Date = Date(), endedAt: Date? = nil, scoring: MatchScoringRules) {
+    var hasMoreGames: Bool {
+        if hasEnded { return false }
+        guard let latestSet else { return true }
+        
+        if scoring.playItOut {
+            return sets.count < scoring.setsMaximum || latestSet.games.count < scoring.setScoring.gamesMaximum
+        }
+        
+        return setsUs >= scoring.setsWinAt || setsThem >= scoring.setsWinAt
+    }
+    
+    var setsUs: Int { sets.count { $0.winner == .us } }
+    var setsThem: Int { sets.count { $0.winner == .them } }
+    
+    var winner: MatchTeam? {
+        if !hasEnded { return nil }
+        
+        let setsUs = setsUs, setsThem = setsThem
+        return setsUs > setsThem ? .us : setsThem > setsUs ? .them : nil
+    }
+    
+    var hasWinner: Bool { winner != nil }
+    
+    var isMultiSet: Bool { scoring.setsWinAt > 1 }
+    
+    init(from template: MatchTemplate) {
+        self.template = template
+        self.sport = template.sport
+        self.environment = template.environment
+        self.scoring = template.scoring
+        self.sets = [MatchSet()]
+        self.startedAt = Date()
+    }
+    
+    init(_ sport: MatchSport = .volleyball, environment: MatchEnvironment = .indoor, scoring: MatchScoringRules, sets: [MatchSet] = [MatchSet()], startedAt: Date = Date(), endedAt: Date? = nil) {
         self.sport = sport
         self.environment = environment
         self.sets = sets
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.scoring = scoring
+    }
+    
+    func setsFor(_ team: MatchTeam) -> Int {
+        return team == .us ? setsUs : setsThem
     }
     
     func score(_ team: MatchTeam) {
@@ -64,17 +105,37 @@ class Match {
             sets.append(MatchSet(games: []))
         }
         
-        if let latestGame = latestGame, !latestGame.hasEnded {
-            latestGame.endedAt = now
+        guard let latestSet else { return }
+        
+        guard let latestGame = latestSet.latestGame else {
+            let newGame = MatchGame(startedAt: now)
+            latestSet.games.append(newGame)
+            return
         }
         
-        let newGame = MatchGame(startedAt: now)
-        latestSet?.games.append(newGame)
+        latestGame.endedAt = now
+
+        if !scoring.setScoring.hasWinner(latestSet) {
+            let newGame = MatchGame(number: latestGame.number + 1, startedAt: now)
+            latestSet.games.append(newGame)
+            return
+        }
+        
+        latestSet.endedAt = now
+        
+        if scoring.hasWinner(self) && !scoring.playItOut {
+            return
+        }
+        
+        let newSet = MatchSet(number: latestSet.number + 1, games: [MatchGame(startedAt: now)], startedAt: now)
+        sets.append(newSet)
     }
 }
 
 @Model
 class MatchSet {
+    var number: Int
+
     var games: [MatchGame]
 
     var latestGame: MatchGame? { games.last }
@@ -85,8 +146,8 @@ class MatchSet {
     
     var hasEnded: Bool { endedAt != nil }
     
-    var gamesUs: Int { games.count { $0.hasEnded && $0.scoreUs > $0.scoreThem } }
-    var gamesThem: Int { games.count { $0.hasEnded && $0.scoreThem > $0.scoreUs } }
+    var gamesUs: Int { games.count { $0.winner == .us } }
+    var gamesThem: Int { games.count { $0.winner == .them } }
     
     var winner: MatchTeam? {
         if !hasEnded { return nil }
@@ -101,16 +162,23 @@ class MatchSet {
         gamesUs == gamesThem
     }
     
-    init(games: [MatchGame] = [MatchGame()], startedAt: Date = Date(), endedAt: Date? = nil) {
+    init(number: Int = 1, games: [MatchGame] = [MatchGame()], startedAt: Date = Date(), endedAt: Date? = nil) {
+        self.number = number
         self.games = games
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.createdAt = Date()
     }
+    
+    func gamesFor(_ team: MatchTeam) -> Int {
+        return team == .us ? gamesUs : gamesThem
+    }
 }
 
 @Model
 class MatchGame {
+    var number: Int
+
     var scoreUs: Int
     var scoreThem: Int
     
@@ -133,7 +201,8 @@ class MatchGame {
         scoreUs == scoreThem
     }
     
-    init(us scoreUs: Int = 0, them scoreThem: Int = 0, startedAt: Date = Date(), endedAt: Date? = nil) {
+    init(number: Int = 1, us scoreUs: Int = 0, them scoreThem: Int = 0, startedAt: Date = Date(), endedAt: Date? = nil) {
+        self.number = number
         self.scoreUs = scoreUs
         self.scoreThem = scoreThem
         self.startedAt = startedAt
@@ -176,9 +245,7 @@ class MatchTemplate {
     func createMatch() -> Match {
         lastUsedAt = Date()
         
-        let match = Match(sport, environment: environment, scoring: scoring)
-        
-        return match
+        return Match(from: self)
     }
 }
 
@@ -195,6 +262,26 @@ struct MatchScoringRules: Codable {
         self.playItOut = playItOut
         self.setScoring = setScoring
         self.setTimebreakerScoring = setTiebreakerScoring ?? setScoring
+    }
+    
+    func checkForWinner(_ match: Match) -> MatchTeam? {
+        if let winner = match.winner { return winner }
+        
+        let setsUs = match.setsUs, setsThem = match.setsThem
+        
+        if setsUs >= setsWinAt {
+            return .us
+        }
+        
+        if setsThem >= setsWinAt {
+            return .them
+        }
+        
+        return nil
+    }
+    
+    func hasWinner(_ match: Match) -> Bool {
+        checkForWinner(match) != nil
     }
 }
 
@@ -265,21 +352,3 @@ struct MatchGameScoringRules: Codable {
         checkForWinner(game) != nil
     }
 }
-
-var indoorVolleyball = MatchTemplate(
-    .volleyball,
-    name: "Indoor Volleyball",
-    environment: .indoor,
-    scoring: MatchScoringRules(
-        setsWinAt: 1,
-        setScoring: MatchSetScoringRules(
-            gamesWinAt: 3,
-            playItOut: true,
-            gameScoring: MatchGameScoringRules(
-                winScore: 25,
-                maximumScore: 27,
-                winBy: 2
-            )
-        )
-    )
-)

@@ -5,8 +5,8 @@
 //  Created by Chris Sauve on 2024-12-10.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 @main
 struct ScoreKeep_Watch_AppApp: App {
@@ -28,10 +28,8 @@ struct ScoreKeep_Watch_AppApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationView {
-                StartView()
-            }
-            .modelContainer(sharedModelContainer)
+            StartView()
+                .modelContainer(sharedModelContainer)
         }
     }
 }
