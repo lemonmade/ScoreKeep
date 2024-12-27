@@ -9,41 +9,30 @@ import SwiftUI
 import WatchKit
 
 struct MatchView: View {
-    var template: MatchTemplate
-    @State private var match: Match?
+    var match: Match
     @Environment(\.modelContext) private var context
     @Environment(NavigationManager.self) private var gameNavigation
 
     var body: some View {
-        VStack {
-            if let match = match {
-                MatchTabView(match: match)
-            } else {
-                Text("Creating game...")
+        MatchTabView(match: match)
+            .onAppear {
+                context.insert(match)
+
+                // TODO
+                try? context.save()
             }
-        }
-        .onAppear {
-            if match != nil { return }
-            
-            let newMatch = template.createMatch()
-            context.insert(newMatch)
-            // TODO
-            try? context.save()
-            
-            gameNavigation.start()
-            match = newMatch
-        }
+            .environment(match)
     }
 }
 
 struct MatchTabView: View {
     @Bindable var match: Match
-    @Environment(NavigationManager.self) private var gameNavigation
+    @Environment(NavigationManager.self) private var navigation
     
     var body: some View {
-        @Bindable var gameNavigation = gameNavigation
+        @Bindable var navigation = navigation
 
-        TabView(selection: $gameNavigation.tab) {
+        TabView(selection: $navigation.activeMatchTab) {
             Tab(value: .controls) {
                 MatchControlsView()
             }
@@ -57,14 +46,14 @@ struct MatchTabView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .navigationBarHidden(gameNavigation.tab == .nowPlaying)
+        .navigationBarHidden(navigation.activeMatchTab == .nowPlaying)
         .environment(match)
     }
 }
 
 #Preview {
     MatchView(
-        template: MatchTemplate(
+        match: MatchTemplate(
             .volleyball,
             name: "Indoor volleyball",
             environment: .indoor,
@@ -77,7 +66,7 @@ struct MatchTabView: View {
                     )
                 )
             )
-        )
+        ).createMatch()
     )
         .environment(NavigationManager())
 }

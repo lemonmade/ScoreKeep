@@ -9,7 +9,7 @@ import HealthKit
 import SwiftUI
 
 struct StartView: View {
-    private let gameNavigation = GameNavigationManager()
+    private let navigation = NavigationManager()
     
     private let shortVolleyball = MatchTemplate(
         .volleyball,
@@ -57,15 +57,15 @@ struct StartView: View {
     )
     
     var body: some View {
-        @Bindable var gameNavigation = gameNavigation
+        @Bindable var navigation = navigation
         
-        NavigationStack(path: $gameNavigation.path) {
+        NavigationStack(path: $navigation.path) {
             List {
                 StartGameNavigationLinkView(template: shortVolleyball)
 
-                StartGameNavigationLinkView(template: indoorVolleyball)
-                
-                StartGameNavigationLinkView(template: beachVolleyball)
+//                StartGameNavigationLinkView(template: indoorVolleyball)
+//
+//                StartGameNavigationLinkView(template: beachVolleyball)
                 
                 StartGameRulesCreateLinkView()
             }
@@ -78,29 +78,19 @@ struct StartView: View {
             .listStyle(.carousel)
             // Had to lift this up from `StartGameNavigationLinkView`, because the list
             // creates views lazily
-            .navigationDestination(for: MatchTemplate.self) { template in
-                // Interesting that I have to pass down context; without this, the context
-                // is missing and throws an error within this view.
-                GameView(template: template)
-                    .environment(gameNavigation)
+            .navigationDestination(for: NavigationLocation.ActiveMatch.self) { matchLocation in
+                MatchView(match: matchLocation.match)
+                    .environment(navigation)
             }
-            .navigationDestination(for: MatchHistoryNavigationDestination.self) { _ in
-                GameHistoryView()
+            .navigationDestination(for: NavigationLocation.MatchHistory.self) { _ in
+                MatchHistoryView()
             }
-            .navigationDestination(for: MatchCreateTemplateNavigationDestination.self) { _ in
-                GameRulesCreateView()
+            .navigationDestination(for: NavigationLocation.TemplateCreate.self) { _ in
+                MatchTemplateCreateView()
             }
-            .environment(gameNavigation)
+            .environment(navigation)
         }
     }
-}
-
-struct MatchHistoryNavigationDestination: Hashable {
-    
-}
-
-struct MatchCreateTemplateNavigationDestination: Hashable {
-    
 }
 
 struct StartGameNavigationLinkView: View {
@@ -114,7 +104,7 @@ struct StartGameNavigationLinkView: View {
     }
     
     var body: some View {
-        NavigationLink(value: template) {
+        NavigationLink(value: NavigationLocation.ActiveMatch(match: template.createMatch())) {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: "figure.volleyball")
                     .resizable()
@@ -145,7 +135,7 @@ struct StartGameNavigationLinkView: View {
 
 struct StartGameHistoryLinkView: View {
     var body: some View {
-        NavigationLink(value: MatchHistoryNavigationDestination()) {
+        NavigationLink(value: NavigationLocation.MatchHistory()) {
             Label("Finished games", systemImage: "calendar")
         }
     }
@@ -153,8 +143,9 @@ struct StartGameHistoryLinkView: View {
 
 struct StartGameRulesCreateLinkView: View {
     var body: some View {
-        NavigationLink(value: MatchCreateTemplateNavigationDestination()) {
+        NavigationLink(value: NavigationLocation.TemplateCreate()) {
             Text("New match")
+                .padding()
                 .frame(maxWidth: .infinity, alignment: .center)
         }
     }

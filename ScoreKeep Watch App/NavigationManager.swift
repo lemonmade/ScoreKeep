@@ -8,21 +8,37 @@
 import Foundation
 import SwiftUI
 
-enum GameNavigationTab {
-    case controls, main, nowPlaying
+protocol NavigationLocationProtocol : Hashable {}
+
+struct NavigationLocation {
+    struct TemplateCreate: NavigationLocationProtocol {}
+    struct MatchHistory: NavigationLocationProtocol {}
+    struct ActiveMatch: NavigationLocationProtocol {
+        var match: Match
+        var tab: Tab = .main
+        
+        enum Tab {
+            case main
+            case controls
+            case nowPlaying
+        }
+    }
 }
 
 @Observable
 class NavigationManager {
-    var tab: GameNavigationTab = .main
-    
     var path = NavigationPath()
+    var activeMatchTab: NavigationLocation.ActiveMatch.Tab = .main
     
-    func start() {
-        tab = .main
+    func navigate<V>(to location: V, replace: Bool = false) where V : NavigationLocationProtocol {
+        if replace {
+            path.removeLast()
+        }
+
+        path.append(location)
     }
     
-    func end() {
-        path.removeLast(path.count)
+    func pop(count: Int = 1) {
+        path.removeLast([count, path.count].min()!)
     }
 }

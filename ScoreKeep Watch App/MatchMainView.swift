@@ -1,5 +1,5 @@
 //
-//  GameMainView.swift
+//  MatchMainView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-18.

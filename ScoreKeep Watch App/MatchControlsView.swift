@@ -1,5 +1,5 @@
 //
-//  GameControlsView.swift
+//  MatchControlsView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-18.
@@ -118,7 +118,7 @@ struct MatchControlsSummaryTeamScoreRowView: View {
 }
 
 struct MatchControlsNextGameButtonView: View {
-    @Environment(GameNavigationManager.self) private var gameNavigation
+    @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
     
     var isDisabled : Bool {
@@ -133,7 +133,7 @@ struct MatchControlsNextGameButtonView: View {
                 match.startGame()
                                 
                 withAnimation {
-                    gameNavigation.tab = .main
+                    navigation.navigate(to: NavigationLocation.ActiveMatch(match: match, tab: .main), replace: true)
                 }
             } label: {
                 Image(systemName: "play")
@@ -149,7 +149,7 @@ struct MatchControlsNextGameButtonView: View {
 }
 
 struct MatchControlsUpdateSettingsButtonView: View {
-    @Environment(GameNavigationManager.self) private var gameNavigation
+    @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
     
     var body: some View {
@@ -171,12 +171,12 @@ struct MatchControlsUpdateSettingsButtonView: View {
 }
 
 struct GameControlsEndGameView: View {
-    @Environment(GameNavigationManager.self) private var gameNavigation
+    @Environment(NavigationManager.self) private var navigation
     
     var body: some View {
         VStack {
             Button {
-                gameNavigation.end()
+                navigation.pop(count: navigation.path.count)
             } label: {
                 Image(systemName: "xmark")
             }
@@ -211,7 +211,7 @@ struct GameControlsPauseGameView: View {
 
 #Preview {
     MatchControlsView()
-        .environment(GameNavigationManager())
+        .environment(NavigationManager())
         .environment(
             Match(
                 .volleyball,

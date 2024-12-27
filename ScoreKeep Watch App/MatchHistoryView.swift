@@ -1,5 +1,5 @@
 //
-//  GameHistoryView.swift
+//  MatchHistoryView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-17.
