@@ -7,17 +7,17 @@
 
 import SwiftUI
 
-struct GameMainView: View {
+struct MatchMainView: View {
     var body: some View {
         TabView {
             GameScoreKeepView()
             
-            GameActivityMetricsView()
+            MatchActivityMetricsView()
         }
         .tabViewStyle(.verticalPage)
     }
 }
 
 #Preview {
-    GameMainView()
+    MatchMainView()
 }

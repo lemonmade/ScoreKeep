@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct GameControlsView: View {
+struct MatchControlsView: View {
     @Environment(Match.self) private var match
 
     var body: some View {
@@ -210,7 +210,7 @@ struct GameControlsPauseGameView: View {
 }
 
 #Preview {
-    GameControlsView()
+    MatchControlsView()
         .environment(GameNavigationManager())
         .environment(
             Match(

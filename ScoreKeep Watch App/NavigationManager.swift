@@ -13,7 +13,7 @@ enum GameNavigationTab {
 }
 
 @Observable
-class GameNavigationManager {
+class NavigationManager {
     var tab: GameNavigationTab = .main
     
     var path = NavigationPath()

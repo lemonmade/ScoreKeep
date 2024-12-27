@@ -8,11 +8,11 @@
 import SwiftUI
 import WatchKit
 
-struct GameView: View {
+struct MatchView: View {
     var template: MatchTemplate
     @State private var match: Match?
     @Environment(\.modelContext) private var context
-    @Environment(GameNavigationManager.self) private var gameNavigation
+    @Environment(NavigationManager.self) private var gameNavigation
 
     var body: some View {
         VStack {
@@ -38,18 +38,18 @@ struct GameView: View {
 
 struct MatchTabView: View {
     @Bindable var match: Match
-    @Environment(GameNavigationManager.self) private var gameNavigation
+    @Environment(NavigationManager.self) private var gameNavigation
     
     var body: some View {
         @Bindable var gameNavigation = gameNavigation
 
         TabView(selection: $gameNavigation.tab) {
             Tab(value: .controls) {
-                GameControlsView()
+                MatchControlsView()
             }
 
             Tab(value: .main) {
-                GameMainView()
+                MatchMainView()
             }
 
             Tab(value: .nowPlaying) {
@@ -63,7 +63,7 @@ struct MatchTabView: View {
 }
 
 #Preview {
-    GameView(
+    MatchView(
         template: MatchTemplate(
             .volleyball,
             name: "Indoor volleyball",
@@ -79,5 +79,5 @@ struct MatchTabView: View {
             )
         )
     )
-        .environment(GameNavigationManager())
+        .environment(NavigationManager())
 }

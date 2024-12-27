@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct GameActivityMetricsView: View {
+struct MatchActivityMetricsView: View {
     var body: some View {
         Text("Game workout activity goes here")
     }
 }
 
 #Preview {
-    GameActivityMetricsView()
+    MatchActivityMetricsView()
 }

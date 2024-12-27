@@ -8,7 +8,7 @@
 import SwiftUI
 import SwiftData
 
-struct GameHistoryView: View {
+struct MatchHistoryView: View {
     @Query(sort: \Match.startedAt, order: .reverse) private var matches: [Match]
     @Environment(\.modelContext) private var matchesContext
     
@@ -49,7 +49,7 @@ struct GameMatchSummaryView: View {
 }
 
 #Preview {
-    GameHistoryView()
+    MatchHistoryView()
         .modelContainer(previewContainer)
 }
 
