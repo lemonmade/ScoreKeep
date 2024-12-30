@@ -1,5 +1,5 @@
 //
-//  GameView.swift
+//  ActiveMatchView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-18.
@@ -8,13 +8,12 @@
 import SwiftUI
 import WatchKit
 
-struct MatchView: View {
+struct ActiveMatchView: View {
     var match: Match
     @Environment(\.modelContext) private var context
-    @Environment(NavigationManager.self) private var gameNavigation
 
     var body: some View {
-        MatchTabView(match: match)
+        ActiveMatchTabView(match: match)
             .onAppear {
                 context.insert(match)
 
@@ -25,7 +24,7 @@ struct MatchView: View {
     }
 }
 
-struct MatchTabView: View {
+struct ActiveMatchTabView: View {
     @Bindable var match: Match
     @Environment(NavigationManager.self) private var navigation
     
@@ -52,7 +51,7 @@ struct MatchTabView: View {
 }
 
 #Preview {
-    MatchView(
+    ActiveMatchView(
         match: MatchTemplate(
             .volleyball,
             name: "Indoor volleyball",

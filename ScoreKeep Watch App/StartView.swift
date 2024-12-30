@@ -7,9 +7,12 @@
 
 import HealthKit
 import SwiftUI
+import SwiftData
 
 struct StartView: View {
     private let navigation = NavigationManager()
+
+    @Query(sort: \MatchTemplate.lastUsedAt, order: .reverse) private var templates: [MatchTemplate]
     
     private let shortVolleyball = MatchTemplate(
         .volleyball,
@@ -61,32 +64,38 @@ struct StartView: View {
         
         NavigationStack(path: $navigation.path) {
             List {
+                ForEach(templates) { template in
+                    StartGameNavigationLinkView(template: template)
+                }
+                
                 StartGameNavigationLinkView(template: shortVolleyball)
 
 //                StartGameNavigationLinkView(template: indoorVolleyball)
 //
 //                StartGameNavigationLinkView(template: beachVolleyball)
                 
-                StartGameRulesCreateLinkView()
+                CreateMatchTemplateNavigationLinkView()
             }
             .navigationBarTitle("ScoreKeep")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    StartGameHistoryLinkView()
+                    MatchHistoryNavigationLinkView()
                 }
             }
             .listStyle(.carousel)
             // Had to lift this up from `StartGameNavigationLinkView`, because the list
             // creates views lazily
             .navigationDestination(for: NavigationLocation.ActiveMatch.self) { matchLocation in
-                MatchView(match: matchLocation.match)
+                ActiveMatchView(match: matchLocation.match)
                     .environment(navigation)
             }
             .navigationDestination(for: NavigationLocation.MatchHistory.self) { _ in
                 MatchHistoryView()
+                    .environment(navigation)
             }
             .navigationDestination(for: NavigationLocation.TemplateCreate.self) { _ in
-                MatchTemplateCreateView()
+                CreateMatchTemplateView()
+                    .environment(navigation)
             }
             .environment(navigation)
         }
@@ -133,7 +142,7 @@ struct StartGameNavigationLinkView: View {
     }
 }
 
-struct StartGameHistoryLinkView: View {
+struct MatchHistoryNavigationLinkView: View {
     var body: some View {
         NavigationLink(value: NavigationLocation.MatchHistory()) {
             Label("Finished games", systemImage: "calendar")
@@ -141,7 +150,7 @@ struct StartGameHistoryLinkView: View {
     }
 }
 
-struct StartGameRulesCreateLinkView: View {
+struct CreateMatchTemplateNavigationLinkView: View {
     var body: some View {
         NavigationLink(value: NavigationLocation.TemplateCreate()) {
             Text("New match")
