@@ -33,6 +33,8 @@ class Match {
     
     var hasEnded: Bool { endedAt != nil }
     
+    var duration: TimeInterval { endedAt?.timeIntervalSince(startedAt) ?? 0 }
+    
     var latestSet: MatchSet? { sets.last }
     var latestGame: MatchGame? { latestSet?.latestGame }
     
