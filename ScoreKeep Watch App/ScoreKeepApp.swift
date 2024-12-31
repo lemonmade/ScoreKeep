@@ -10,7 +10,7 @@ import SwiftUI
 
 @main
 struct ScoreKeep_Watch_AppApp: App {
-    var sharedModelContainer: ModelContainer = {
+    private var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Match.self,
             MatchSet.self,
