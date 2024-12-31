@@ -6,18 +6,19 @@
 //
 
 import HealthKit
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct StartView: View {
     private let navigation = NavigationManager()
 
-    @Query(sort: \MatchTemplate.lastUsedAt, order: .reverse) private var templates: [MatchTemplate]
-    
+    @Query(sort: \MatchTemplate.lastUsedAt, order: .reverse) private
+        var templates: [MatchTemplate]
+
     private let indoorVolleyball = MatchTemplate(
         .volleyball,
         name: "Indoor volleyball",
-        color: .blue,
+        color: .green,
         environment: .indoor,
         scoring: MatchScoringRules(
             setsWinAt: 3,
@@ -30,11 +31,11 @@ struct StartView: View {
             )
         )
     )
-    
+
     private let beachVolleyball = MatchTemplate(
         .volleyball,
         name: "Beach volleyball",
-        color: .green,
+        color: .yellow,
         environment: .outdoor,
         scoring: MatchScoringRules(
             setsWinAt: 1,
@@ -50,19 +51,19 @@ struct StartView: View {
 
     var body: some View {
         @Bindable var navigation = navigation
-        
+
         NavigationStack(path: $navigation.path) {
             List {
                 ForEach(templates) { template in
                     StartMatchNavigationLinkView(template: template)
                 }
-                
+
                 if templates.isEmpty {
                     StartMatchNavigationLinkView(template: indoorVolleyball)
 
                     StartMatchNavigationLinkView(template: beachVolleyball)
                 }
-                
+
                 CreateMatchTemplateNavigationLinkView()
             }
             .navigationBarTitle("ScoreKeep")
@@ -74,16 +75,19 @@ struct StartView: View {
             .listStyle(.carousel)
             // Had to lift this up from `StartGameNavigationLinkView`, because the list
             // creates views lazily
-            .navigationDestination(for: NavigationLocation.ActiveMatch.self) { matchLocation in
+            .navigationDestination(for: NavigationLocation.ActiveMatch.self) {
+                matchLocation in
                 ActiveMatchView(template: matchLocation.template)
                     .environment(navigation)
             }
-            .navigationDestination(for: NavigationLocation.MatchHistory.self) { _ in
+            .navigationDestination(for: NavigationLocation.MatchHistory.self) {
+                _ in
                 MatchHistoryListView()
                     .environment(navigation)
             }
-            .navigationDestination(for: NavigationLocation.TemplateCreate.self) { _ in
-                CreateMatchTemplateView()
+            .navigationDestination(for: NavigationLocation.TemplateCreate.self)
+            { createMatchTemplateDestination in
+                CreateMatchTemplateView(template: createMatchTemplateDestination.template)
                     .environment(navigation)
             }
             .environment(navigation)
@@ -95,30 +99,42 @@ struct StartMatchNavigationLinkView: View {
     var template: MatchTemplate
     var markAsUsed: Bool = true
     
+    @Environment(NavigationManager.self) private var navigation
+
     private var detailText: String {
         var ofText: String = ""
-        
+
         if template.scoring.isMultiSet {
-            ofText = template.scoring.playItOut ? "Best-of-\(template.scoring.setsMaximum)" : "First to \(template.scoring.setsWinAt)"
+            ofText =
+                template.scoring.playItOut
+                ? "Best-of-\(template.scoring.setsMaximum)"
+                : "First to \(template.scoring.setsWinAt)"
         } else {
-            ofText = template.scoring.setScoring.playItOut ? "Best-of-\(template.scoring.setScoring.gamesMaximum)" : "First to \(template.scoring.setScoring.gamesWinAt)"
+            ofText =
+                template.scoring.setScoring.playItOut
+                ? "Best-of-\(template.scoring.setScoring.gamesMaximum)"
+                : "First to \(template.scoring.setScoring.gamesWinAt)"
         }
-        
-        let gameText = "games to \(template.scoring.setScoring.gameScoring.winScore)"
-        
+
+        let gameText =
+            "games to \(template.scoring.setScoring.gameScoring.winScore)"
+
         return "\(ofText), \(gameText)"
     }
-    
+
     var body: some View {
-        NavigationLink(value: NavigationLocation.ActiveMatch(template: template)) {
+        NavigationLink(
+            value: NavigationLocation.ActiveMatch(template: template)
+        ) {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: "figure.volleyball")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 40, height: 40)
+                    .frame(width: 42, height: 42)
+                    .fontWeight(.bold)
                     .foregroundStyle(.tint)
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(template.name)
                         .font(.headline)
                     Text(detailText)
@@ -126,16 +142,38 @@ struct StartMatchNavigationLinkView: View {
                         .foregroundStyle(.tint)
                 }
             }
-            
+
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(
-            EdgeInsets(top: 15, leading: 0, bottom: 15, trailing: 0)
+            EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0)
         )
         .tint(template.color.color)
         .listRowBackground(
             RoundedRectangle(cornerRadius: 20)
                 .fill(template.color.color.opacity(0.2))
         )
+        .overlay(alignment: .topTrailing) {
+            Button {
+                navigation.navigate(to: NavigationLocation.TemplateCreate(template: template))
+            } label: {
+                ZStack {
+                    Image(systemName: "ellipsis")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                        .fontWeight(.bold)
+                        .foregroundStyle(template.color.color)
+                        .padding(8)
+                        .background(
+                            Circle()
+                                .fill(template.color.color.opacity(0.2))
+                        )
+                }
+                .offset(y: 12)    
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
     }
 }
 
@@ -156,7 +194,6 @@ struct CreateMatchTemplateNavigationLinkView: View {
         }
     }
 }
-
 
 #Preview {
     StartView()

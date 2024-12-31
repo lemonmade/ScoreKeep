@@ -13,19 +13,34 @@ struct CreateMatchTemplateView: View {
     @Environment(\.modelContext) private var context
     @Environment(NavigationManager.self) private var navigation
     
+    @State private var name: String
+    @State private var environment: MatchEnvironment
+    @State private var color: MatchTemplateColor
     
-    @State private var name = "Volleyball"
-    @State private var environment: MatchEnvironment = .indoor
-    @State private var color: MatchTemplateColor = .green
-    
-    @State private var setsWinAt = 1
+    @State private var setsWinAt: Int
 
-    @State private var gamesWinAt = 3
-    @State private var gamesPlayItOut = false
+    @State private var gamesWinAt: Int
+    @State private var gamesPlayItOut: Bool
     
-    @State private var gameScoringWinScore = 25
-    @State private var gameScoringMaximumScore = 27
-    @State private var gameScoringWinBy = 1
+    @State private var gameScoringWinScore: Int
+    @State private var gameScoringMaximumScore: Int
+    @State private var gameScoringWinBy: Int
+    
+    @State private var navigationTitle: String
+    
+    init(template: MatchTemplate? = nil) {
+        self.template = template
+        self.name = template?.name ?? "Volleyball"
+        self.environment = template?.environment ?? .indoor
+        self.color = template?.color ?? .green
+        self.setsWinAt = template?.scoring.setsWinAt ?? 1
+        self.gamesWinAt = template?.scoring.setScoring.gamesWinAt ?? 3
+        self.gamesPlayItOut = template?.scoring.setScoring.playItOut ?? false
+        self.gameScoringWinScore = template?.scoring.setScoring.gameScoring.winScore ?? 25
+        self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.maximumScore ?? 27
+        self.gameScoringWinBy = template?.scoring.setScoring.gameScoring.winBy ?? 2
+        self.navigationTitle = template == nil ? "New match" : template!.name
+    }
     
     private var isMultiSet: Bool {
         return setsWinAt > 1
@@ -119,70 +134,109 @@ struct CreateMatchTemplateView: View {
                     }
                 }
                 
-                Button {
-                    let newScoringRules = MatchScoringRules(
-                        setsWinAt: setsWinAt,
-                        playItOut: false,
-                        setScoring: MatchSetScoringRules(
-                            gamesWinAt: gamesWinAt,
-                            gamesMaximum: (gamesWinAt * 2) - 1,
-                            playItOut: gamesPlayItOut,
-                            gameScoring: MatchGameScoringRules(
-                                winScore: gameScoringWinScore,
-                                maximumScore: gameScoringMaximumScore,
-                                winBy: gameScoringWinBy
+                VStack {
+                    Button {
+                        let newScoringRules = MatchScoringRules(
+                            setsWinAt: setsWinAt,
+                            playItOut: false,
+                            setScoring: MatchSetScoringRules(
+                                gamesWinAt: gamesWinAt,
+                                gamesMaximum: (gamesWinAt * 2) - 1,
+                                playItOut: gamesPlayItOut,
+                                gameScoring: MatchGameScoringRules(
+                                    winScore: gameScoringWinScore,
+                                    maximumScore: gameScoringMaximumScore,
+                                    winBy: gameScoringWinBy
+                                )
                             )
                         )
-                    )
-                    
-                    if let template {
-                        if template.color != color {
-                            template.color = color
-                        }
                         
-                        if template.scoring != newScoringRules {
-                            template.scoring = newScoringRules
-                        }
-                        
-                        // TODO?
-                        if template.hasChanges {
+                        if let template {
+                            save(template: template)
+                            
+                            navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
+                        } else {
+                            let template = MatchTemplate(
+                                .volleyball,
+                                name: name,
+                                color: color,
+                                environment: environment,
+                                scoring: newScoringRules
+                            )
+                            
+                            context.insert(template)
+                            // TODO
                             try? context.save()
+                            navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
                         }
-                        
-                        navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
-                    } else {
-                        let template = MatchTemplate(
-                            .volleyball,
-                            name: name,
-                            color: color,
-                            environment: environment,
-                            scoring: newScoringRules
-                        )
-                        
-                        context.insert(template)
-                        // TODO
-                        try? context.save()
-                        navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
-                    }
-                } label: {
-                    Text("Start")
-                }
-                .tint(.green)
-                
-                if template != nil {
-                    Button {
-                        context.delete(template!)
-                        // TODO
-                        try? context.save()
-                        navigation.pop()
                     } label: {
-                        Text("Delete")
+                        Text("Start")
                     }
-                    .tint(.red)
+                    .tint(.green)
+                    
+                    if template != nil {
+                        Button {
+                            save(template: template!)
+                            navigation.pop()
+                        } label: {
+                            Text("Save")
+                        }
+                    }
+                    
+                    if template?.lastUsedAt != nil {
+                        Button {
+                            context.delete(template!)
+                            // TODO
+                            try? context.save()
+                            navigation.pop()
+                        } label: {
+                            Text("Delete")
+                        }
+                        .tint(.red)
+                    }
                 }
             }
         }
-        .navigationTitle("New match")
+        .navigationTitle(navigationTitle)
+    }
+    
+    private func save(template: MatchTemplate) {
+        let newScoringRules = MatchScoringRules(
+            setsWinAt: setsWinAt,
+            setsMaximum: (setsWinAt * 2) - 1,
+            playItOut: false,
+            setScoring: MatchSetScoringRules(
+                gamesWinAt: gamesWinAt,
+                gamesMaximum: (gamesWinAt * 2) - 1,
+                playItOut: gamesPlayItOut,
+                gameScoring: MatchGameScoringRules(
+                    winScore: gameScoringWinScore,
+                    maximumScore: gameScoringMaximumScore,
+                    winBy: gameScoringWinBy
+                )
+            )
+        )
+        
+        if template.name != name {
+            template.name = name
+        }
+        
+        if template.color != color {
+            template.color = color
+        }
+        
+        if template.scoring != newScoringRules {
+            template.scoring = newScoringRules
+        }
+        
+        if template.id.storeIdentifier != nil {
+            context.insert(template)
+        }
+        
+        // TODO
+        if template.hasChanges {
+            try? context.save()
+        }
     }
 }
 
@@ -207,7 +261,7 @@ struct MatchTemplateColorPickerView: View {
                         selected.wrappedValue = matchColor
                     } label: {
                         ZStack {
-                            Color(matchColor.color)
+                            Color(matchColor.color.opacity(0.6))
                                 .aspectRatio(1, contentMode: .fill)
                                 .clipShape(.circle)
                             
@@ -217,7 +271,7 @@ struct MatchTemplateColorPickerView: View {
                                     .fontWeight(.bold)
                                 Circle()
                                     .inset(by: -3)
-                                    .stroke(matchColor.color, lineWidth: 2)
+                                    .stroke(matchColor.color, lineWidth: 3)
                             }
                         }
                     }
@@ -232,7 +286,7 @@ struct MatchTemplateColorPickerView: View {
                         Color(.darkGray)
                             .aspectRatio(1, contentMode: .fill)
                             .clipShape(.circle)
-                            .opacity(0.75)
+                            .opacity(0.5)
                         
                         Image(systemName: "ellipsis")
                             .frame(maxWidth: .infinity)
@@ -265,7 +319,7 @@ struct MatchTemplateColorPickerSheetView: View {
                         selected.wrappedValue = matchColor
                     } label: {
                         ZStack {
-                            Color(matchColor.color)
+                            Color(matchColor.color.opacity(0.6))
                                 .aspectRatio(1, contentMode: .fill)
                                 .clipShape(.circle)
                             
@@ -275,7 +329,7 @@ struct MatchTemplateColorPickerSheetView: View {
                                     .fontWeight(.bold)
                                 Circle()
                                     .inset(by: -3)
-                                    .stroke(matchColor.color, lineWidth: 2)
+                                    .stroke(matchColor.color, lineWidth: 3)
                             }
                         }
                     }

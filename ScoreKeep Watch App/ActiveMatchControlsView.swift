@@ -143,6 +143,7 @@ struct StartNextGameForActiveMatchButtonView: View {
             }
             .tint(.green)
             .font(.title2)
+            .fontWeight(.medium)
             .disabled(isDisabled)
 
             Text("Next game")
@@ -165,6 +166,7 @@ struct UpdateSettingsForActiveMatchButtonView: View {
                 Image(systemName: "gearshape")
             }
             .font(.title2)
+            .fontWeight(.medium)
             .disabled(isDisabled)
             
             Text("Settings")
@@ -190,6 +192,7 @@ struct EndActiveMatchButtonView: View {
             }
             .tint(.red)
             .font(.title2)
+            .fontWeight(.medium)
 
             Text("End")
         }
@@ -211,6 +214,7 @@ struct PauseActiveMatchButtonView: View {
             }
             .tint(.yellow)
             .font(.title2)
+            .fontWeight(.medium)
 
             Text(isRunning ? "Pause" : "Resume")
         }

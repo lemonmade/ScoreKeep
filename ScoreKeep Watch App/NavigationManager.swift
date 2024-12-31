@@ -11,7 +11,10 @@ import SwiftUI
 protocol NavigationLocationProtocol : Hashable {}
 
 struct NavigationLocation {
-    struct TemplateCreate: NavigationLocationProtocol {}
+    struct TemplateCreate: NavigationLocationProtocol {
+        var template: MatchTemplate? = nil
+    }
+
     struct MatchHistory: NavigationLocationProtocol {}
     struct ActiveMatch: NavigationLocationProtocol {
         var template: MatchTemplate
