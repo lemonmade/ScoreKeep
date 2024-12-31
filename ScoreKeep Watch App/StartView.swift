@@ -14,27 +14,14 @@ struct StartView: View {
 
     @Query(sort: \MatchTemplate.lastUsedAt, order: .reverse) private var templates: [MatchTemplate]
     
-    private let shortVolleyball = MatchTemplate(
-        .volleyball,
-        name: "Short volleyball",
-        environment: .indoor,
-        scoring: MatchScoringRules(
-            setsWinAt: 1,
-            setScoring: MatchSetScoringRules(
-                gamesWinAt: 2,
-                gameScoring: MatchGameScoringRules(
-                    winScore: 10
-                )
-            )
-        )
-    )
-    
     private let indoorVolleyball = MatchTemplate(
         .volleyball,
         name: "Indoor volleyball",
+        color: .blue,
         environment: .indoor,
         scoring: MatchScoringRules(
             setsWinAt: 3,
+            playItOut: false,
             setScoring: MatchSetScoringRules(
                 gamesWinAt: 6,
                 gameScoring: MatchGameScoringRules(
@@ -47,9 +34,11 @@ struct StartView: View {
     private let beachVolleyball = MatchTemplate(
         .volleyball,
         name: "Beach volleyball",
+        color: .green,
         environment: .outdoor,
         scoring: MatchScoringRules(
             setsWinAt: 1,
+            playItOut: true,
             setScoring: MatchSetScoringRules(
                 gamesWinAt: 3,
                 gameScoring: MatchGameScoringRules(
@@ -58,21 +47,21 @@ struct StartView: View {
             )
         )
     )
-    
+
     var body: some View {
         @Bindable var navigation = navigation
         
         NavigationStack(path: $navigation.path) {
             List {
                 ForEach(templates) { template in
-                    StartGameNavigationLinkView(template: template)
+                    StartMatchNavigationLinkView(template: template)
                 }
                 
-                StartGameNavigationLinkView(template: shortVolleyball)
+                if templates.isEmpty {
+                    StartMatchNavigationLinkView(template: indoorVolleyball)
 
-//                StartGameNavigationLinkView(template: indoorVolleyball)
-//
-//                StartGameNavigationLinkView(template: beachVolleyball)
+                    StartMatchNavigationLinkView(template: beachVolleyball)
+                }
                 
                 CreateMatchTemplateNavigationLinkView()
             }
@@ -86,11 +75,11 @@ struct StartView: View {
             // Had to lift this up from `StartGameNavigationLinkView`, because the list
             // creates views lazily
             .navigationDestination(for: NavigationLocation.ActiveMatch.self) { matchLocation in
-                ActiveMatchView(match: matchLocation.match)
+                ActiveMatchView(template: matchLocation.template)
                     .environment(navigation)
             }
             .navigationDestination(for: NavigationLocation.MatchHistory.self) { _ in
-                MatchHistoryView()
+                MatchHistoryListView()
                     .environment(navigation)
             }
             .navigationDestination(for: NavigationLocation.TemplateCreate.self) { _ in
@@ -102,42 +91,50 @@ struct StartView: View {
     }
 }
 
-struct StartGameNavigationLinkView: View {
+struct StartMatchNavigationLinkView: View {
     var template: MatchTemplate
+    var markAsUsed: Bool = true
     
-    private var tintColor: Color {
-        switch template.sport {
-            case .volleyball:
-            return template.environment == .indoor ? .blue : .yellow
+    private var detailText: String {
+        var ofText: String = ""
+        
+        if template.scoring.isMultiSet {
+            ofText = template.scoring.playItOut ? "Best-of-\(template.scoring.setsMaximum)" : "First to \(template.scoring.setsWinAt)"
+        } else {
+            ofText = template.scoring.setScoring.playItOut ? "Best-of-\(template.scoring.setScoring.gamesMaximum)" : "First to \(template.scoring.setScoring.gamesWinAt)"
         }
+        
+        let gameText = "games to \(template.scoring.setScoring.gameScoring.winScore)"
+        
+        return "\(ofText), \(gameText)"
     }
     
     var body: some View {
-        NavigationLink(value: NavigationLocation.ActiveMatch(match: template.createMatch())) {
+        NavigationLink(value: NavigationLocation.ActiveMatch(template: template)) {
             VStack(alignment: .leading, spacing: 8) {
                 Image(systemName: "figure.volleyball")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 50, height: 50)
+                    .frame(width: 40, height: 40)
                     .foregroundStyle(.tint)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(template.name)
                         .font(.headline)
-                    Text("Best-of-\(template.scoring.setScoring.gamesMaximum), first to \(template.scoring.setScoring.gameScoring.maximumScore)")
-                        .font(.caption)
+                    Text(detailText)
+                        .font(.caption2)
                         .foregroundStyle(.tint)
                 }
             }
             
         }
         .padding(
-            EdgeInsets(top: 15, leading: 5, bottom: 15, trailing: 5)
+            EdgeInsets(top: 15, leading: 0, bottom: 15, trailing: 0)
         )
-        .tint(tintColor)
+        .tint(template.color.color)
         .listRowBackground(
             RoundedRectangle(cornerRadius: 20)
-                .fill(tintColor.opacity(0.2))
+                .fill(template.color.color.opacity(0.2))
         )
     }
 }

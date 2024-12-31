@@ -7,12 +7,12 @@
 
 import SwiftUI
 
-struct GameScoreKeepView: View {
+struct ActiveMatchScoreKeepView: View {
     @Environment(Match.self) private var match
 
     var body: some View {
         if let game = match.latestGame {
-            GameScoreView(match: match, game: game)
+            ActiveMatchScoreKeepGameView(match: match, game: game)
         } else {
             // TODO
             EmptyView()
@@ -20,7 +20,7 @@ struct GameScoreKeepView: View {
     }
 }
 
-struct GameScoreView: View {
+struct ActiveMatchScoreKeepGameView: View {
     var match: Match
     var game: MatchGame
 
@@ -164,7 +164,7 @@ struct GameScoreTeamScoreView: View {
 }
 
 #Preview {
-    GameScoreKeepView()
+    ActiveMatchScoreKeepView()
         .environment(
             Match(
                 .volleyball,

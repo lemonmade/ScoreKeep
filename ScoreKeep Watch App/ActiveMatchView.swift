@@ -9,18 +9,42 @@ import SwiftUI
 import WatchKit
 
 struct ActiveMatchView: View {
-    var match: Match
+    var template: MatchTemplate
+    var markAsUsed: Bool = true
+    
+    @State private var match: Match? = nil
+
     @Environment(\.modelContext) private var context
+    @Environment(NavigationManager.self) private var navigation
 
     var body: some View {
-        ActiveMatchTabView(match: match)
+        ActiveMatchInternalView(match: match)
+            .navigationBarBackButtonHidden(true)
+            .navigationBarHidden(navigation.activeMatchTab == .nowPlaying)
+            .environment(match)
             .onAppear {
+                navigation.activeMatchTab = .main
+                
+                let match = template.createMatch(markAsUsed: markAsUsed)
+                self.match = match
+
                 context.insert(match)
 
                 // TODO
                 try? context.save()
             }
-            .environment(match)
+    }
+}
+
+struct ActiveMatchInternalView: View {
+    var match: Match?
+    
+    var body: some View {
+        if let match {
+            ActiveMatchTabView(match: match)
+        } else {
+            EmptyView()
+        }
     }
 }
 
@@ -33,26 +57,24 @@ struct ActiveMatchTabView: View {
 
         TabView(selection: $navigation.activeMatchTab) {
             Tab(value: .controls) {
-                MatchControlsView()
+                ActiveMatchControlsView()
             }
 
             Tab(value: .main) {
-                MatchMainView()
+                ActiveMatchMainView()
             }
 
             Tab(value: .nowPlaying) {
                 NowPlayingView()
             }
         }
-        .navigationBarBackButtonHidden(true)
-        .navigationBarHidden(navigation.activeMatchTab == .nowPlaying)
         .environment(match)
     }
 }
 
 #Preview {
     ActiveMatchView(
-        match: MatchTemplate(
+        template: MatchTemplate(
             .volleyball,
             name: "Indoor volleyball",
             environment: .indoor,
@@ -65,7 +87,7 @@ struct ActiveMatchTabView: View {
                     )
                 )
             )
-        ).createMatch()
+        )
     )
         .environment(NavigationManager())
 }

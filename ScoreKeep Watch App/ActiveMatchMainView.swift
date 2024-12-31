@@ -1,5 +1,5 @@
 //
-//  MatchMainView.swift
+//  ActiveMatchMainView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-18.
@@ -7,17 +7,17 @@
 
 import SwiftUI
 
-struct MatchMainView: View {
+struct ActiveMatchMainView: View {
     var body: some View {
         TabView {
-            GameScoreKeepView()
+            ActiveMatchScoreKeepView()
             
-            MatchActivityMetricsView()
+            ActiveMatchActivityView()
         }
         .tabViewStyle(.verticalPage)
     }
 }
 
 #Preview {
-    MatchMainView()
+    ActiveMatchMainView()
 }

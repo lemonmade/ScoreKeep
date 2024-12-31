@@ -8,135 +8,67 @@
 import SwiftUI
 
 struct CreateMatchTemplateView: View {
+    var template: MatchTemplate? = nil
+
     @Environment(\.modelContext) private var context
     @Environment(NavigationManager.self) private var navigation
+    
+    
+    @State private var name = "Volleyball"
+    @State private var environment: MatchEnvironment = .indoor
+    @State private var color: MatchTemplateColor = .green
+    
+    @State private var setsWinAt = 1
 
-    @Bindable var template = MatchTemplate(
-        .volleyball,
-        name: "Volleyball",
-        environment: .indoor,
-        scoring: MatchScoringRules(
-            setsWinAt: 1,
-            setScoring: MatchSetScoringRules(
-                gamesWinAt: 6,
-                gameScoring: MatchGameScoringRules(
-                    winScore: 25
-                )
-            )
-        )
-    )
+    @State private var gamesWinAt = 3
+    @State private var gamesPlayItOut = false
     
-    private var scoring: MatchScoringRules {
-        template.scoring
-    }
+    @State private var gameScoringWinScore = 25
+    @State private var gameScoringMaximumScore = 27
+    @State private var gameScoringWinBy = 1
     
-    private var setScoring: MatchSetScoringRules {
-        scoring.setScoring
-    }
-    
-    
-    private var gameScoring: MatchGameScoringRules {
-        setScoring.gameScoring
-    }
-    
-    @State private var gameScoringWinScore = 25 {
-        didSet {
-            template.scoring = MatchScoringRules(
-                setsWinAt: scoring.setsWinAt,setsMaximum: scoring.setsMaximum,
-                setScoring: MatchSetScoringRules(
-                    gamesWinAt: setScoring.gamesWinAt,
-                    gamesMaximum: setScoring.gamesMaximum,
-                    playItOut: setScoring.playItOut,
-                    gameScoring: MatchGameScoringRules(
-                        winScore: gameScoringWinScore,
-                        maximumScore: gameScoring.maximumScore,
-                        winBy: gameScoring.winBy
-                    ),
-                    gameTimebreakerScoring: setScoring.gameTimebreakerScoring
-                ),
-                setTiebreakerScoring: scoring.setTimebreakerScoring
-            )
-        }
-    }
-    
-    @State private var gameScoringMaximumScore = 27 {
-        didSet {
-            template.scoring = MatchScoringRules(
-                setsWinAt: scoring.setsWinAt,setsMaximum: scoring.setsMaximum,
-                setScoring: MatchSetScoringRules(
-                    gamesWinAt: setScoring.gamesWinAt,
-                    gamesMaximum: setScoring.gamesMaximum,
-                    playItOut: setScoring.playItOut,
-                    gameScoring: MatchGameScoringRules(
-                        winScore: gameScoring.winScore,
-                        maximumScore: gameScoringMaximumScore,
-                        winBy: gameScoring.winBy
-                    ),
-                    gameTimebreakerScoring: setScoring.gameTimebreakerScoring
-                ),
-                setTiebreakerScoring: scoring.setTimebreakerScoring
-            )
-            
-            if gameScoringWinScore < gameScoringMaximumScore {
-                self.gameScoringWinScore = gameScoringMaximumScore
-            }
-        }
-    }
-    
-    @State private var gameScoringWinBy = 1 {
-        didSet {
-            template.scoring = MatchScoringRules(
-                setsWinAt: scoring.setsWinAt,setsMaximum: scoring.setsMaximum,
-                setScoring: MatchSetScoringRules(
-                    gamesWinAt: setScoring.gamesWinAt,
-                    gamesMaximum: setScoring.gamesMaximum,
-                    playItOut: setScoring.playItOut,
-                    gameScoring: MatchGameScoringRules(
-                        winScore: gameScoring.winScore,
-                        maximumScore: gameScoring.maximumScore,
-                        winBy: gameScoringWinBy
-                    ),
-                    gameTimebreakerScoring: setScoring.gameTimebreakerScoring
-                ),
-                setTiebreakerScoring: scoring.setTimebreakerScoring
-            )
-        }
-    }
-    
-    @State private var matchColor: MatchColor = .green
-    
-    enum MatchColor: String {
-        case red, blue, green, yellow
-        
-        var color: Color {
-            switch self {
-            case .red: return Color.red
-            case .blue: return Color.blue
-            case .green: return Color.green
-            case .yellow: return Color.yellow
-            }
-        }
-        
-        static var allCases: [MatchColor] { [.red, .blue, .green, .yellow] }
+    private var isMultiSet: Bool {
+        return setsWinAt > 1
     }
     
     var body: some View {
         ScrollView {
             VStack(spacing: 12) {
-                TextField("Name", text: $template.name)
+                TextField("Name", text: $name)
                 
-//                Picker("Color", selection: $matchColor) {
-//                    Text("").frame(maxWidth: .infinity, minHeight: 30).background(MatchColor.red.color).tag(MatchColor.red)
-//                    Text("").frame(width: 30, height: 30).background(MatchColor.blue.color).tag(MatchColor.blue)
-//                    Text("").frame(width: 30, height: 30).background(MatchColor.green.color).tag(MatchColor.green)
-//                }
-//                .pickerStyle(.navigationLink)
-                
-                Picker("Environment", selection: $template.environment) {
+                MatchTemplateColorPickerView(selected: $color)
+
+                Picker("Environment", selection: $environment) {
                     Text("Indoor").tag(MatchEnvironment.indoor)
                     Text("Outdoor").tag(MatchEnvironment.outdoor)
                 }
                 .pickerStyle(.navigationLink)
+                
+                Divider()
+                
+                VStack {
+                    Text("Games to win")
+                    
+                    Stepper(value: $gamesWinAt, in: 1...50, step: 1) {
+                        HStack(spacing: 0) {
+                            Text("\(gamesWinAt)").fontWeight(.bold)
+                            Text(" games")
+                        }
+                            .font(.title3)
+                            .monospacedDigit()
+                    }
+                }
+                
+                Picker("After win", selection: $gamesPlayItOut) {
+                    Text("Play it out").tag(true)
+                    Text("End \(isMultiSet ? "set" : "match")").tag(false)
+                }
+                .pickerStyle(.navigationLink)
+                
+                Divider()
+                
+                Text("Game scoring")
+                    .font(.headline)
                 
                 VStack {
                     Text("Win at")
@@ -148,6 +80,11 @@ struct CreateMatchTemplateView: View {
                         }
                             .font(.title3)
                             .monospacedDigit()
+                    }
+                    .onChange(of: gameScoringWinScore) {
+                        if gameScoringWinScore > gameScoringMaximumScore {
+                            gameScoringMaximumScore = gameScoringWinScore
+                        }
                     }
                 }
                 
@@ -161,6 +98,11 @@ struct CreateMatchTemplateView: View {
                         }
                             .font(.title3)
                             .monospacedDigit()
+                    }
+                    .onChange(of: gameScoringMaximumScore) {
+                        if gameScoringWinScore > gameScoringMaximumScore {
+                            gameScoringWinScore = gameScoringMaximumScore
+                        }
                     }
                 }
                 
@@ -178,17 +120,170 @@ struct CreateMatchTemplateView: View {
                 }
                 
                 Button {
-                    context.insert(template)
-                    // TODO
-                    try? context.save()
-                    navigation.pop()
+                    let newScoringRules = MatchScoringRules(
+                        setsWinAt: setsWinAt,
+                        playItOut: false,
+                        setScoring: MatchSetScoringRules(
+                            gamesWinAt: gamesWinAt,
+                            gamesMaximum: (gamesWinAt * 2) - 1,
+                            playItOut: gamesPlayItOut,
+                            gameScoring: MatchGameScoringRules(
+                                winScore: gameScoringWinScore,
+                                maximumScore: gameScoringMaximumScore,
+                                winBy: gameScoringWinBy
+                            )
+                        )
+                    )
+                    
+                    if let template {
+                        if template.color != color {
+                            template.color = color
+                        }
+                        
+                        if template.scoring != newScoringRules {
+                            template.scoring = newScoringRules
+                        }
+                        
+                        // TODO?
+                        if template.hasChanges {
+                            try? context.save()
+                        }
+                        
+                        navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
+                    } else {
+                        let template = MatchTemplate(
+                            .volleyball,
+                            name: name,
+                            color: color,
+                            environment: environment,
+                            scoring: newScoringRules
+                        )
+                        
+                        context.insert(template)
+                        // TODO
+                        try? context.save()
+                        navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
+                    }
                 } label: {
-                    Text("Create")
+                    Text("Start")
                 }
                 .tint(.green)
+                
+                if template != nil {
+                    Button {
+                        context.delete(template!)
+                        // TODO
+                        try? context.save()
+                        navigation.pop()
+                    } label: {
+                        Text("Delete")
+                    }
+                    .tint(.red)
+                }
             }
         }
-        .navigationTitle("New Game")
+        .navigationTitle("New match")
+    }
+}
+
+struct MatchTemplateColorPickerView: View {
+    var selected: Binding<MatchTemplateColor>
+    @State private var showingSheet: Bool = false
+    @State private var showingColors: [MatchTemplateColor]
+    
+    init(selected: Binding<MatchTemplateColor>) {
+        self.selected = selected
+        
+        let firstThreeColors = MatchTemplateColor.allCases.prefix(3)
+        
+        self.showingColors = firstThreeColors.contains(selected.wrappedValue) ? Array(firstThreeColors) : [selected.wrappedValue] + firstThreeColors.prefix(2)
+    }
+    
+    var body: some View {
+        Grid(horizontalSpacing: 0) {
+            GridRow {
+                ForEach(showingColors, id: \.self) { matchColor in
+                    Button {
+                        selected.wrappedValue = matchColor
+                    } label: {
+                        ZStack {
+                            Color(matchColor.color)
+                                .aspectRatio(1, contentMode: .fill)
+                                .clipShape(.circle)
+                            
+                            if selected.wrappedValue == matchColor {
+                                Image(systemName: "checkmark")
+                                    .frame(maxWidth: .infinity)
+                                    .fontWeight(.bold)
+                                Circle()
+                                    .inset(by: -3)
+                                    .stroke(matchColor.color, lineWidth: 2)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(6)
+                }
+                
+                Button {
+                    showingSheet = true
+                } label: {
+                    ZStack {
+                        Color(.darkGray)
+                            .aspectRatio(1, contentMode: .fill)
+                            .clipShape(.circle)
+                            .opacity(0.75)
+                        
+                        Image(systemName: "ellipsis")
+                            .frame(maxWidth: .infinity)
+                            .fontWeight(.bold)
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(6)
+                .sheet(isPresented: $showingSheet) {
+                    MatchTemplateColorPickerSheetView(selected: selected)
+                }
+            }
+        }
+        .onChange(of: selected.wrappedValue) {
+            if showingColors.contains(selected.wrappedValue) { return }
+            
+            self.showingColors = [selected.wrappedValue] + self.showingColors.prefix(2)
+        }
+    }
+}
+
+struct MatchTemplateColorPickerSheetView: View {
+    var selected: Binding<MatchTemplateColor>
+    
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: .init(repeating: GridItem(.flexible()), count: 4)) {
+                ForEach(MatchTemplateColor.allCases, id: \.self) { matchColor in
+                    Button {
+                        selected.wrappedValue = matchColor
+                    } label: {
+                        ZStack {
+                            Color(matchColor.color)
+                                .aspectRatio(1, contentMode: .fill)
+                                .clipShape(.circle)
+                            
+                            if selected.wrappedValue == matchColor {
+                                Image(systemName: "checkmark")
+                                    .frame(maxWidth: .infinity)
+                                    .fontWeight(.bold)
+                                Circle()
+                                    .inset(by: -3)
+                                    .stroke(matchColor.color, lineWidth: 2)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(3)
+                }
+            }
+        }
     }
 }
 

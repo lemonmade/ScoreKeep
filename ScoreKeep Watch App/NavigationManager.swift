@@ -14,8 +14,7 @@ struct NavigationLocation {
     struct TemplateCreate: NavigationLocationProtocol {}
     struct MatchHistory: NavigationLocationProtocol {}
     struct ActiveMatch: NavigationLocationProtocol {
-        var match: Match
-        var tab: Tab = .main
+        var template: MatchTemplate
         
         enum Tab {
             case main

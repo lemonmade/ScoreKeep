@@ -1,5 +1,5 @@
 //
-//  MatchControlsView.swift
+//  ActiveMatchControlsView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-18.
@@ -7,25 +7,25 @@
 
 import SwiftUI
 
-struct MatchControlsView: View {
+struct ActiveMatchControlsView: View {
     @Environment(Match.self) private var match
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                MatchControlsSummaryView()
+                ActiveMatchControlsSummaryView()
                 
                 VStack(spacing: 8) {
                     HStack {
-                        MatchControlsNextGameButtonView()
+                        StartNextGameForActiveMatchButtonView()
 
-                        MatchControlsUpdateSettingsButtonView()
+                        UpdateSettingsForActiveMatchButtonView()
                     }
                     
                     HStack {
-                        GameControlsPauseGameView()
+                        PauseActiveMatchButtonView()
                         
-                        GameControlsEndGameView()
+                        EndActiveMatchButtonView()
                     }
                 }
             }
@@ -33,19 +33,19 @@ struct MatchControlsView: View {
     }
 }
 
-struct MatchControlsSummaryView: View {
+struct ActiveMatchControlsSummaryView: View {
     @Environment(Match.self) private var match
 
     var body: some View {
         Grid(horizontalSpacing: 0, verticalSpacing: 2) {
-            MatchControlsSummaryTeamScoreRowView(team: .them)
-            MatchControlsSummaryTeamScoreRowView(team: .us)
+            ActiveMatchControlsSummaryTeamScoreRowView(team: .them)
+            ActiveMatchControlsSummaryTeamScoreRowView(team: .us)
         }
         .frame(maxWidth: .infinity)
     }
 }
 
-struct MatchControlsSummaryTeamScoreRowView: View {
+struct ActiveMatchControlsSummaryTeamScoreRowView: View {
     var team: MatchTeam
     
     @Environment(Match.self) private var match
@@ -117,12 +117,12 @@ struct MatchControlsSummaryTeamScoreRowView: View {
     }
 }
 
-struct MatchControlsNextGameButtonView: View {
+struct StartNextGameForActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
     
     var isDisabled : Bool {
-        return match.latestGame?.hasWinner == false || match.hasMoreGames
+        return match.latestGame?.hasWinner == false || !match.hasMoreGames
     }
     
     var body: some View {
@@ -130,25 +130,28 @@ struct MatchControlsNextGameButtonView: View {
         
         VStack {
             Button {
-                match.startGame()
-                                
-                withAnimation {
-                    navigation.navigate(to: NavigationLocation.ActiveMatch(match: match, tab: .main), replace: true)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    match.startGame()
                 }
+                
+                withAnimation(.snappy) {
+                    navigation.activeMatchTab = .main
+                }
+                
             } label: {
-                Image(systemName: "play")
+                Image(systemName: "\([(match.latestGame?.number ?? 0) + 1, match.scoring.setScoring.gamesMaximum].min()!).circle")
             }
             .tint(.green)
             .font(.title2)
             .disabled(isDisabled)
 
             Text("Next game")
-                .foregroundStyle(isDisabled ? .gray : .primary)
+                .foregroundStyle(isDisabled ? .tertiary : .primary)
         }
     }
 }
 
-struct MatchControlsUpdateSettingsButtonView: View {
+struct UpdateSettingsForActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
     
@@ -170,12 +173,17 @@ struct MatchControlsUpdateSettingsButtonView: View {
     }
 }
 
-struct GameControlsEndGameView: View {
+struct EndActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
+    @Environment(Match.self) private var match
+    @Environment(\.modelContext) private var context
     
     var body: some View {
         VStack {
             Button {
+                match.end()
+                // TODO
+                try? context.save()
                 navigation.pop(count: navigation.path.count)
             } label: {
                 Image(systemName: "xmark")
@@ -188,29 +196,29 @@ struct GameControlsEndGameView: View {
     }
 }
 
-struct GameControlsPauseGameView: View {
+struct PauseActiveMatchButtonView: View {
     @State private var isRunning = true
     
     var body: some View {
         VStack {
             Button {
                 // TODO
-                isRunning.toggle()
+                withAnimation(.none) {
+                    isRunning.toggle()
+                }
             } label: {
-                Image(systemName: isRunning ? "pause" : "play")
+                Image(systemName: isRunning ? "pause" : "arrow.clockwise")
             }
             .tint(.yellow)
             .font(.title2)
-            .disabled(true)
 
             Text(isRunning ? "Pause" : "Resume")
-                .foregroundStyle(.gray)
         }
     }
 }
 
 #Preview {
-    MatchControlsView()
+    ActiveMatchControlsView()
         .environment(NavigationManager())
         .environment(
             Match(
