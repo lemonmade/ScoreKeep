@@ -64,7 +64,7 @@ struct StartView: View {
                     StartMatchNavigationLinkView(template: beachVolleyball)
                 }
 
-                CreateMatchTemplateNavigationLinkView()
+                CreateMatchTemplateButtonView()
             }
             .navigationBarTitle("ScoreKeep")
             .toolbar {
@@ -84,6 +84,9 @@ struct StartView: View {
                 _ in
                 MatchHistoryListView()
                     .environment(navigation)
+            }
+            .navigationDestination(for: NavigationLocation.MatchHistoryDetail.self) { destination in
+                MatchHistoryDetailView(match: destination.match)
             }
             .navigationDestination(for: NavigationLocation.TemplateCreate.self)
             { createMatchTemplateDestination in
@@ -185,13 +188,17 @@ struct MatchHistoryNavigationLinkView: View {
     }
 }
 
-struct CreateMatchTemplateNavigationLinkView: View {
+struct CreateMatchTemplateButtonView: View {
+    @Environment(NavigationManager.self) private var navigation
+    
     var body: some View {
-        NavigationLink(value: NavigationLocation.TemplateCreate()) {
+        Button {
+            navigation.navigate(to: NavigationLocation.TemplateCreate())
+        } label: {
             Text("New match")
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .center)
         }
+        .buttonStyle(.bordered)
+        .listRowBackground(EmptyView())
     }
 }
 

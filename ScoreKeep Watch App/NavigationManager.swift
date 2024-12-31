@@ -14,6 +14,10 @@ struct NavigationLocation {
     struct TemplateCreate: NavigationLocationProtocol {
         var template: MatchTemplate? = nil
     }
+    
+    struct MatchHistoryDetail: NavigationLocationProtocol {
+        var match: Match
+    }
 
     struct MatchHistory: NavigationLocationProtocol {}
     struct ActiveMatch: NavigationLocationProtocol {

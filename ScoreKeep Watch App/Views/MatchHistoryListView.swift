@@ -31,9 +31,7 @@ struct MatchHistoryListView: View {
         } else {
             List {
                 ForEach(matches) { match in
-                    NavigationLink {
-                        Text(match.id.storeIdentifier ?? "Unknown")
-                    } label: {
+                    NavigationLink(value: NavigationLocation.MatchHistoryDetail(match: match)) {
                         HStack(alignment: .top, spacing: 8) {
                             MatchHistoryMatchOverallScoreView(match: match)
 
@@ -60,6 +58,7 @@ struct MatchHistoryListView: View {
                 }
             }
                 .listStyle(.carousel)
+                .navigationTitle("Match history")
         }
     }
 }
