@@ -200,6 +200,8 @@ class MatchGame {
     var startedAt: Date
     var endedAt: Date?
     
+    var scores: [MatchGameScore] = []
+    
     var hasEnded: Bool { endedAt != nil }
     
     var winner: MatchTeam? {
@@ -224,19 +226,31 @@ class MatchGame {
         self.createdAt = Date()
     }
     
-    func score(_ team: MatchTeam, to: Int? = nil) {
+    func score(_ team: MatchTeam, to: Int? = nil, at timestamp: Date = Date()) {
+        let currentScore = scoreFor(team)
+        let finalTo = to ?? currentScore + 1
+        
         if team == .us {
-            let finalTo = to ?? self.scoreUs + 1
             self.scoreUs = finalTo
         } else {
-            let finalTo = to ?? self.scoreThem + 1
             self.scoreThem = finalTo
         }
+        
+        scores.append(
+            MatchGameScore(team: team, change: finalTo - currentScore, total: finalTo, timestamp: timestamp)
+        )
     }
     
     func scoreFor(_ team: MatchTeam) -> Int {
         team == .us ? scoreUs : scoreThem
     }
+}
+
+struct MatchGameScore: Codable, Equatable {
+    var team: MatchTeam
+    var change: Int
+    var total: Int
+    var timestamp: Date
 }
 
 enum MatchTemplateColor: String, Codable {
