@@ -12,6 +12,7 @@ import SwiftUI
 struct StartView: View {
     private let navigation = NavigationManager()
 
+    @Environment(WorkoutManager.self) private var workoutManager
     @Query(sort: \MatchTemplate.lastUsedAt, order: .reverse) private
         var templates: [MatchTemplate]
 
@@ -94,6 +95,9 @@ struct StartView: View {
                     .environment(navigation)
             }
             .environment(navigation)
+        }
+        .onAppear {
+            workoutManager.requestAuthorization()
         }
     }
 }

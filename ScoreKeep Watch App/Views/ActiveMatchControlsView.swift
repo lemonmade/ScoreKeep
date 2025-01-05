@@ -178,6 +178,7 @@ struct UpdateSettingsForActiveMatchButtonView: View {
 struct EndActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
+    @Environment(WorkoutManager.self) private var workoutManager
     @Environment(\.modelContext) private var context
     
     var body: some View {
@@ -187,6 +188,7 @@ struct EndActiveMatchButtonView: View {
                 // TODO
                 try? context.save()
                 navigation.pop(count: navigation.path.count)
+                workoutManager.end()
             } label: {
                 Image(systemName: "xmark")
             }
@@ -200,14 +202,22 @@ struct EndActiveMatchButtonView: View {
 }
 
 struct PauseActiveMatchButtonView: View {
-    @State private var isRunning = true
+    @Environment(WorkoutManager.self) private var workoutManager
+    
+    private var isRunning: Bool {
+        workoutManager.running
+    }
     
     var body: some View {
         VStack {
             Button {
                 // TODO
                 withAnimation(.none) {
-                    isRunning.toggle()
+                    if workoutManager.running {
+                        workoutManager.pause()
+                    } else {
+                        workoutManager.resume()
+                    }
                 }
             } label: {
                 Image(systemName: isRunning ? "pause" : "arrow.clockwise")

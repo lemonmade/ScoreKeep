@@ -16,6 +16,7 @@ struct ActiveMatchView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(NavigationManager.self) private var navigation
+    @Environment(WorkoutManager.self) private var workoutManager
 
     var body: some View {
         ActiveMatchInternalView(match: match)
@@ -32,6 +33,8 @@ struct ActiveMatchView: View {
 
                 // TODO
                 try? context.save()
+                
+                workoutManager.startWorkout(match: match)
             }
     }
 }

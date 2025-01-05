@@ -25,11 +25,14 @@ struct ScoreKeep_Watch_AppApp: App {
 
         return try! ModelContainer(for: schema, configurations: [configuration])
     }()
+    
+    private let workoutManager = WorkoutManager()
 
     var body: some Scene {
         WindowGroup {
             StartView()
                 .modelContainer(sharedModelContainer)
+                .environment(workoutManager)
         }
     }
 }
