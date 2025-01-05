@@ -170,6 +170,7 @@ struct StartMatchNavigationLinkView: View {
                         .padding(8)
                         .background(
                             Circle()
+                                .inset(by: 3)
                                 .fill(template.color.color.opacity(0.2))
                         )
                 }
@@ -197,7 +198,10 @@ struct CreateMatchTemplateButtonView: View {
         } label: {
             Text("New match")
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(BorderedButtonStyle(tint: .gray))
+        .foregroundStyle(.primary)
+
+//        .backgroundStyle(.regularMaterial)
         .listRowBackground(EmptyView())
     }
 }

@@ -84,6 +84,10 @@ struct GameScoreTeamButtonView: View {
         .frame(width: size.width, height: size.height)
         .buttonStyle(CustomButtonStyle(keyColor: keyColor))
         .disabled(game.hasEnded)
+        .sensoryFeedback(.impact(weight: .medium), trigger: game.scoreFor(team)) { old, new in
+            return old != new
+            
+        }
     }
 }
 

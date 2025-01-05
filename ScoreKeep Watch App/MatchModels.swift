@@ -200,7 +200,7 @@ class MatchGame {
     var startedAt: Date
     var endedAt: Date?
     
-    var scores: [MatchGameScore] = []
+    var scores: [MatchGameScore]
     
     var hasEnded: Bool { endedAt != nil }
     
@@ -217,10 +217,11 @@ class MatchGame {
         scoreUs == scoreThem
     }
     
-    init(number: Int = 1, us scoreUs: Int = 0, them scoreThem: Int = 0, startedAt: Date = Date(), endedAt: Date? = nil) {
+    init(number: Int = 1, us scoreUs: Int = 0, them scoreThem: Int = 0, scores: [MatchGameScore] = [], startedAt: Date = Date(), endedAt: Date? = nil) {
         self.number = number
         self.scoreUs = scoreUs
         self.scoreThem = scoreThem
+        self.scores = scores
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.createdAt = Date()
