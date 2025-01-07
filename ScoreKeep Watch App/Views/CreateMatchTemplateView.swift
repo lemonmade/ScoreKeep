@@ -26,6 +26,8 @@ struct CreateMatchTemplateView: View {
     @State private var gameScoringMaximumScore: Int
     @State private var gameScoringWinBy: Int
     
+    @State private var startWorkout: Bool
+    
     @State private var navigationTitle: String
     
     init(template: MatchTemplate? = nil) {
@@ -40,6 +42,7 @@ struct CreateMatchTemplateView: View {
         self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.maximumScore ?? 27
         self.gameScoringWinBy = template?.scoring.setScoring.gameScoring.winBy ?? 2
         self.navigationTitle = template == nil ? "New match" : template!.name
+        self.startWorkout = template?.startWorkout ?? true
     }
     
     private var isMultiSet: Bool {
@@ -47,53 +50,47 @@ struct CreateMatchTemplateView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 12) {
+        Form {
+            Section {
                 TextField("Name", text: $name)
                 
                 MatchTemplateColorPickerView(selected: $color)
-
+                    .listRowBackground(EmptyView())
+//                    .listRowInsets(EdgeInsets())
+                
                 Picker("Environment", selection: $environment) {
                     Text("Indoor").tag(MatchEnvironment.indoor)
                     Text("Outdoor").tag(MatchEnvironment.outdoor)
                 }
                 .pickerStyle(.navigationLink)
                 
-                Divider()
-                
+            }
+
+            Section(header: Text("Games")) {
                 VStack {
-                    Text("Games to win")
-                    
+                    Text("Win at")
                     Stepper(value: $gamesWinAt, in: 1...50, step: 1) {
                         HStack(spacing: 0) {
-                            Text("\(gamesWinAt)").fontWeight(.bold)
-                            Text(" games")
+                            Text("\(gamesWinAt)")
                         }
-                            .font(.title3)
-                            .monospacedDigit()
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
                     }
                 }
+                .padding([.top, .bottom], 8)
+            }
                 
-                Picker("After win", selection: $gamesPlayItOut) {
-                    Text("Play it out").tag(true)
-                    Text("End \(isMultiSet ? "set" : "match")").tag(false)
-                }
-                .pickerStyle(.navigationLink)
-                
-                Divider()
-                
-                Text("Game scoring")
-                    .font(.headline)
-                
+            Section(header: Text("Points")) {
                 VStack {
                     Text("Win at")
                     
                     Stepper(value: $gameScoringWinScore, in: 1...50, step: 1) {
                         HStack(spacing: 0) {
-                            Text("\(gameScoringWinScore)").fontWeight(.bold)
-                            Text(" points")
+                            Text("\(gameScoringWinScore)")
                         }
-                            .font(.title3)
+                            .font(.title2)
+                            .fontWeight(.bold)
                             .monospacedDigit()
                     }
                     .onChange(of: gameScoringWinScore) {
@@ -102,16 +99,17 @@ struct CreateMatchTemplateView: View {
                         }
                     }
                 }
+                .padding([.top, .bottom], 8)
                 
                 VStack {
-                    Text("Maximum score")
+                    Text("Max score")
 
                     Stepper(value: $gameScoringMaximumScore, in: gameScoringWinScore...50, step: 1) {
                         HStack(spacing: 0) {
-                            Text("\(gameScoringMaximumScore)").fontWeight(.bold)
-                            Text(" points")
+                            Text("\(gameScoringMaximumScore)")
                         }
-                            .font(.title3)
+                            .font(.title2)
+                            .fontWeight(.bold)
                             .monospacedDigit()
                     }
                     .onChange(of: gameScoringMaximumScore) {
@@ -120,83 +118,106 @@ struct CreateMatchTemplateView: View {
                         }
                     }
                 }
+                .padding([.top, .bottom], 8)
                 
                 VStack {
                     Text("Win by")
 
                     Stepper(value: $gameScoringWinBy, in: 1...10, step: 1) {
                         HStack(spacing: 0) {
-                            Text("\(gameScoringWinBy)").fontWeight(.bold)
-                            Text(" points")
+                            Text("\(gameScoringWinBy)")
                         }
-                            .font(.title3)
+                            .fontWeight(.bold)
+                            .font(.title2)
                             .monospacedDigit()
                     }
                 }
-                
-                VStack {
-                    Button {
-                        let newScoringRules = MatchScoringRules(
-                            setsWinAt: setsWinAt,
-                            playItOut: false,
-                            setScoring: MatchSetScoringRules(
-                                gamesWinAt: gamesWinAt,
-                                gamesMaximum: (gamesWinAt * 2) - 1,
-                                playItOut: gamesPlayItOut,
-                                gameScoring: MatchGameScoringRules(
-                                    winScore: gameScoringWinScore,
-                                    maximumScore: gameScoringMaximumScore,
-                                    winBy: gameScoringWinBy
-                                )
+                .padding([.top, .bottom], 8)
+            }
+            
+            Section(header: Text("Workout")) {
+                Toggle(isOn: $startWorkout) {
+                    Text("Start workout")
+                }
+            }
+            
+            Section {
+                Button {
+                    let newScoringRules = MatchScoringRules(
+                        setsWinAt: setsWinAt,
+                        playItOut: false,
+                        setScoring: MatchSetScoringRules(
+                            gamesWinAt: gamesWinAt,
+                            gamesMaximum: (gamesWinAt * 2) - 1,
+                            playItOut: gamesPlayItOut,
+                            gameScoring: MatchGameScoringRules(
+                                winScore: gameScoringWinScore,
+                                maximumScore: gameScoringMaximumScore,
+                                winBy: gameScoringWinBy
                             )
                         )
-                        
-                        if let template {
-                            save(template: template)
-                            
-                            navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
-                        } else {
-                            let template = MatchTemplate(
-                                .volleyball,
-                                name: name,
-                                color: color,
-                                environment: environment,
-                                scoring: newScoringRules
+                    )
+                
+                    if let template {
+                        save(template: template)
+                
+                        navigation
+                            .navigate(
+                                to: NavigationLocation
+                                    .ActiveMatch(template: template)
                             )
-                            
-                            context.insert(template)
-                            // TODO
-                            try? context.save()
-                            navigation.navigate(to: NavigationLocation.ActiveMatch(template: template))
-                        }
+                    } else {
+                        let template = MatchTemplate(
+                            .volleyball,
+                            name: name,
+                            color: color,
+                            environment: environment,
+                            scoring: newScoringRules
+                        )
+                
+                        context.insert(template)
+                        // TODO
+                        try? context.save()
+                        navigation
+                            .navigate(
+                                to: NavigationLocation
+                                    .ActiveMatch(template: template)
+                            )
+                    }
+                } label: {
+                    Text("Start")
+                }
+                .buttonStyle(.bordered)
+                .listRowBackground(EmptyView())
+                .tint(.green)
+                
+                if template != nil {
+                    Button {
+                        save(template: template!)
+                        navigation.pop()
                     } label: {
-                        Text("Start")
+                        Text("Save")
                     }
-                    .tint(.green)
-                    
-                    if template != nil {
-                        Button {
-                            save(template: template!)
-                            navigation.pop()
-                        } label: {
-                            Text("Save")
-                        }
+                    .buttonStyle(.bordered)
+                    .listRowBackground(EmptyView())
+                }
+                
+                if template?.lastUsedAt != nil {
+                    Button {
+                        context.delete(template!)
+                        // TODO
+                        try? context.save()
+                        navigation.pop()
+                    } label: {
+                        Text("Delete")
                     }
-                    
-                    if template?.lastUsedAt != nil {
-                        Button {
-                            context.delete(template!)
-                            // TODO
-                            try? context.save()
-                            navigation.pop()
-                        } label: {
-                            Text("Delete")
-                        }
-                        .tint(.red)
-                    }
+                    .buttonStyle(.bordered)
+                    .listRowBackground(EmptyView())
+                    .tint(.red)
                 }
             }
         }
+
         .navigationTitle(navigationTitle)
     }
     
@@ -229,6 +250,10 @@ struct CreateMatchTemplateView: View {
             template.scoring = newScoringRules
         }
         
+        if template.startWorkout != startWorkout {
+            template.startWorkout = startWorkout
+        }
+        
         if template.id.storeIdentifier != nil {
             context.insert(template)
         }
@@ -254,7 +279,7 @@ struct MatchTemplateColorPickerView: View {
     }
     
     var body: some View {
-        Grid(horizontalSpacing: 0) {
+        Grid(horizontalSpacing: 8) {
             GridRow {
                 ForEach(showingColors, id: \.self) { matchColor in
                     Button {
@@ -267,7 +292,6 @@ struct MatchTemplateColorPickerView: View {
                             
                             if selected.wrappedValue == matchColor {
                                 Image(systemName: "checkmark")
-                                    .frame(maxWidth: .infinity)
                                     .fontWeight(.bold)
                                 Circle()
                                     .inset(by: -3)
@@ -276,7 +300,9 @@ struct MatchTemplateColorPickerView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .padding(6)
+                    .padding(8)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0)
+                    
                 }
                 
                 Button {
@@ -289,15 +315,15 @@ struct MatchTemplateColorPickerView: View {
                             .opacity(0.5)
                         
                         Image(systemName: "ellipsis")
-                            .frame(maxWidth: .infinity)
                             .fontWeight(.bold)
                     }
                 }
                 .buttonStyle(.plain)
-                .padding(6)
+                .padding(8)
                 .sheet(isPresented: $showingSheet) {
                     MatchTemplateColorPickerSheetView(selected: selected)
                 }
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0)
             }
         }
         .onChange(of: selected.wrappedValue) {
@@ -342,6 +368,8 @@ struct MatchTemplateColorPickerSheetView: View {
 }
 
 #Preview {
-    CreateMatchTemplateView()
-        .environment(NavigationManager())
+    NavigationView {
+        CreateMatchTemplateView()
+            .environment(NavigationManager())
+    }
 }

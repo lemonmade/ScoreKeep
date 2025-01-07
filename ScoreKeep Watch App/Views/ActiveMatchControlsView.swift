@@ -140,6 +140,7 @@ struct StartNextGameForActiveMatchButtonView: View {
                 
             } label: {
                 Image(systemName: "\([(match.latestGame?.number ?? 0) + 1, match.scoring.setScoring.gamesMaximum].min()!).circle")
+                    .foregroundStyle(isDisabled ? .tertiary : .primary)
             }
             .tint(.green)
             .font(.title2)
@@ -208,25 +209,32 @@ struct PauseActiveMatchButtonView: View {
         workoutManager.running
     }
     
+    private var hasActiveWorkout: Bool {
+        workoutManager.session != nil
+    }
+    
     var body: some View {
         VStack {
             Button {
                 // TODO
                 withAnimation(.none) {
-                    if workoutManager.running {
+                    if isRunning {
                         workoutManager.pause()
                     } else {
                         workoutManager.resume()
                     }
                 }
             } label: {
-                Image(systemName: isRunning ? "pause" : "arrow.clockwise")
+                Image(systemName: isRunning || !hasActiveWorkout ? "pause" : "arrow.clockwise")
+                    .foregroundStyle(hasActiveWorkout ? .primary : .tertiary)
             }
             .tint(.yellow)
             .font(.title2)
             .fontWeight(.medium)
+            .disabled(!hasActiveWorkout)
 
             Text(isRunning ? "Pause" : "Resume")
+                .foregroundStyle(hasActiveWorkout ? .primary : .tertiary)
         }
     }
 }

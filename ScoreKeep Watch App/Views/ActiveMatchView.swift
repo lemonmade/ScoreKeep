@@ -34,7 +34,9 @@ struct ActiveMatchView: View {
                 // TODO
                 try? context.save()
                 
-                workoutManager.startWorkout(match: match)
+                Task {
+                    await workoutManager.startWorkout(match: match)
+                }
             }
     }
 }

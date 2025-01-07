@@ -282,14 +282,16 @@ class MatchTemplate {
     var scoring: MatchScoringRules
     var createdAt: Date
     var lastUsedAt: Date?
+    var startWorkout: Bool
     
-    init(_ sport: MatchSport, name: String, color: MatchTemplateColor = .green, environment: MatchEnvironment = .indoor, scoring: MatchScoringRules) {
+    init(_ sport: MatchSport, name: String, color: MatchTemplateColor = .green, environment: MatchEnvironment = .indoor, scoring: MatchScoringRules, startWorkout: Bool = true) {
         self.sport = sport
         self.name = name
         self.color = color
         self.environment = environment
         self.scoring = scoring
         self.createdAt = Date()
+        self.startWorkout = startWorkout
     }
     
     func createMatch(markAsUsed: Bool = true) -> Match {

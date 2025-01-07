@@ -16,7 +16,7 @@ class WorkoutManager: NSObject {
     var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
     
-    func startWorkout(match: Match) {
+    func startWorkout(match: Match) async {
         let configuration = HKWorkoutConfiguration()
 
         configuration.activityType = .volleyball
@@ -30,22 +30,29 @@ class WorkoutManager: NSObject {
         do {
             session = try HKWorkoutSession(healthStore: healthStore, configuration: configuration)
             builder = session?.associatedWorkoutBuilder()
-        } catch {
+        } catch let error {
+            print("Error building session")
+            print(error)
             // Handle any exceptions.
             return
         }
-
+        
         // Setup session and builder.
         session?.delegate = self
         builder?.delegate = self
 
         // Set the workout builder's data source.
         builder?.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
+        
 
         // Start the workout session and begin data collection.
         session?.startActivity(with: match.startedAt)
-        builder?.beginCollection(withStart: match.startedAt) { (success, error) in
-            // The workout has started.
+        
+        do {
+            try await builder?.beginCollection(at: match.startedAt)
+        } catch let error {
+            print("Error starting metric collection")
+            print(error)
         }
     }
     
@@ -86,7 +93,9 @@ class WorkoutManager: NSObject {
 // MARK: - HKWorkoutSessionDelegate
 extension WorkoutManager: HKWorkoutSessionDelegate {
     func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
+
         DispatchQueue.main.async {
+
             self.running = toState == .running
         }
 
@@ -103,7 +112,8 @@ extension WorkoutManager: HKWorkoutSessionDelegate {
     }
 
     func workoutSession(_ workoutSession: HKWorkoutSession, didFailWithError error: Error) {
-
+        print("Error with workout session")
+        print(workoutSession, error)
     }
 }
 
