@@ -34,8 +34,10 @@ struct ActiveMatchView: View {
                 // TODO
                 try? context.save()
                 
-                Task {
-                    await workoutManager.startWorkout(match: match)
+                if template.startWorkout {
+                    Task {
+                        await workoutManager.startWorkout(match: match)
+                    }
                 }
             }
     }
