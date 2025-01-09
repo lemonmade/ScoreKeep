@@ -23,7 +23,7 @@ struct MatchHistoryDetailGameView: View {
                 MatchTotalScoreSummaryView(game: game)
                 
                 VStack(alignment: .leading) {
-                    Text("Game 1")
+                    Text("Game \(game.number)")
                         .font(.headline)
                         .foregroundStyle(.primary)
                     
