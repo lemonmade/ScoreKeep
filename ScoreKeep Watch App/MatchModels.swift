@@ -217,7 +217,19 @@ class MatchGame {
         scoreUs == scoreThem
     }
     
-    init(number: Int = 1, us scoreUs: Int = 0, them scoreThem: Int = 0, scores: [MatchGameScore] = [], startedAt: Date = Date(), endedAt: Date? = nil) {
+    private var initialServe: MatchTeam?
+    
+    var nextServe: MatchTeam? {
+        if hasEnded { return nil }
+        
+        if let lastScore = scores.last {
+            return lastScore.team
+        }
+        
+        return initialServe
+    }
+    
+    init(number: Int = 1, us scoreUs: Int = 0, them scoreThem: Int = 0, scores: [MatchGameScore] = [], serve: MatchTeam? = nil, startedAt: Date = Date(), endedAt: Date? = nil) {
         self.number = number
         self.scoreUs = scoreUs
         self.scoreThem = scoreThem
@@ -225,6 +237,7 @@ class MatchGame {
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.createdAt = Date()
+        self.initialServe = serve
     }
     
     func score(_ team: MatchTeam, to: Int? = nil, at timestamp: Date = Date()) {

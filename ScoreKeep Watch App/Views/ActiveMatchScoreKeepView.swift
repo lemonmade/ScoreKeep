@@ -135,15 +135,24 @@ struct GameScoreTeamScoreView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            Text(team == .us ? "Us" : "Them")
-                .textCase(.uppercase)
-                .font(.caption2)
-                .fontWeight(.bold)
-                .foregroundColor(.black)
-                .padding([.leading, .trailing], 4)
-                .background(keyColor)
-                .cornerRadius(8)
-                .offset(y: -10)
+            VStack(alignment: .leading, spacing: 8) {
+                if team == game.nextServe {
+                    Image(systemName: "volleyball.fill")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                }
+                
+                Text(team == .us ? "Us" : "Them")
+                    .textCase(.uppercase)
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.black)
+                    .padding([.leading, .trailing], 4)
+                    .background(keyColor)
+                    .cornerRadius(8)
+                    
+            }
+            .offset(y: -8)
             
             Spacer()
             
