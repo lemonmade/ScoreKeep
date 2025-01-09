@@ -110,23 +110,24 @@ struct StartMatchNavigationLinkView: View {
 
     private var detailText: String {
         var ofText: String = ""
-
+        
         if template.scoring.isMultiSet {
             ofText =
                 template.scoring.playItOut
-                ? "Best-of-\(template.scoring.setsMaximum)"
-                : "First to \(template.scoring.setsWinAt)"
+                ? "Best of \(template.scoring.setsMaximum) sets"
+                : "First to \(template.scoring.setsWinAt) sets"
         } else {
             ofText =
                 template.scoring.setScoring.playItOut
-                ? "Best-of-\(template.scoring.setScoring.gamesMaximum)"
-                : "First to \(template.scoring.setScoring.gamesWinAt)"
+                ? "Best of \(template.scoring.setScoring.gamesMaximum) games"
+                : "First to \(template.scoring.setScoring.gamesWinAt) games"
         }
 
-        let gameText =
-            "games to \(template.scoring.setScoring.gameScoring.winScore)"
-
-        return "\(ofText), \(gameText)"
+        return "\(ofText)"
+    }
+    
+    private var detailSecondaryText: String {
+        return "Games to \(template.scoring.setScoring.gameScoring.winScore) points"
     }
 
     var body: some View {
@@ -145,6 +146,9 @@ struct StartMatchNavigationLinkView: View {
                     Text(template.name)
                         .font(.headline)
                     Text(detailText)
+                        .font(.caption2)
+                        .foregroundStyle(.tint)
+                    Text(detailSecondaryText)
                         .font(.caption2)
                         .foregroundStyle(.tint)
                 }
@@ -212,4 +216,5 @@ struct CreateMatchTemplateButtonView: View {
 
 #Preview {
     StartView()
+        .environment(WorkoutManager())
 }

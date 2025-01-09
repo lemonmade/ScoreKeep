@@ -18,6 +18,7 @@ struct CreateMatchTemplateView: View {
     @State private var color: MatchTemplateColor
     
     @State private var setsWinAt: Int
+    @State private var setsPlayItOut: Bool
 
     @State private var gamesWinAt: Int
     @State private var gamesPlayItOut: Bool
@@ -36,6 +37,7 @@ struct CreateMatchTemplateView: View {
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
         self.setsWinAt = template?.scoring.setsWinAt ?? 1
+        self.setsPlayItOut = template?.scoring.playItOut ?? false
         self.gamesWinAt = template?.scoring.setScoring.gamesWinAt ?? 3
         self.gamesPlayItOut = template?.scoring.setScoring.playItOut ?? false
         self.gameScoringWinScore = template?.scoring.setScoring.gameScoring.winScore ?? 25
@@ -63,10 +65,36 @@ struct CreateMatchTemplateView: View {
                     Text("Outdoor").tag(MatchEnvironment.outdoor)
                 }
                 .pickerStyle(.navigationLink)
+            }
+            
+            Section(header: Text("Sets")) {
+                Picker("After win", selection: $setsPlayItOut) {
+                    Text("End match").tag(false)
+                    Text("Play it out").tag(true)
+                }
+                .pickerStyle(.navigationLink)
                 
+                VStack {
+                    Text("Win at")
+                    Stepper(value: $setsWinAt, in: 1...50, step: 1) {
+                        HStack(spacing: 0) {
+                            Text("\(setsWinAt)")
+                        }
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                    }
+                }
+                .padding([.top, .bottom], 8)
             }
 
             Section(header: Text("Games")) {
+                Picker("After win", selection: $gamesPlayItOut) {
+                    Text("End set").tag(false)
+                    Text("Play it out").tag(true)
+                }
+                .pickerStyle(.navigationLink)
+                
                 VStack {
                     Text("Win at")
                     Stepper(value: $gamesWinAt, in: 1...50, step: 1) {
@@ -143,21 +171,6 @@ struct CreateMatchTemplateView: View {
             
             Section {
                 Button {
-                    let newScoringRules = MatchScoringRules(
-                        setsWinAt: setsWinAt,
-                        playItOut: false,
-                        setScoring: MatchSetScoringRules(
-                            gamesWinAt: gamesWinAt,
-                            gamesMaximum: (gamesWinAt * 2) - 1,
-                            playItOut: gamesPlayItOut,
-                            gameScoring: MatchGameScoringRules(
-                                winScore: gameScoringWinScore,
-                                maximumScore: gameScoringMaximumScore,
-                                winBy: gameScoringWinBy
-                            )
-                        )
-                    )
-                
                     if let template {
                         save(template: template)
                 
@@ -172,7 +185,7 @@ struct CreateMatchTemplateView: View {
                             name: name,
                             color: color,
                             environment: environment,
-                            scoring: newScoringRules
+                            scoring: asScoringRules()
                         )
                 
                         context.insert(template)
@@ -191,9 +204,9 @@ struct CreateMatchTemplateView: View {
                 .listRowBackground(EmptyView())
                 .tint(.green)
                 
-                if template != nil {
+                if let template {
                     Button {
-                        save(template: template!)
+                        save(template: template)
                         navigation.pop()
                     } label: {
                         Text("Save")
@@ -221,11 +234,11 @@ struct CreateMatchTemplateView: View {
         .navigationTitle(navigationTitle)
     }
     
-    private func save(template: MatchTemplate) {
-        let newScoringRules = MatchScoringRules(
+    private func asScoringRules() -> MatchScoringRules {
+        return MatchScoringRules(
             setsWinAt: setsWinAt,
             setsMaximum: (setsWinAt * 2) - 1,
-            playItOut: false,
+            playItOut: setsPlayItOut,
             setScoring: MatchSetScoringRules(
                 gamesWinAt: gamesWinAt,
                 gamesMaximum: (gamesWinAt * 2) - 1,
@@ -237,6 +250,10 @@ struct CreateMatchTemplateView: View {
                 )
             )
         )
+    }
+    
+    private func save(template: MatchTemplate) {
+        let newScoringRules = asScoringRules()
         
         if template.name != name {
             template.name = name
