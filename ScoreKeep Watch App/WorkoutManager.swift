@@ -8,11 +8,42 @@
 import HealthKit
 
 @Observable
+class WorkoutManagerActiveWorkout {
+    var session: HKWorkoutSession
+    
+    private(set) var averageHeartRate: Double?
+    private(set) var heartRate: Double?
+    private(set) var activeEnergy: Double?
+    private(set) var distance: Double?
+    
+    init(session: HKWorkoutSession) {
+        self.session = session
+    }
+    
+    func updateStatistics(_ statistics: HKStatistics) {
+        switch statistics.quantityType {
+        case HKQuantityType.quantityType(forIdentifier: .heartRate):
+            let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
+            self.heartRate = statistics.mostRecentQuantity()?.doubleValue(for: heartRateUnit) ?? 0
+            self.averageHeartRate = statistics.averageQuantity()?.doubleValue(for: heartRateUnit) ?? 0
+        case HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned):
+            let energyUnit = HKUnit.kilocalorie()
+            self.activeEnergy = statistics.sumQuantity()?.doubleValue(for: energyUnit) ?? 0
+        case HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning), HKQuantityType.quantityType(forIdentifier: .distanceCycling):
+            let meterUnit = HKUnit.meter()
+            self.distance = statistics.sumQuantity()?.doubleValue(for: meterUnit) ?? 0
+        default:
+            return
+        }
+    }
+}
+
+@Observable
 class WorkoutManager: NSObject {
     let healthStore = HKHealthStore()
     
     var running: Bool = false
-    var workout: HKWorkout?
+    var workout: WorkoutManagerActiveWorkout?
     var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
     
@@ -37,13 +68,16 @@ class WorkoutManager: NSObject {
             return
         }
         
+        if let session {
+            workout = WorkoutManagerActiveWorkout(session: session)
+        }
+        
         // Setup session and builder.
         session?.delegate = self
         builder?.delegate = self
 
         // Set the workout builder's data source.
         builder?.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
-        
 
         // Start the workout session and begin data collection.
         session?.startActivity(with: match.startedAt)
@@ -77,25 +111,43 @@ class WorkoutManager: NSObject {
     }
 
     func pause() {
-        session?.pause()
+        if let workout {
+            workout.session.pause()
+        }
     }
 
     func resume() {
-        session?.resume()
+        if let workout {
+            workout.session.resume()
+        }
     }
 
     func end() {
-        session?.end()
+        if let workout {
+            workout.session.end()
+            self.workout = nil
+        }
     }
 }
 
 
 // MARK: - HKWorkoutSessionDelegate
 extension WorkoutManager: HKWorkoutSessionDelegate {
+    func workoutSession(_ workoutSession: HKWorkoutSession, didGenerate event: HKWorkoutEvent) {
+        switch event.type {
+        case .pauseOrResumeRequest:
+            if self.running {
+                self.pause()
+            } else {
+                self.resume()
+            }
+        default: return
+        }
+    }
+    
     func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
 
         DispatchQueue.main.async {
-
             self.running = toState == .running
         }
 
@@ -104,7 +156,7 @@ extension WorkoutManager: HKWorkoutSessionDelegate {
             builder?.endCollection(withEnd: date) { (success, error) in
                 self.builder?.finishWorkout { (workout, error) in
                     DispatchQueue.main.async {
-                        self.workout = workout
+                        self.workout = nil
                     }
                 }
             }
@@ -126,13 +178,16 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
     func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
         for type in collectedTypes {
             guard let quantityType = type as? HKQuantityType else {
-                return // Nothing to do.
+                continue // Nothing to do.
             }
 
-            let statistics = workoutBuilder.statistics(for: quantityType)
-
-            // Update the published values.
-//            updateForStatistics(statistics)
+            guard let workout, let statistics = workoutBuilder.statistics(for: quantityType) else {
+                continue
+            }
+            
+            DispatchQueue.main.async {
+                workout.updateStatistics(statistics)
+            }
         }
     }
 }

@@ -19,11 +19,11 @@ struct ActiveMatchControlsView: View {
                     HStack {
                         StartNextGameForActiveMatchButtonView()
 
-                        UpdateSettingsForActiveMatchButtonView()
+                        PauseActiveMatchButtonView()
                     }
                     
                     HStack {
-                        PauseActiveMatchButtonView()
+                        UpdateSettingsForActiveMatchButtonView()
                         
                         EndActiveMatchButtonView()
                     }
