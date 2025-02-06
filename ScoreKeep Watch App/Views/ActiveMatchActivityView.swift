@@ -8,30 +8,59 @@
 import SwiftUI
 
 struct ActiveMatchActivityViewWithData: View {
+    @Environment(Match.self) var match
     @Environment(WorkoutManager.self) var workoutManager
     
     var body: some View {
-        VStack {
-            VStack {
-                Text("Heart rate")
-                Text(workoutManager.workout?.heartRate == nil ? "-" : workoutManager.workout!.heartRate!.description)
+        VStack(alignment: .leading, spacing: 4) {
+            Spacer()
+            
+            TimelineView(.periodic(from: match.startedAt, by: 0.1)) { context in
+                Text(context.date, format: .stopwatch(startingAt: match.startedAt, maxPrecision: .seconds(1)))
+                    .foregroundStyle(.yellow)
+            }
+            .border(.red)
+            
+            HStack(alignment: .center) {
+                if let workout = workoutManager.workout {
+                    Text(workout.activeEnergy.value, format: .number.precision(.fractionLength(0)))
+                } else {
+                    Text("--")
+                }
+                Text("Active \nCal")
+                    .font(.title3.uppercaseSmallCaps())
+                    .fontWeight(.medium)
+                    .textCase(.uppercase)
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(0)
+                    .fixedSize()
+                    .clipped()
+            }
+            .border(.red)
+            
+            HStack {
+                if let heartRate = workoutManager.workout?.heartRate {
+                    Text(heartRate, format: .number.precision(.fractionLength(0)))
+                        .border(.red)
+                } else {
+                    Text("--")
+                        .lineSpacing(0)
+                        .border(.red)
+                }
+                
+                Image(systemName: "heart.fill")
+                    .font(.title3)
+                    .foregroundStyle(.red)
+                    .border(.red)
             }
             
-            VStack {
-                Text("Average heart rate")
-                Text(workoutManager.workout?.averageHeartRate == nil ? "-" : workoutManager.workout!.averageHeartRate!.description)
-            }
-            
-            VStack {
-                Text("Active energy")
-                Text(workoutManager.workout?.activeEnergy == nil ? "-" : workoutManager.workout!.activeEnergy!.description)
-            }
-            
-            VStack {
-                Text("Distance")
-                Text(workoutManager.workout?.distance == nil ? "-" : workoutManager.workout!.distance!.description)
-            }
+            Text(workoutManager.workout?.distance ?? Measurement<UnitLength>(value: 0, unit: .meters), format: .measurement(width: .abbreviated, usage: .road))
+                .border(.red)
         }
+       
+        .font(.system(size: 36, weight: .semibold, design: .rounded).monospacedDigit().lowercaseSmallCaps())
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .ignoresSafeArea(edges: .bottom)
         .scenePadding()
     }
 }

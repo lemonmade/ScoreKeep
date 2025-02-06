@@ -35,13 +35,32 @@ struct ActiveMatchControlsView: View {
 
 struct ActiveMatchControlsSummaryView: View {
     @Environment(Match.self) private var match
+    @Environment(WorkoutManager.self) private var workoutManager
 
     var body: some View {
-        Grid(horizontalSpacing: 0, verticalSpacing: 2) {
-            ActiveMatchControlsSummaryTeamScoreRowView(team: .them)
-            ActiveMatchControlsSummaryTeamScoreRowView(team: .us)
+        VStack(alignment: .leading) {
+            Grid(horizontalSpacing: 0, verticalSpacing: 2) {
+                ActiveMatchControlsSummaryTeamScoreRowView(team: .them)
+                ActiveMatchControlsSummaryTeamScoreRowView(team: .us)
+            }
+            .frame(maxWidth: .infinity)
+            
+            HStack(spacing: 8) {
+                TimelineView(.periodic(from: match.startedAt, by: 0.1)) { context in
+                    Text(context.date, format: .stopwatch(startingAt: match.startedAt, maxPrecision: .seconds(1)))
+                }
+                
+                if let heartRate = workoutManager.workout?.heartRate {
+                    HStack {
+                        Text(heartRate, format: .number.precision(.fractionLength(0)))
+                        
+                        Image(systemName: "heart.fill")
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .font(.system(.caption, design: .rounded, weight: .semibold).monospacedDigit().lowercaseSmallCaps())
         }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -125,27 +144,39 @@ struct StartNextGameForActiveMatchButtonView: View {
         return match.latestGame?.hasWinner == false || !match.hasMoreGames
     }
     
+    var systemName: String {
+        let nextGameNumber = [(match.latestGame?.number ?? 0) + 1, match.scoring.setScoring.gamesMaximum].min()!
+        return "\(nextGameNumber).circle"
+    }
+    
+    @State private var creatingGame = false
+    
     var body: some View {
         let isDisabled = isDisabled
         
         VStack {
             Button {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                    match.startGame()
-                }
+                self.creatingGame = true
                 
-                withAnimation(.snappy) {
-                    navigation.activeMatchTab = .main
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    match.startGame()
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        withAnimation(.snappy) {
+                            self.creatingGame = false
+                            navigation.activeMatchTab = .main
+                        }
+                    }
                 }
                 
             } label: {
-                Image(systemName: "\([(match.latestGame?.number ?? 0) + 1, match.scoring.setScoring.gamesMaximum].min()!).circle")
+                Image(systemName: systemName)
                     .foregroundStyle(isDisabled ? .tertiary : .primary)
             }
             .tint(.green)
             .font(.title2)
             .fontWeight(.medium)
-            .disabled(isDisabled)
+            .disabled(creatingGame || isDisabled)
 
             Text("Next game")
                 .foregroundStyle(isDisabled ? .tertiary : .primary)

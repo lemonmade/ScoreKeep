@@ -93,13 +93,13 @@ struct MatchHistoryMatchDetailTextView: View {
     var body: some View {
         if match.isMultiSet {
             Text(
-                "\((match.sets).map { "\($0.gamesUs)-\($0.gamesThem)" }.joined(separator: ", "))"
+                "\((match.orderedSets).map { "\($0.gamesUs)-\($0.gamesThem)" }.joined(separator: ", "))"
             )
             .font(.caption)
             .foregroundColor(.secondary)
         } else {
             Text(
-                "\((match.latestSet?.games ?? []).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
+                "\((match.latestSet?.orderedGames ?? []).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
             )
             .font(.caption)
             .foregroundColor(.secondary)

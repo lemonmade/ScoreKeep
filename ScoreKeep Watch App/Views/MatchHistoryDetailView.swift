@@ -16,8 +16,8 @@ struct MatchHistoryDetailView: View {
         TabView {
             MatchHistoryDetailMatchView(match: match)
             
-            ForEach(match.sets) { set in
-                ForEach(set.games) { game in
+            ForEach(match.orderedSets) { set in
+                ForEach(set.orderedGames) { game in
                     MatchHistoryDetailGameView(game: game)
                 }
             }

@@ -9,12 +9,13 @@ import SwiftUI
 
 struct ActiveMatchMainView: View {
     var body: some View {
-        TabView {
-            ActiveMatchScoreKeepView()
-            
-            ActiveMatchActivityView()
-        }
-        .tabViewStyle(.verticalPage)
+        ActiveMatchScoreKeepView()
+//        TabView {
+//            ActiveMatchScoreKeepView()
+//            
+//            ActiveMatchActivityView()
+//        }
+//        .tabViewStyle(.verticalPage)
     }
 }
 

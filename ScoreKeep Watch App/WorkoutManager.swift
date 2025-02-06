@@ -13,11 +13,13 @@ class WorkoutManagerActiveWorkout {
     
     private(set) var averageHeartRate: Double?
     private(set) var heartRate: Double?
-    private(set) var activeEnergy: Double?
-    private(set) var distance: Double?
+    private(set) var activeEnergy: Measurement<UnitEnergy>
+    private(set) var distance: Measurement<UnitLength>
     
     init(session: HKWorkoutSession) {
         self.session = session
+        self.activeEnergy = Measurement(value: 0, unit: .kilocalories)
+        self.distance = Measurement(value: 0, unit: .meters)
     }
     
     func updateStatistics(_ statistics: HKStatistics) {
@@ -27,11 +29,13 @@ class WorkoutManagerActiveWorkout {
             self.heartRate = statistics.mostRecentQuantity()?.doubleValue(for: heartRateUnit) ?? 0
             self.averageHeartRate = statistics.averageQuantity()?.doubleValue(for: heartRateUnit) ?? 0
         case HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned):
-            let energyUnit = HKUnit.kilocalorie()
-            self.activeEnergy = statistics.sumQuantity()?.doubleValue(for: energyUnit) ?? 0
+            if let sum = statistics.sumQuantity()?.doubleValue(for: .kilocalorie()) {
+                self.activeEnergy = Measurement(value: sum, unit: .kilocalories)
+            }
         case HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning), HKQuantityType.quantityType(forIdentifier: .distanceCycling):
-            let meterUnit = HKUnit.meter()
-            self.distance = statistics.sumQuantity()?.doubleValue(for: meterUnit) ?? 0
+            if let sum = statistics.sumQuantity()?.doubleValue(for: .meter()) {
+                self.distance = Measurement(value: sum, unit: .meters)
+            }
         default:
             return
         }
