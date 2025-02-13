@@ -101,11 +101,6 @@ class Match {
     }
 
     func score(_ team: MatchTeam) {
-        print(
-            "Scoring for team: \(team == .us ? "US" : "THEM"), current score: \(debugScoreDescription)"
-        )
-
-        // TODO
         guard let set = latestSet, !set.hasEnded, let game = set.latestGame,
             !game.hasEnded
         else { return }
@@ -234,6 +229,7 @@ class MatchGame {
     var endedAt: Date?
 
     var scores: [MatchGameScore]
+    var orderedScores: [MatchGameScore] { scores.sorted { $0.timestamp < $1.timestamp } }
 
     var hasEnded: Bool { endedAt != nil }
 
@@ -256,7 +252,7 @@ class MatchGame {
     var nextServe: MatchTeam? {
         if hasEnded { return nil }
 
-        if let lastScore = scores.last {
+        if let lastScore = orderedScores.last {
             return lastScore.team
         }
 
@@ -297,6 +293,17 @@ class MatchGame {
 
     func scoreFor(_ team: MatchTeam) -> Int {
         team == .us ? scoreUs : scoreThem
+    }
+    
+    func scoreStreakFor(_ team: MatchTeam) -> Int {
+        var streak = 0
+        
+        for score in scores.sorted(by: { $0.timestamp > $1.timestamp }) {
+            if score.team != team { break }
+            streak += score.change
+        }
+        
+        return streak
     }
 }
 

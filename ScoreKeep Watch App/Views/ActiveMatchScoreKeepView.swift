@@ -134,12 +134,31 @@ struct GameScoreTeamScoreView: View {
     }
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
+        HStack(alignment: .center, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
                 if team == game.nextServe {
-                    Image(systemName: "volleyball.fill")
-                        .resizable()
-                        .frame(width: 24, height: 24)
+                    HStack(alignment: .bottom, spacing: 2) {
+                        Image(systemName: "volleyball.fill")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                        
+                        let streak = game.scoreStreakFor(team)
+                        if streak > 1 {
+//                            VStack(alignment: .center, spacing: 2) {
+                                Text("\(streak)")
+                                    .font(.system(size: 14,  weight: .semibold, design: .rounded))
+                                    .frame(height: 14)
+                                
+//                                Image(systemName: "repeat")
+//                                    .resizable()
+//                                    .frame(width: 8, height: 8)
+//                                    .fontWeight(.semibold)
+//                            }
+//                            .animation(.none, value: streak)
+                        }
+                    }
+                } else {
+                    Spacer().frame(height: 24)
                 }
                 
                 Text(team == .us ? "Us" : "Them")
@@ -150,9 +169,7 @@ struct GameScoreTeamScoreView: View {
                     .padding([.leading, .trailing], 4)
                     .background(keyColor)
                     .cornerRadius(8)
-                    
             }
-            .offset(y: -8)
             
             Spacer()
             
@@ -166,6 +183,7 @@ struct GameScoreTeamScoreView: View {
                     .font(.system(size: 70, weight: .bold))
                     .contentTransition(.numericText(value: Double(score)))
             }
+            .fontDesign(.rounded)
         }
         .padding(8)
         .monospacedDigit()
