@@ -9,27 +9,105 @@ import SwiftUI
 
 struct ActiveMatchControlsView: View {
     @Environment(Match.self) private var match
+    @Environment(WorkoutManager.self) private var workoutManager
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 ActiveMatchControlsSummaryView()
                 
-                VStack(spacing: 8) {
-                    HStack {
+                if match.latestGame?.hasWinner == true {
+                    if match.hasMoreGames {
                         StartNextGameForActiveMatchButtonView()
+                    } else {
+                        EndActiveMatchButtonView(style: .primary)
+                    }
+                }
+                
+                if workoutManager.workout != nil {
+                    ActiveMatchWorkoutSectionView()
+                }
 
-                        PauseActiveMatchButtonView()
-                    }
-                    
-                    HStack {
-                        UpdateSettingsForActiveMatchButtonView()
-                        
-                        EndActiveMatchButtonView()
-                    }
+                HStack {
+                    UpdateSettingsForActiveMatchButtonView()
+
+                    EndActiveMatchButtonView(style: .grid)
                 }
             }
         }
+    }
+}
+
+struct ActiveMatchWorkoutSectionView: View {
+    @Environment(WorkoutManager.self) private var workoutManager
+    
+    private var isRunning: Bool {
+        workoutManager.running
+    }
+
+    private var hasActiveWorkout: Bool {
+        workoutManager.session != nil
+    }
+    
+    private var buttonIcon: String {
+        return !hasActiveWorkout || isRunning ? "pause" : "arrow.clockwise"
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 4) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "figure.volleyball")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                    
+                    Text("Workout")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .font(.subheadline)
+                
+                HStack(spacing: 2) {
+                    if let heartRate = workoutManager.workout?.heartRate {
+                        Text(heartRate, format: .number.precision(.fractionLength(0)))
+                    } else {
+                        Text("–")
+                    }
+
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.red)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+            
+            Button {
+                withAnimation(.none) {
+                    if isRunning {
+                        workoutManager.pause()
+                    } else {
+                        workoutManager.resume()
+                    }
+                }
+            } label: {
+                Image(systemName: buttonIcon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                    .fontWeight(.bold)
+                    .padding(12)
+                    .background(
+                        Circle()
+                            .fill(.primary.opacity(0.1))
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(!hasActiveWorkout)
+            .fixedSize()
+        }
+        .padding(12)
+        .background(.quaternary)
+        .cornerRadius(12)
     }
 }
 
@@ -39,36 +117,30 @@ struct ActiveMatchControlsSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Grid(horizontalSpacing: 0, verticalSpacing: 2) {
-                ActiveMatchControlsSummaryTeamScoreRowView(team: .them)
-                ActiveMatchControlsSummaryTeamScoreRowView(team: .us)
-            }
+            MatchSummaryScoreTableView(match: match)
             .frame(maxWidth: .infinity)
-            
+
             HStack(spacing: 8) {
                 TimelineView(.periodic(from: match.startedAt, by: 0.1)) { context in
-                    Text(context.date, format: .stopwatch(startingAt: match.startedAt, maxPrecision: .seconds(1)))
-                }
-                
-                if let heartRate = workoutManager.workout?.heartRate {
-                    HStack {
-                        Text(heartRate, format: .number.precision(.fractionLength(0)))
-                        
-                        Image(systemName: "heart.fill")
-                            .foregroundStyle(.red)
-                    }
+                    Text(
+                        context.date,
+                        format: .stopwatch(startingAt: match.startedAt, maxPrecision: .seconds(1)))
                 }
             }
-            .font(.system(.caption, design: .rounded, weight: .semibold).monospacedDigit().lowercaseSmallCaps())
+            .padding(.horizontal)
+            .font(
+                .system(.caption2, design: .rounded).monospacedDigit()
+                    .lowercaseSmallCaps())
+            .foregroundStyle(.secondary)
         }
     }
 }
 
 struct ActiveMatchControlsSummaryTeamScoreRowView: View {
     var team: MatchTeam
-    
+
     @Environment(Match.self) private var match
-    
+
     private let cornerRadius: CGFloat = 16
     private let innerPadding: CGFloat = 4
     private let outerPadding: CGFloat = 8
@@ -76,19 +148,19 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
     private var backgroundColor: Color {
         team == .us ? .blue : .red
     }
-    
+
     private var backgroundColorBodyColumn: Color {
         backgroundColor.opacity(0.15)
     }
-    
+
     private var backgroundColorMainColumn: Color {
         backgroundColor
     }
-    
+
     private var scoreMinWidth: CGFloat {
         match.scoring.setScoring.gameScoring.maximumScore >= 10 ? 38 : 0
     }
-    
+
     var body: some View {
         GridRow {
             Text(team == .us ? "Us" : "Them")
@@ -100,7 +172,7 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
                 .padding([.leading], outerPadding)
                 .background(backgroundColorMainColumn)
                 .clipShape(.rect(topLeadingRadius: cornerRadius, bottomLeadingRadius: cornerRadius))
-            
+
             if match.isMultiSet {
                 Text(paddedScore(match.setsFor(team)))
                     .foregroundColor(backgroundColor)
@@ -109,7 +181,7 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
                     .padding([.leading], outerPadding)
                     .background(backgroundColorBodyColumn)
             }
-            
+
             Text(paddedScore(match.latestSet?.gamesFor(team)))
                 .foregroundColor(backgroundColor)
                 .monospacedDigit()
@@ -124,14 +196,15 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
                 .padding([.trailing], outerPadding)
                 .frame(minWidth: scoreMinWidth, alignment: .center)
                 .background(backgroundColorBodyColumn)
-                .clipShape(.rect(bottomTrailingRadius: cornerRadius, topTrailingRadius: cornerRadius))
+                .clipShape(
+                    .rect(bottomTrailingRadius: cornerRadius, topTrailingRadius: cornerRadius))
         }
         .font(.title3)
     }
-    
+
     private func paddedScore(_ score: Int?) -> String {
         guard let score else { return "0" }
-        
+
         return "\(score)"
     }
 }
@@ -139,58 +212,49 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
 struct StartNextGameForActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
-    
-    var isDisabled : Bool {
+
+    private var isDisabled: Bool {
         return match.latestGame?.hasWinner == false || !match.hasMoreGames
     }
-    
-    var systemName: String {
-        let nextGameNumber = [(match.latestGame?.number ?? 0) + 1, match.scoring.setScoring.gamesMaximum].min()!
+
+    private var systemName: String {
         return "\(nextGameNumber).circle"
     }
     
-    @State private var creatingGame = false
-    
-    var body: some View {
-        let isDisabled = isDisabled
-        
-        VStack {
-            Button {
-                self.creatingGame = true
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    match.startGame()
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        withAnimation(.snappy) {
-                            self.creatingGame = false
-                            navigation.activeMatchTab = .main
-                        }
-                    }
-                }
-                
-            } label: {
-                Image(systemName: systemName)
-                    .foregroundStyle(isDisabled ? .tertiary : .primary)
-            }
-            .tint(.green)
-            .font(.title2)
-            .fontWeight(.medium)
-            .disabled(creatingGame || isDisabled)
+    private var nextGameNumber: Int {
+        return [
+            (match.latestGame?.number ?? 0) + 1, match.scoring.setScoring.gamesMaximum,
+        ].min()!
+    }
 
-            Text("Next game")
-                .foregroundStyle(isDisabled ? .tertiary : .primary)
+    var body: some View {
+        Button {
+            withAnimation(.snappy) {
+                match.startGame()
+            }
+            
+            // Without this delay, the second animation causes an instant switch to the new view...
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.snappy) {
+                    navigation.activeMatchTab = .main
+                }
+            }
+        } label: {
+            Text("Start game \(nextGameNumber)")
         }
+        .tint(.green)
+        .fontWeight(.medium)
+        .disabled(isDisabled)
     }
 }
 
 struct UpdateSettingsForActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
-    
+
     var body: some View {
         let isDisabled = match.hasEnded
-        
+
         VStack {
             Button {
                 print("TODO update settings")
@@ -200,7 +264,7 @@ struct UpdateSettingsForActiveMatchButtonView: View {
             .font(.title2)
             .fontWeight(.medium)
             .disabled(isDisabled)
-            
+
             Text("Settings")
                 .foregroundStyle(isDisabled ? .gray : .primary)
         }
@@ -213,66 +277,49 @@ struct EndActiveMatchButtonView: View {
     @Environment(WorkoutManager.self) private var workoutManager
     @Environment(\.modelContext) private var context
     
-    var body: some View {
-        VStack {
-            Button {
-                match.end()
-                // TODO
-                try? context.save()
-                navigation.pop(count: navigation.path.count)
-                workoutManager.end()
-            } label: {
-                Image(systemName: "xmark")
-            }
-            .tint(.red)
-            .font(.title2)
-            .fontWeight(.medium)
+    enum Style {
+        case grid, primary
+    }
+    
+    var style: Style
 
-            Text("End")
-        }
-    }
-}
-
-struct PauseActiveMatchButtonView: View {
-    @Environment(WorkoutManager.self) private var workoutManager
-    
-    private var isRunning: Bool {
-        workoutManager.running
-    }
-    
-    private var hasActiveWorkout: Bool {
-        workoutManager.session != nil
-    }
-    
     var body: some View {
-        VStack {
-            Button {
-                // TODO
-                withAnimation(.none) {
-                    if isRunning {
-                        workoutManager.pause()
-                    } else {
-                        workoutManager.resume()
-                    }
+        if style == .grid {
+            VStack {
+                Button {
+                    endMatch()
+                } label: {
+                    Image(systemName: "xmark")
                 }
-            } label: {
-                Image(systemName: isRunning || !hasActiveWorkout ? "pause" : "arrow.clockwise")
-                    .foregroundStyle(hasActiveWorkout ? .primary : .tertiary)
-            }
-            .tint(.yellow)
-            .font(.title2)
-            .fontWeight(.medium)
-            .disabled(!hasActiveWorkout)
+                .tint(.red)
+                .font(.title2)
+                .fontWeight(.medium)
 
-            Text(isRunning ? "Pause" : "Resume")
-                .foregroundStyle(hasActiveWorkout ? .primary : .tertiary)
+                Text("End")
+            }
+        } else {
+            Button {
+                endMatch()
+            } label: {
+                Text("End match")
+            }
+            .tint(.green)
         }
+    }
+    
+    private func endMatch() {
+        workoutManager.end()
+        match.end()
+        // TODO
+        try? context.save()
+        navigation.pop(count: navigation.path.count)
     }
 }
 
 #Preview {
     ActiveMatchControlsView()
         .environment(NavigationManager())
+        .environment(WorkoutManager())
         .environment(
             Match(
                 .volleyball,

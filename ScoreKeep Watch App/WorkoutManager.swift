@@ -10,29 +10,31 @@ import HealthKit
 @Observable
 class WorkoutManagerActiveWorkout {
     var session: HKWorkoutSession
-    
+
     private(set) var averageHeartRate: Double?
     private(set) var heartRate: Double?
     private(set) var activeEnergy: Measurement<UnitEnergy>
     private(set) var distance: Measurement<UnitLength>
-    
+
     init(session: HKWorkoutSession) {
         self.session = session
         self.activeEnergy = Measurement(value: 0, unit: .kilocalories)
         self.distance = Measurement(value: 0, unit: .meters)
     }
-    
+
     func updateStatistics(_ statistics: HKStatistics) {
         switch statistics.quantityType {
         case HKQuantityType.quantityType(forIdentifier: .heartRate):
             let heartRateUnit = HKUnit.count().unitDivided(by: HKUnit.minute())
             self.heartRate = statistics.mostRecentQuantity()?.doubleValue(for: heartRateUnit) ?? 0
-            self.averageHeartRate = statistics.averageQuantity()?.doubleValue(for: heartRateUnit) ?? 0
+            self.averageHeartRate =
+                statistics.averageQuantity()?.doubleValue(for: heartRateUnit) ?? 0
         case HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned):
             if let sum = statistics.sumQuantity()?.doubleValue(for: .kilocalorie()) {
                 self.activeEnergy = Measurement(value: sum, unit: .kilocalories)
             }
-        case HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning), HKQuantityType.quantityType(forIdentifier: .distanceCycling):
+        case HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning),
+            HKQuantityType.quantityType(forIdentifier: .distanceCycling):
             if let sum = statistics.sumQuantity()?.doubleValue(for: .meter()) {
                 self.distance = Measurement(value: sum, unit: .meters)
             }
@@ -45,21 +47,22 @@ class WorkoutManagerActiveWorkout {
 @Observable
 class WorkoutManager: NSObject {
     let healthStore = HKHealthStore()
-    
+
     var running: Bool = false
     var workout: WorkoutManagerActiveWorkout?
     var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
-    
+
     func startWorkout(match: Match) async {
         let configuration = HKWorkoutConfiguration()
 
         configuration.activityType = .volleyball
 
-        configuration.locationType = switch(match.environment) {
-        case .indoor: .indoor
-        case .outdoor: .outdoor
-        }
+        configuration.locationType =
+            switch match.environment {
+            case .indoor: .indoor
+            case .outdoor: .outdoor
+            }
 
         // Create the session and obtain the workout builder.
         do {
@@ -71,21 +74,22 @@ class WorkoutManager: NSObject {
             // Handle any exceptions.
             return
         }
-        
+
         if let session {
             workout = WorkoutManagerActiveWorkout(session: session)
         }
-        
+
         // Setup session and builder.
         session?.delegate = self
         builder?.delegate = self
 
         // Set the workout builder's data source.
-        builder?.dataSource = HKLiveWorkoutDataSource(healthStore: healthStore, workoutConfiguration: configuration)
+        builder?.dataSource = HKLiveWorkoutDataSource(
+            healthStore: healthStore, workoutConfiguration: configuration)
 
         // Start the workout session and begin data collection.
         session?.startActivity(with: match.startedAt)
-        
+
         do {
             try await builder?.beginCollection(at: match.startedAt)
         } catch let error {
@@ -93,7 +97,7 @@ class WorkoutManager: NSObject {
             print(error)
         }
     }
-    
+
     func requestAuthorization() {
         // The quantity type to write to the health store.
         let typesToShare: Set = [
@@ -105,11 +109,12 @@ class WorkoutManager: NSObject {
             HKQuantityType.quantityType(forIdentifier: .heartRate)!,
             HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned)!,
             HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning)!,
-            HKObjectType.activitySummaryType()
+            HKObjectType.activitySummaryType(),
         ]
 
         // Request authorization for those quantity types.
-        healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) { (success, error) in
+        healthStore.requestAuthorization(toShare: typesToShare, read: typesToRead) {
+            (success, error) in
             // Handle error.
         }
     }
@@ -134,7 +139,6 @@ class WorkoutManager: NSObject {
     }
 }
 
-
 // MARK: - HKWorkoutSessionDelegate
 extension WorkoutManager: HKWorkoutSessionDelegate {
     func workoutSession(_ workoutSession: HKWorkoutSession, didGenerate event: HKWorkoutEvent) {
@@ -148,8 +152,11 @@ extension WorkoutManager: HKWorkoutSessionDelegate {
         default: return
         }
     }
-    
-    func workoutSession(_ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState, from fromState: HKWorkoutSessionState, date: Date) {
+
+    func workoutSession(
+        _ workoutSession: HKWorkoutSession, didChangeTo toState: HKWorkoutSessionState,
+        from fromState: HKWorkoutSessionState, date: Date
+    ) {
 
         DispatchQueue.main.async {
             self.running = toState == .running
@@ -179,16 +186,18 @@ extension WorkoutManager: HKLiveWorkoutBuilderDelegate {
 
     }
 
-    func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>) {
+    func workoutBuilder(
+        _ workoutBuilder: HKLiveWorkoutBuilder, didCollectDataOf collectedTypes: Set<HKSampleType>
+    ) {
         for type in collectedTypes {
             guard let quantityType = type as? HKQuantityType else {
-                continue // Nothing to do.
+                continue  // Nothing to do.
             }
 
             guard let workout, let statistics = workoutBuilder.statistics(for: quantityType) else {
                 continue
             }
-            
+
             DispatchQueue.main.async {
                 workout.updateStatistics(statistics)
             }

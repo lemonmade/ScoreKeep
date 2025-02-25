@@ -36,13 +36,14 @@ struct MatchHistoryDetailMatchView: View {
     
     var body: some View {
         VStack {
+            MatchSummaryScoreTableView(match: match)
+                .padding()
+
             Text(match.endedAt ?? match.startedAt, format: dateFormatter)
                 .font(.headline)
             
             Text(match.startedAt...(match.endedAt ?? match.startedAt))
                 .foregroundStyle(.secondary)
-            
-            MatchTotalScoreSummaryView(match: match)
         }
     }
 }

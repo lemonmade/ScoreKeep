@@ -184,7 +184,7 @@ struct StartMatchNavigationLinkView: View {
                 }
                 .offset(y: 12)    
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
         }
     }
 }
