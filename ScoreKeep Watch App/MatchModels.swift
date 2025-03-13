@@ -64,6 +64,14 @@ class Match {
     var hasWinner: Bool { winner != nil }
 
     var isMultiSet: Bool { scoring.isMultiSet }
+    
+    var scoreSummaryString: String {
+        if isMultiSet {
+            return "\((orderedSets).map { "\($0.gamesUs)-\($0.gamesThem)" }.joined(separator: ", "))"
+        }
+        
+        return "\((latestSet?.orderedGames ?? []).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
+    }
 
     init(from template: MatchTemplate, markAsUsed: Bool = true) {
         self.template = markAsUsed ? template : nil

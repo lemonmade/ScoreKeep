@@ -34,16 +34,41 @@ struct MatchHistoryDetailMatchView: View {
         time: .none
     )
     
+    private let dateRangeFormatter: DateIntervalFormatter = {
+        let formatter = DateIntervalFormatter()
+        formatter.dateStyle = .none
+        return formatter
+    }()
+    
+    private var endDate: Date {
+        match.endedAt ?? match.startedAt
+    }
+    
+    private var dateRange: ClosedRange<Date> {
+        match.startedAt...endDate
+    }
+    
+    private var summary: String {
+        let dateRange = self.dateRange
+        return "\(dateFormatter.format(endDate))\n\(dateRangeFormatter.string(from: dateRange.lowerBound, to: dateRange.upperBound))\n\(match.scoreSummaryString)"
+    }
+    
     var body: some View {
-        VStack {
-            MatchSummaryScoreTableView(match: match)
-                .padding()
+        ScrollView {
+            VStack {
+                MatchSummaryScoreTableView(match: match)
+                    .padding()
 
-            Text(match.endedAt ?? match.startedAt, format: dateFormatter)
-                .font(.headline)
-            
-            Text(match.startedAt...(match.endedAt ?? match.startedAt))
-                .foregroundStyle(.secondary)
+                Text(endDate, format: dateFormatter)
+                    .font(.headline)
+                
+                Text(dateRange)
+                    .foregroundStyle(.secondary)
+                
+                ShareLink(item: summary) {
+                    Label("Summary", systemImage: "square.and.arrow.up")
+                }
+            }
         }
     }
 }
