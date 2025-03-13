@@ -117,7 +117,7 @@ struct ActiveMatchControlsSummaryView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            MatchSummaryScoreTableView(match: match)
+            MatchSummaryScoreTableView(match: match, layout: .selfPointsInward)
             .frame(maxWidth: .infinity)
 
             HStack(spacing: 8) {

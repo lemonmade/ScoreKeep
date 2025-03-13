@@ -102,200 +102,80 @@ struct MatchTotalScoreSummaryView: View {
     }
 }
 
+enum ScoreLayout {
+    case selfFirst
+    case selfPointsInward
+}
+
 struct MatchSummaryScoreTableView: View {
     var match: Match
+    var layout: ScoreLayout = .selfFirst
 
     private let cornerRadiusOutside: CGFloat = 12
-    private let cornerRadiusInside: CGFloat = 8
     private let innerPadding: CGFloat = 8
     private let outerPadding: CGFloat = 12
     private let verticalPadding: CGFloat = 5
     private let backgroundOpacity = 0.25
+    
+    private let winnerFontWeight: Font.Weight = .bold
+    private let nonWinnerFontWeight: Font.Weight = .regular
+    private var boldestFontWeight: Font.Weight { winnerFontWeight }
+    
+    private func fontWeight(winner: Bool = false) -> Font.Weight {
+        return winner ? winnerFontWeight : nonWinnerFontWeight
+    }
+    
+    func row(for team: MatchTeam) -> some View {
+        let latestSet = match.latestSet!
+        let latestGame = latestSet.latestGame!
+        let color = team == .us ? Color.blue : Color.red
+        let label = team == .us ? "Us" : "Them"
+        
+        return HStack(spacing: 0) {
+            let fontWeight = fontWeight(winner: match.winner == team)
+            
+            Text(label)
+                .fontWeight(fontWeight)
+                .foregroundColor(color)
+                .padding(.vertical, verticalPadding)
+                .padding(.leading, outerPadding)
+                .padding(.trailing, innerPadding)
 
-    var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 0, verticalSpacing: 2) {
-            GridRow {
-                Text("Us")
-                    .fontWeight(match.winner == .us ? .bold : .regular)
-                    .foregroundColor(.blue)
-                    .padding(.vertical, verticalPadding)
-                    .padding(.leading, outerPadding)
-                    .padding(.trailing, innerPadding)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        MatchSummaryScoreTableBackgroundView(
-                            color: .blue,
-                            winner: match.winner == .us,
-                            horizontalPosition: .leading,
-                            verticalPosition: .top
-                        )
-//                        UnevenRoundedRectangle(
-//                            cornerRadii: RectangleCornerRadii(
-//                                topLeading: cornerRadiusOutside,
-//                                bottomLeading: match.winner == .us ? cornerRadiusInside : 0,
-//                                bottomTrailing: 0,
-//                                topTrailing: 0
-//                            )
-//                        )
-//                        .fill(.blue.opacity(backgroundOpacity))
-//                        .stroke(
-//                            .blue,
-//                            style: StrokeStyle(lineWidth: match.winner == .us ? 2 : 0)
-//                        )
-//                        .padding(.leading, -2)
-//                        .padding(.trailing, -1)
-//                        .padding(.bottom, 1)
-//                        .mask(alignment: .trailing) {
-//                            VStack(spacing: 0) {
-//                                Rectangle().frame(height: 2)
-//                                HStack {
-//                                    Rectangle()
-//                                    Spacer().frame(width: 2)
-//                                }
-//                                Rectangle().frame(height: 2)
-//                            }
-//                            .padding([.leading, .vertical], -3)
-//                            .padding(.trailing, -2)
-//                        }
-                    }
-
-                MatchSummaryScoreTableNumberView(match.latestSet!.gamesUs, verticalPosition: .top, horizontalPosition: .inner)
-                    .fontWeight(.bold)
+            Spacer()
+            
+            ForEach(latestSet.orderedGames) { game in
+                MatchSummaryScoreTableNumberView(game.scoreFor(team), pad: true, verticalPosition: .top, horizontalPosition: game == latestGame ? .trailing : .inner)
+                    .fontWeight(boldestFontWeight)
                     .opacity(0)
                     .overlay {
-                        MatchSummaryScoreTableNumberView(match.latestSet!.gamesUs, verticalPosition: .top, horizontalPosition: .inner)
+                        MatchSummaryScoreTableNumberView(game.scoreFor(team), verticalPosition: .top, horizontalPosition: game == latestGame ? .trailing : .inner)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                            .fontWeight(match.winner == .us ? .bold : .regular)
-                            .foregroundColor(.blue)
+                            .fontWeight(fontWeight)
+                            .foregroundColor(color)
                     }
-                    .background {
-                        MatchSummaryScoreTableBackgroundView(
-                            color: .blue,
-                            winner: match.winner == .us,
-                            horizontalPosition: .inner,
-                            verticalPosition: .top
-                        )
-//                        Rectangle()
-//                            .fill(.blue.opacity(backgroundOpacity))
-//                            .stroke(
-//                                .blue,
-//                                style: StrokeStyle(lineWidth: match.winner == .us ? 2 : 0)
-//                            )
-//                            .padding(.horizontal, -1)
-//                            .padding(.bottom, 1)
-//                            .mask(alignment: .leading) {
-//                                VStack(spacing: 0) {
-//                                    Rectangle().frame(height: 2)
-//                                    HStack {
-//                                        Spacer().frame(width: 2)
-//                                        Rectangle()
-//                                        Spacer().frame(width: 2)
-//                                    }
-//                                    Rectangle().frame(height: 2)
-//                                }
-//                                .padding(.vertical, -3)
-//                                .padding(.horizontal, -2)
-//                            }
-                    }
-
-                MatchSummaryScoreTableNumberView(match.latestSet!.latestGame!.scoreUs, pad: true, verticalPosition: .top, horizontalPosition: .trailing)
-                    .fontWeight(.bold)
-                    .opacity(0)
-                    .overlay {
-                        MatchSummaryScoreTableNumberView(match.latestSet!.latestGame!.scoreUs, verticalPosition: .top, horizontalPosition: .trailing)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                        .fontWeight(match.winner == .us ? .bold : .regular)
-                        .foregroundColor(.blue)
-                    }
-                    .background {
-                        MatchSummaryScoreTableBackgroundView(
-                            color: .blue,
-                            winner: match.winner == .us,
-                            horizontalPosition: .trailing,
-                            verticalPosition: .top
-                        )
-//                        UnevenRoundedRectangle(
-//                            cornerRadii: RectangleCornerRadii(
-//                                topLeading: 0,
-//                                bottomLeading: 0,
-//                                bottomTrailing: match.winner == .us ? cornerRadiusInside : 0,
-//                                topTrailing: cornerRadiusOutside
-//                            )
-//                        )
-//                        .fill(.blue.opacity(backgroundOpacity))
-//                        .stroke(
-//                            .blue,
-//                            style: StrokeStyle(lineWidth: match.winner == .us ? 2 : 0)
-//                        )
-//                        .padding(.horizontal, -1)
-//                        .padding(.bottom, 1)
-//                        .mask(alignment: .leading) {
-//                            VStack(spacing: 0) {
-//                                Rectangle().frame(height: 2)
-//                                HStack {
-//                                    Spacer().frame(width: 2)
-//                                    Rectangle()
-//                                }
-//                                Rectangle().frame(height: 2)
-//                            }
-//                            .padding([.trailing, .vertical], -3)
-//                            .padding(.leading, -2)
-//                        }
-                    }
+                
             }
-
-            GridRow {
-                Text("Them")
-                    .fontWeight(match.winner == .them ? .bold : .regular)
-                    .foregroundColor(.red)
-                    .padding(.vertical, verticalPadding)
-                    .padding(.leading, outerPadding)
-                    .padding(.trailing, innerPadding)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background {
-                        MatchSummaryScoreTableBackgroundView(
-                            color: .red,
-                            winner: match.winner == .them,
-                            horizontalPosition: .leading,
-                            verticalPosition: .bottom
-                        )
-                    }
-
-                MatchSummaryScoreTableNumberView(match.latestSet!.gamesThem, verticalPosition: .bottom, horizontalPosition: .inner)
-                    .fontWeight(.bold)
-                    .opacity(0)
-                    .overlay {
-                        MatchSummaryScoreTableNumberView(match.latestSet!.gamesThem, verticalPosition: .bottom, horizontalPosition: .inner)
-                            .fontWeight(match.winner == .them ? .bold : .regular)
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                            .background {
-                                MatchSummaryScoreTableBackgroundView(
-                                    color: .red,
-                                    winner: match.winner == .them,
-                                    horizontalPosition: .inner,
-                                    verticalPosition: .bottom
-                                )
-                            }
-                    }
-
-                MatchSummaryScoreTableNumberView(match.latestSet!.latestGame!.scoreThem, pad: true, verticalPosition: .bottom, horizontalPosition: .trailing)
-                .fontWeight(.bold)
-                .opacity(0)
-                .overlay {
-                    MatchSummaryScoreTableNumberView(match.latestSet!.latestGame!.scoreThem, verticalPosition: .bottom, horizontalPosition: .trailing)
-                    .fontWeight(match.winner == .them ? .bold : .regular)
-                    .foregroundColor(.red)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                    .background {
-                        MatchSummaryScoreTableBackgroundView(
-                            color: .red,
-                            winner: match.winner == .them,
-                            horizontalPosition: .trailing,
-                            verticalPosition: .bottom
-                        )
-                    }
-                }
+        }
+        .background {
+            RoundedRectangle(cornerRadius: cornerRadiusOutside)
+                .fill(color.opacity(backgroundOpacity))
+                .stroke(color.opacity(match.winner == team ? 1 : 0), lineWidth: 2)
+        }
+        .foregroundColor(color)
+    }
+    
+    var body: some View {
+        let latestSet = match.latestSet!
+        let latestGame = latestSet.latestGame!
+        
+        VStack(spacing: 2) {
+            switch layout {
+            case .selfFirst:
+                row(for: .us)
+                row(for: .them)
+            case .selfPointsInward:
+                row(for: .them)
+                row(for: .us)
             }
         }
         .monospacedDigit()
@@ -319,17 +199,17 @@ struct MatchSummaryScoreTableNumberView: View {
     private let verticalPadding: CGFloat = 5
     private var leadingPadding: CGFloat {
         switch horizontalPosition {
-        case .inner: return 8
-        case .leading: return 12
-        case .trailing: return 8
+        case .inner: return 4
+        case .leading: return 10
+        case .trailing: return 4
         }
     }
     
     private var trailingPadding: CGFloat {
         switch horizontalPosition {
-        case .inner: return 8
-        case .leading: return 8
-        case .trailing: return 12
+        case .inner: return 4
+        case .leading: return 4
+        case .trailing: return 10
         }
     }
     
@@ -466,7 +346,7 @@ struct MatchSummaryScoreTableBackgroundView: View {
             sets: [
                 MatchSet(
                     games: [
-                        MatchGame(us: 10, them: 2, endedAt: .now.advanced(by: -1000)),
+                        MatchGame(us: 10, them: 5, endedAt: .now.advanced(by: -1000)),
                         MatchGame(us: 10, them: 2, endedAt: .now),
                     ],
                     endedAt: .now
@@ -498,5 +378,5 @@ struct MatchSummaryScoreTableBackgroundView: View {
 //            startedAt: .now.advanced(by: -2000)
 //        )
     )
-    .safeAreaPadding(.all, 20)
+    .safeAreaPadding(.all, 10)
 }
