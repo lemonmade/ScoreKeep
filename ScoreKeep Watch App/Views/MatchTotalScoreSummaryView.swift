@@ -143,7 +143,7 @@ struct MatchSummaryScoreTableView: View {
 
             Spacer()
             
-            ForEach(latestSet.orderedGames) { game in
+            ForEach(latestSet.games) { game in
                 MatchSummaryScoreTableNumberView(game.scoreFor(team), pad: true, verticalPosition: .top, horizontalPosition: game == latestGame ? .trailing : .inner)
                     .fontWeight(boldestFontWeight)
                     .opacity(0)
@@ -165,9 +165,6 @@ struct MatchSummaryScoreTableView: View {
     }
     
     var body: some View {
-        let latestSet = match.latestSet!
-        let latestGame = latestSet.latestGame!
-        
         VStack(spacing: 2) {
             switch layout {
             case .selfFirst:

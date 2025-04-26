@@ -78,7 +78,7 @@ struct GameScoreChartView: View {
             )
         ]
         
-        for score in game.orderedScores {
+        for score in game.scores {
             index += 1
 
             if score.team == .us { scoreUs = score.total }

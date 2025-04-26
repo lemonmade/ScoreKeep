@@ -11,6 +11,20 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		6C1376D12D90B46E003AB248 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6C3DCA452D0921D1004A9BBF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6C1376BC2D90B46C003AB248;
+			remoteInfo = "ScoreKeep iOS App";
+		};
+		6C1376DB2D90B46E003AB248 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 6C3DCA452D0921D1004A9BBF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6C1376BC2D90B46C003AB248;
+			remoteInfo = "ScoreKeep iOS App";
+		};
 		6C3DCA532D0921D2004A9BBF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 6C3DCA452D0921D1004A9BBF /* Project object */;
@@ -49,13 +63,52 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		6C1376BD2D90B46C003AB248 /* ScoreKeep iOS App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ScoreKeep iOS App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C1376D02D90B46E003AB248 /* ScoreKeep iOS AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ScoreKeep iOS AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C1376DA2D90B46E003AB248 /* ScoreKeep iOS AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ScoreKeep iOS AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C3DCA4B2D0921D2004A9BBF /* ScoreKeep.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScoreKeep.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C3DCA512D0921D2004A9BBF /* ScoreKeep Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ScoreKeep Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C3DCA632D0921D3004A9BBF /* ScoreKeep Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ScoreKeep Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C3DCA6D2D0921D3004A9BBF /* ScoreKeep Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ScoreKeep Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		6C1376E82D90B46E003AB248 /* Exceptions for "ScoreKeep iOS App" folder in "ScoreKeep iOS App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 6C1376BC2D90B46C003AB248 /* ScoreKeep iOS App */;
+		};
+		6C1377092D90B7C3003AB248 /* Exceptions for "ScoreKeep iOS App" folder in "ScoreKeep Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				MatchModels.swift,
+			);
+			target = 6C3DCA502D0921D2004A9BBF /* ScoreKeep Watch App */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		6C1376BE2D90B46C003AB248 /* ScoreKeep iOS App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				6C1377092D90B7C3003AB248 /* Exceptions for "ScoreKeep iOS App" folder in "ScoreKeep Watch App" target */,
+				6C1376E82D90B46E003AB248 /* Exceptions for "ScoreKeep iOS App" folder in "ScoreKeep iOS App" target */,
+			);
+			path = "ScoreKeep iOS App";
+			sourceTree = "<group>";
+		};
+		6C1376D32D90B46E003AB248 /* ScoreKeep iOS AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "ScoreKeep iOS AppTests";
+			sourceTree = "<group>";
+		};
+		6C1376DD2D90B46E003AB248 /* ScoreKeep iOS AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "ScoreKeep iOS AppUITests";
+			sourceTree = "<group>";
+		};
 		6C3DCA552D0921D2004A9BBF /* ScoreKeep Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "ScoreKeep Watch App";
@@ -74,6 +127,27 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		6C1376BA2D90B46C003AB248 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C1376CD2D90B46E003AB248 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C1376D72D90B46E003AB248 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6C3DCA4E2D0921D2004A9BBF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -104,6 +178,9 @@
 				6C3DCA552D0921D2004A9BBF /* ScoreKeep Watch App */,
 				6C3DCA662D0921D3004A9BBF /* ScoreKeep Watch AppTests */,
 				6C3DCA702D0921D3004A9BBF /* ScoreKeep Watch AppUITests */,
+				6C1376BE2D90B46C003AB248 /* ScoreKeep iOS App */,
+				6C1376D32D90B46E003AB248 /* ScoreKeep iOS AppTests */,
+				6C1376DD2D90B46E003AB248 /* ScoreKeep iOS AppUITests */,
 				6C3DCA4C2D0921D2004A9BBF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,6 +192,9 @@
 				6C3DCA512D0921D2004A9BBF /* ScoreKeep Watch App.app */,
 				6C3DCA632D0921D3004A9BBF /* ScoreKeep Watch AppTests.xctest */,
 				6C3DCA6D2D0921D3004A9BBF /* ScoreKeep Watch AppUITests.xctest */,
+				6C1376BD2D90B46C003AB248 /* ScoreKeep iOS App.app */,
+				6C1376D02D90B46E003AB248 /* ScoreKeep iOS AppTests.xctest */,
+				6C1376DA2D90B46E003AB248 /* ScoreKeep iOS AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -122,6 +202,74 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		6C1376BC2D90B46C003AB248 /* ScoreKeep iOS App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C1376E92D90B46E003AB248 /* Build configuration list for PBXNativeTarget "ScoreKeep iOS App" */;
+			buildPhases = (
+				6C1376B92D90B46C003AB248 /* Sources */,
+				6C1376BA2D90B46C003AB248 /* Frameworks */,
+				6C1376BB2D90B46C003AB248 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				6C1376BE2D90B46C003AB248 /* ScoreKeep iOS App */,
+			);
+			name = "ScoreKeep iOS App";
+			packageProductDependencies = (
+			);
+			productName = "ScoreKeep iOS App";
+			productReference = 6C1376BD2D90B46C003AB248 /* ScoreKeep iOS App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		6C1376CF2D90B46E003AB248 /* ScoreKeep iOS AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C1376EA2D90B46E003AB248 /* Build configuration list for PBXNativeTarget "ScoreKeep iOS AppTests" */;
+			buildPhases = (
+				6C1376CC2D90B46E003AB248 /* Sources */,
+				6C1376CD2D90B46E003AB248 /* Frameworks */,
+				6C1376CE2D90B46E003AB248 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6C1376D22D90B46E003AB248 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6C1376D32D90B46E003AB248 /* ScoreKeep iOS AppTests */,
+			);
+			name = "ScoreKeep iOS AppTests";
+			packageProductDependencies = (
+			);
+			productName = "ScoreKeep iOS AppTests";
+			productReference = 6C1376D02D90B46E003AB248 /* ScoreKeep iOS AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		6C1376D92D90B46E003AB248 /* ScoreKeep iOS AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6C1376EB2D90B46E003AB248 /* Build configuration list for PBXNativeTarget "ScoreKeep iOS AppUITests" */;
+			buildPhases = (
+				6C1376D62D90B46E003AB248 /* Sources */,
+				6C1376D72D90B46E003AB248 /* Frameworks */,
+				6C1376D82D90B46E003AB248 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6C1376DC2D90B46E003AB248 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6C1376DD2D90B46E003AB248 /* ScoreKeep iOS AppUITests */,
+			);
+			name = "ScoreKeep iOS AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "ScoreKeep iOS AppUITests";
+			productReference = 6C1376DA2D90B46E003AB248 /* ScoreKeep iOS AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		6C3DCA4A2D0921D2004A9BBF /* ScoreKeep */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 6C3DCA7B2D0921D3004A9BBF /* Build configuration list for PBXNativeTarget "ScoreKeep" */;
@@ -216,9 +364,20 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1610;
-				LastUpgradeCheck = 1610;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					6C1376BC2D90B46C003AB248 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					6C1376CF2D90B46E003AB248 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 6C1376BC2D90B46C003AB248;
+					};
+					6C1376D92D90B46E003AB248 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 6C1376BC2D90B46C003AB248;
+					};
 					6C3DCA4A2D0921D2004A9BBF = {
 						CreatedOnToolsVersion = 16.1;
 					};
@@ -253,11 +412,35 @@
 				6C3DCA502D0921D2004A9BBF /* ScoreKeep Watch App */,
 				6C3DCA622D0921D3004A9BBF /* ScoreKeep Watch AppTests */,
 				6C3DCA6C2D0921D3004A9BBF /* ScoreKeep Watch AppUITests */,
+				6C1376BC2D90B46C003AB248 /* ScoreKeep iOS App */,
+				6C1376CF2D90B46E003AB248 /* ScoreKeep iOS AppTests */,
+				6C1376D92D90B46E003AB248 /* ScoreKeep iOS AppUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		6C1376BB2D90B46C003AB248 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C1376CE2D90B46E003AB248 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C1376D82D90B46E003AB248 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6C3DCA492D0921D2004A9BBF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -289,6 +472,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		6C1376B92D90B46C003AB248 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C1376CC2D90B46E003AB248 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C1376D62D90B46E003AB248 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		6C3DCA4D2D0921D2004A9BBF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -313,6 +517,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		6C1376D22D90B46E003AB248 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6C1376BC2D90B46C003AB248 /* ScoreKeep iOS App */;
+			targetProxy = 6C1376D12D90B46E003AB248 /* PBXContainerItemProxy */;
+		};
+		6C1376DC2D90B46E003AB248 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 6C1376BC2D90B46C003AB248 /* ScoreKeep iOS App */;
+			targetProxy = 6C1376DB2D90B46E003AB248 /* PBXContainerItemProxy */;
+		};
 		6C3DCA542D0921D2004A9BBF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 6C3DCA502D0921D2004A9BBF /* ScoreKeep Watch App */;
@@ -331,6 +545,153 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		6C1376E22D90B46E003AB248 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "ScoreKeep iOS App/ScoreKeep_iOS_App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ScoreKeep iOS App/Preview Content\"";
+				DEVELOPMENT_TEAM = G8U72MPU96;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "ScoreKeep iOS App/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6C1376E32D90B46E003AB248 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "ScoreKeep iOS App/ScoreKeep_iOS_App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ScoreKeep iOS App/Preview Content\"";
+				DEVELOPMENT_TEAM = G8U72MPU96;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "ScoreKeep iOS App/Info.plist";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep.app;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		6C1376E42D90B46E003AB248 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G8U72MPU96;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tools.lemon.ScoreKeep-iOS-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScoreKeep iOS App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScoreKeep iOS App";
+			};
+			name = Debug;
+		};
+		6C1376E52D90B46E003AB248 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G8U72MPU96;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tools.lemon.ScoreKeep-iOS-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScoreKeep iOS App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScoreKeep iOS App";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		6C1376E62D90B46E003AB248 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G8U72MPU96;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tools.lemon.ScoreKeep-iOS-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "ScoreKeep iOS App";
+			};
+			name = Debug;
+		};
+		6C1376E72D90B46E003AB248 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G8U72MPU96;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "tools.lemon.ScoreKeep-iOS-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "ScoreKeep iOS App";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		6C3DCA752D0921D3004A9BBF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -459,14 +820,17 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "ScoreKeep-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ScoreKeep;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "The workout related data will be used to display a user's finished workout stats.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Volleyball workouts tracked by this app on Apple Watch will be saved to HealthKit.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKWatchOnly = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = tools.lemon.ScoreKeep.app;
+				INFOPLIST_KEY_WKWatchOnly = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep.app.watchkit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -491,14 +855,17 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "ScoreKeep-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ScoreKeep;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "The workout related data will be used to display a user's finished workout stats.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Volleyball workouts tracked by this app on Apple Watch will be saved to HealthKit.";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKWatchOnly = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = tools.lemon.ScoreKeep.app;
+				INFOPLIST_KEY_WKWatchOnly = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = tools.lemon.ScoreKeep.app.watchkit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -620,6 +987,33 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		6C1376E92D90B46E003AB248 /* Build configuration list for PBXNativeTarget "ScoreKeep iOS App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C1376E22D90B46E003AB248 /* Debug */,
+				6C1376E32D90B46E003AB248 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6C1376EA2D90B46E003AB248 /* Build configuration list for PBXNativeTarget "ScoreKeep iOS AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C1376E42D90B46E003AB248 /* Debug */,
+				6C1376E52D90B46E003AB248 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6C1376EB2D90B46E003AB248 /* Build configuration list for PBXNativeTarget "ScoreKeep iOS AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C1376E62D90B46E003AB248 /* Debug */,
+				6C1376E72D90B46E003AB248 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		6C3DCA482D0921D1004A9BBF /* Build configuration list for PBXProject "ScoreKeep" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
