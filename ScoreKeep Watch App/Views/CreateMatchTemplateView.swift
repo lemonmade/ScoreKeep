@@ -27,6 +27,8 @@ struct CreateMatchTemplateView: View {
     @State private var gameScoringMaximumScore: Int
     @State private var gameScoringWinBy: Int
     
+    @State private var hasWarmup: Bool
+    
     @State private var startWorkout: Bool
     
     @State private var navigationTitle: String
@@ -44,6 +46,10 @@ struct CreateMatchTemplateView: View {
         self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.maximumScore ?? 27
         self.gameScoringWinBy = template?.scoring.setScoring.gameScoring.winBy ?? 2
         self.navigationTitle = template == nil ? "New match" : template!.name
+        
+        let warmup = template?.warmup ?? .none
+        self.hasWarmup = warmup != .none
+
         self.startWorkout = template?.startWorkout ?? true
     }
     
@@ -68,14 +74,8 @@ struct CreateMatchTemplateView: View {
             }
             
             Section(header: Text("Sets")) {
-                Picker("After win", selection: $setsPlayItOut) {
-                    Text("End match").tag(false)
-                    Text("Play it out").tag(true)
-                }
-                .pickerStyle(.navigationLink)
-                
                 VStack {
-                    Text("Win at")
+                    Text("Best of")
                     Stepper(value: $setsWinAt, in: 1...50, step: 1) {
                         HStack(spacing: 0) {
                             Text("\(setsWinAt)")
@@ -86,17 +86,17 @@ struct CreateMatchTemplateView: View {
                     }
                 }
                 .padding([.top, .bottom], 8)
-            }
-
-            Section(header: Text("Games")) {
-                Picker("After win", selection: $gamesPlayItOut) {
-                    Text("End set").tag(false)
+                
+                Picker("After win", selection: $setsPlayItOut) {
+                    Text("End match").tag(false)
                     Text("Play it out").tag(true)
                 }
                 .pickerStyle(.navigationLink)
-                
+            }
+
+            Section(header: Text("Games")) {
                 VStack {
-                    Text("Win at")
+                    Text("Best of")
                     Stepper(value: $gamesWinAt, in: 1...50, step: 1) {
                         HStack(spacing: 0) {
                             Text("\(gamesWinAt)")
@@ -107,6 +107,12 @@ struct CreateMatchTemplateView: View {
                     }
                 }
                 .padding([.top, .bottom], 8)
+                
+                Picker("After win", selection: $gamesPlayItOut) {
+                    Text("End set").tag(false)
+                    Text("Play it out").tag(true)
+                }
+                .pickerStyle(.navigationLink)
             }
                 
             Section(header: Text("Points")) {
@@ -163,6 +169,12 @@ struct CreateMatchTemplateView: View {
                 .padding([.top, .bottom], 8)
             }
             
+            Section(header: Text("Warmup")) {
+                Toggle(isOn: $hasWarmup) {
+                    Text("Warmup before match")
+                }
+            }
+            
             Section(header: Text("Workout")) {
                 Toggle(isOn: $startWorkout) {
                     Text("Start workout")
@@ -185,7 +197,9 @@ struct CreateMatchTemplateView: View {
                             name: name,
                             color: color,
                             environment: environment,
-                            scoring: asScoringRules()
+                            scoring: asScoringRules(),
+                            warmup: asWarmupRules(),
+                            startWorkout: startWorkout
                         )
                 
                         context.insert(template)
@@ -252,6 +266,10 @@ struct CreateMatchTemplateView: View {
         )
     }
     
+    private func asWarmupRules() -> MatchWarmupRules {
+        return hasWarmup ? .open : .none
+    }
+    
     private func save(template: MatchTemplate) {
         let newScoringRules = asScoringRules()
         
@@ -269,6 +287,11 @@ struct CreateMatchTemplateView: View {
         
         if template.startWorkout != startWorkout {
             template.startWorkout = startWorkout
+        }
+        
+        let warmup = asWarmupRules()
+        if template.warmup != warmup {
+            template.warmup = warmup
         }
         
         if template.id.storeIdentifier != nil {
@@ -388,5 +411,19 @@ struct MatchTemplateColorPickerSheetView: View {
     NavigationView {
         CreateMatchTemplateView()
             .environment(NavigationManager())
+            .environment(
+                Match(
+                    .volleyball,
+                    scoring: MatchScoringRules(
+                        setsWinAt: 5,
+                        setScoring: MatchSetScoringRules(
+                            gamesWinAt: 5,
+                            gameScoring: MatchGameScoringRules(
+                                winScore: 25
+                            )
+                        )
+                    )
+                )
+            )
     }
 }

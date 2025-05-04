@@ -28,17 +28,23 @@ struct ActiveMatchView: View {
                 
                 let match = template.createMatch(markAsUsed: markAsUsed)
                 self.match = match
-
-                context.insert(match)
-
-                // TODO
-                try? context.save()
+                
+                // TODO: we currently start the first game, even if there is a warmup.
+                // we should only be creating the game after the warmup has ended
+                if (template.startWorkout) {
+                    match.startWarmup()
+                }
                 
                 if template.startWorkout {
                     Task {
                         await workoutManager.startWorkout(match: match)
                     }
                 }
+                
+                context.insert(match)
+
+                // TODO
+                try? context.save()
             }
     }
 }
@@ -97,4 +103,6 @@ struct ActiveMatchTabView: View {
         )
     )
         .environment(NavigationManager())
+        .environment(WorkoutManager())
+        .modelContainer(MatchModelContainer().testModelContainer())
 }

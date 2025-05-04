@@ -27,6 +27,7 @@ class MatchModelContainer {
         Match.self,
         MatchSet.self,
         MatchGame.self,
+        MatchWarmup.self,
         MatchTemplate.self,
     ])
     
@@ -37,6 +38,16 @@ class MatchModelContainer {
             cloudKitDatabase: .automatic
         )
 
+        return try! ModelContainer(for: schema, configurations: [configuration])
+    }
+    
+    func testModelContainer() -> ModelContainer {
+        let configuration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
+        )
+        
         return try! ModelContainer(for: schema, configurations: [configuration])
     }
 }
@@ -65,6 +76,10 @@ class Match {
     
     @Relationship
     var template: MatchTemplate?
+    
+    @Relationship
+    var warmup: MatchWarmup?
+    var hasWarmup: Bool { warmup != nil }
 
     var hasEnded: Bool { endedAt != nil }
 
@@ -147,16 +162,26 @@ class Match {
         game.score(team)
 
         if scoring.setScoring.gameScoring.hasWinner(game) {
-            game.endedAt = Date()
+            game.endedAt = Date.now
 
             if !scoring.setScoring.canPlayAnotherGame(set) {
-                set.endedAt = Date()
+                set.endedAt = Date.now
             }
         }
     }
+    
+    func startWarmup() {
+        if warmup != nil { return }
+
+        warmup = MatchWarmup(startedAt: Date.now)
+    }
 
     func startGame() {
-        let now = Date()
+        let now = Date.now
+        
+        if let warmup {
+            warmup.end()
+        }
 
         if latestSet == nil {
             addSet(startedAt: now)
@@ -386,6 +411,32 @@ struct MatchGameScore: Codable, Equatable {
     var timestamp: Date
 }
 
+@Model
+class MatchWarmup {
+    @Relationship(inverse: \Match.warmup)
+    var match: Match?
+    
+    var createdAt: Date = Date.now
+    var startedAt: Date = Date.now
+    var endedAt: Date?
+    
+    var hasEnded: Bool { endedAt != nil }
+    
+    init(
+        startedAt: Date = Date.now,
+        endedAt: Date? = nil
+    ) {
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.createdAt = Date.now
+    }
+    
+    func end() {
+        if hasEnded { return }
+        endedAt = Date.now
+    }
+}
+
 enum MatchTemplateColor: String, Codable {
     case green, yellow, indigo, purple, teal, blue, orange, pink
 
@@ -424,11 +475,13 @@ class MatchTemplate {
     
     var createdAt: Date = Date.now
     var lastUsedAt: Date?
+    var warmup: MatchWarmupRules = MatchWarmupRules.none
     var startWorkout: Bool = true
 
     init(
         _ sport: MatchSport, name: String, color: MatchTemplateColor = .green,
         environment: MatchEnvironment = .indoor, scoring: MatchScoringRules,
+        warmup: MatchWarmupRules = .none,
         startWorkout: Bool = true
     ) {
         self.sport = sport
@@ -437,6 +490,7 @@ class MatchTemplate {
         self.environment = environment
         self._scoring = scoring
         self.createdAt = Date()
+        self.warmup = warmup
         self.startWorkout = startWorkout
     }
 
@@ -447,6 +501,11 @@ class MatchTemplate {
 
         return Match(from: self, markAsUsed: markAsUsed)
     }
+}
+
+enum MatchWarmupRules: Codable, Equatable {
+    case none
+    case open
 }
 
 struct MatchScoringRules: Codable, Equatable {

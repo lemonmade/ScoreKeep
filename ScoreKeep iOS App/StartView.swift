@@ -122,5 +122,5 @@ struct StartView: View {
 
 #Preview {
     StartView()
-        .modelContainer(for: Item.self, inMemory: true)
+        .modelContainer(MatchModelContainer().testModelContainer())
 }
