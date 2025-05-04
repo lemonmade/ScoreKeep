@@ -27,6 +27,8 @@ struct ActiveMatchControlsView: View {
                 if workoutManager.workout != nil {
                     ActiveMatchWorkoutSectionView()
                 }
+                
+                ActiveMatchRulesSummaryView()
 
                 HStack {
                     UpdateSettingsForActiveMatchButtonView()
@@ -35,6 +37,37 @@ struct ActiveMatchControlsView: View {
                 }
             }
         }
+    }
+}
+
+struct ActiveMatchRulesSummaryView: View {
+    @Environment(Match.self) private var match
+    
+    private var systemImage: String {
+        switch match.sport {
+        case .ultimate: return "figure.disc.sports"
+        case .volleyball: return "figure.volleyball"
+        }
+    }
+    
+    private var fallbackName: String {
+        switch match.sport {
+        case .ultimate: return "Ultimate frisbee"
+        case .volleyball: return "Volleyball"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(match.template?.name ?? fallbackName, systemImage: systemImage)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(.subheadline)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(12)
+        .background(.quaternary)
+        .cornerRadius(12)
     }
 }
 
@@ -56,16 +89,9 @@ struct ActiveMatchWorkoutSectionView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "figure.volleyball")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 16, height: 16)
-                    
-                    Text("Workout")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .font(.subheadline)
+                Text("Workout")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.subheadline)
                 
                 HStack(spacing: 2) {
                     if let heartRate = workoutManager.workout?.heartRate {

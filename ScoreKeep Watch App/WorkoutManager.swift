@@ -56,7 +56,11 @@ class WorkoutManager: NSObject {
     func startWorkout(match: Match) async {
         let configuration = HKWorkoutConfiguration()
 
-        configuration.activityType = .volleyball
+        configuration.activityType =
+            switch match.sport {
+            case .ultimate: .discSports
+            case .volleyball: .volleyball
+            }
 
         configuration.locationType =
             switch match.environment {

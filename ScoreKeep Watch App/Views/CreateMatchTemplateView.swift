@@ -14,6 +14,7 @@ struct CreateMatchTemplateView: View {
     @Environment(NavigationManager.self) private var navigation
     
     @State private var name: String
+    @State private var sport: MatchSport
     @State private var environment: MatchEnvironment
     @State private var color: MatchTemplateColor
     
@@ -36,6 +37,7 @@ struct CreateMatchTemplateView: View {
     init(template: MatchTemplate? = nil) {
         self.template = template
         self.name = template?.name ?? "Volleyball"
+        self.sport = template?.sport ?? .volleyball
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
         self.setsWinAt = template?.scoring.setsWinAt ?? 1
@@ -62,9 +64,16 @@ struct CreateMatchTemplateView: View {
             Section {
                 TextField("Name", text: $name)
                 
+                Picker("Sport", selection: $sport) {
+                    Label("Ultimate", systemImage: "circle.circle.fill")
+                        .tag(MatchSport.ultimate)
+
+                    Label("Volleyball", systemImage: "volleyball.fill")
+                        .tag(MatchSport.volleyball)
+                }
+                
                 MatchTemplateColorPickerView(selected: $color)
                     .listRowBackground(EmptyView())
-//                    .listRowInsets(EdgeInsets())
                 
                 Picker("Environment", selection: $environment) {
                     Text("Indoor").tag(MatchEnvironment.indoor)
@@ -75,7 +84,7 @@ struct CreateMatchTemplateView: View {
             
             Section(header: Text("Sets")) {
                 VStack {
-                    Text("Best of")
+                    Text("First to")
                     Stepper(value: $setsWinAt, in: 1...50, step: 1) {
                         HStack(spacing: 0) {
                             Text("\(setsWinAt)")
@@ -96,7 +105,7 @@ struct CreateMatchTemplateView: View {
 
             Section(header: Text("Games")) {
                 VStack {
-                    Text("Best of")
+                    Text("First to")
                     Stepper(value: $gamesWinAt, in: 1...50, step: 1) {
                         HStack(spacing: 0) {
                             Text("\(gamesWinAt)")
@@ -275,6 +284,10 @@ struct CreateMatchTemplateView: View {
         
         if template.name != name {
             template.name = name
+        }
+        
+        if template.sport != sport {
+            template.sport = sport
         }
         
         if template.color != color {

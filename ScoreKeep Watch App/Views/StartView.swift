@@ -49,6 +49,23 @@ struct StartView: View {
             )
         )
     )
+    
+    private let ultimate = MatchTemplate(
+        .ultimate,
+        name: "Ultimate frisbee",
+        color: .purple,
+        environment: .outdoor,
+        scoring: MatchScoringRules(
+            setsWinAt: 1,
+            playItOut: true,
+            setScoring: MatchSetScoringRules(
+                gamesWinAt: 1,
+                gameScoring: MatchGameScoringRules(
+                    winScore: 15
+                )
+            )
+        )
+    )
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -63,6 +80,8 @@ struct StartView: View {
                     StartMatchNavigationLinkView(template: indoorVolleyball)
 
                     StartMatchNavigationLinkView(template: beachVolleyball)
+                    
+                    StartMatchNavigationLinkView(template: ultimate)
                 }
 
                 CreateMatchTemplateButtonView()
@@ -117,17 +136,27 @@ struct StartMatchNavigationLinkView: View {
                 ? "Best of \(template.scoring.setsMaximum) sets"
                 : "First to \(template.scoring.setsWinAt) sets"
         } else {
-            ofText =
-                template.scoring.setScoring.playItOut
-                ? "Best of \(template.scoring.setScoring.gamesMaximum) games"
-                : "First to \(template.scoring.setScoring.gamesWinAt) games"
+            if template.scoring.setScoring.isMultiGame {
+                ofText = "Best of \(template.scoring.setScoring.gamesMaximum) games"
+            }
         }
 
         return "\(ofText)"
     }
-    
+
     private var detailSecondaryText: String {
-        return "Games to \(template.scoring.setScoring.gameScoring.winScore) points"
+        if template.scoring.setScoring.isMultiGame {
+            return "Games to \(template.scoring.setScoring.gameScoring.winScore) points"
+        }
+
+        return "First to \(template.scoring.setScoring.gameScoring.winScore) points"
+    }
+    
+    private var systemImage: String {
+        switch template.sport {
+        case .ultimate: return "figure.disc.sports"
+        case .volleyball: return "figure.volleyball"
+        }
     }
 
     var body: some View {
@@ -135,7 +164,7 @@ struct StartMatchNavigationLinkView: View {
             value: NavigationLocation.ActiveMatch(template: template)
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: "figure.volleyball")
+                Image(systemName: systemImage)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 42, height: 42)
@@ -145,9 +174,13 @@ struct StartMatchNavigationLinkView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(template.name)
                         .font(.headline)
-                    Text(detailText)
-                        .font(.caption2)
-                        .foregroundStyle(.tint)
+                    
+                    if !detailText.isEmpty {
+                        Text(detailText)
+                            .font(.caption2)
+                            .foregroundStyle(.tint)
+                    }
+
                     Text(detailSecondaryText)
                         .font(.caption2)
                         .foregroundStyle(.tint)

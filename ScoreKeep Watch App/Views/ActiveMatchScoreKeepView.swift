@@ -78,7 +78,7 @@ struct GameScoreTeamButtonView: View {
         Button(action: {
             match.score(team)
         }) {
-            GameScoreTeamScoreView(team: team, game: game, size: size)
+            GameScoreTeamScoreView(match: match, team: team, game: game, size: size)
                 .foregroundStyle(keyColor)
         }
         .frame(width: size.width, height: size.height)
@@ -121,6 +121,7 @@ struct CustomButtonStyle: ButtonStyle {
 }
 
 struct GameScoreTeamScoreView: View {
+    var match: Match
     var team: MatchTeam
     var game: MatchGame
     var size: CGSize
@@ -136,30 +137,7 @@ struct GameScoreTeamScoreView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
-                if team == game.nextServe {
-                    HStack(alignment: .bottom, spacing: 2) {
-                        Image(systemName: "volleyball.fill")
-                            .resizable()
-                            .frame(width: 24, height: 24)
-                        
-                        let streak = game.scoreStreakFor(team)
-                        if streak > 1 {
-//                            VStack(alignment: .center, spacing: 2) {
-                                Text("\(streak)")
-                                    .font(.system(size: 14,  weight: .semibold, design: .rounded))
-                                    .frame(height: 14)
-                                
-//                                Image(systemName: "repeat")
-//                                    .resizable()
-//                                    .frame(width: 8, height: 8)
-//                                    .fontWeight(.semibold)
-//                            }
-//                            .animation(.none, value: streak)
-                        }
-                    }
-                } else {
-                    Spacer().frame(height: 24)
-                }
+                GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
                 
                 Text(team == .us ? "Us" : "Them")
                     .textCase(.uppercase)
@@ -191,6 +169,38 @@ struct GameScoreTeamScoreView: View {
         .contentShape(.rect)
         // Fill the container
         .frame(width: size.width, height: size.height, alignment: .trailing)
+    }
+}
+
+struct GameScoreTeamServeIndicatorView: View {
+    var team: MatchTeam
+    var match: Match
+    var game: MatchGame
+    
+    var systemName: String {
+        switch match.sport {
+        case .ultimate: return "circle.circle.fill"
+        case .volleyball: return "volleyball.fill"
+        }
+    }
+    
+    var body: some View {
+        if team == game.nextServe {
+            HStack(alignment: .bottom, spacing: 2) {
+                Image(systemName: systemName)
+                    .resizable()
+                    .frame(width: 24, height: 24)
+                
+                let streak = game.scoreStreakFor(team)
+                if streak > 1 {
+                    Text("\(streak)")
+                        .font(.system(size: 14,  weight: .semibold, design: .rounded))
+                        .frame(height: 14)
+                }
+            }
+        } else {
+            Spacer().frame(height: 24)
+        }
     }
 }
 
