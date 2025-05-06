@@ -16,11 +16,11 @@ struct ActiveMatchControlsView: View {
             VStack(spacing: 16) {
                 ActiveMatchControlsSummaryView()
                 
-                if match.latestGame?.hasWinner == true {
+                if match.hasEnded || match.latestGame?.hasWinner == true {
                     if match.hasMoreGames {
                         StartNextGameForActiveMatchButtonView()
                     } else {
-                        EndActiveMatchButtonView(style: .primary)
+                        EndActiveMatchButtonView()
                     }
                 }
                 
@@ -28,19 +28,17 @@ struct ActiveMatchControlsView: View {
                     ActiveMatchWorkoutSectionView()
                 }
                 
-                ActiveMatchRulesSummaryView()
-
-                HStack {
-                    UpdateSettingsForActiveMatchButtonView()
-
-                    EndActiveMatchButtonView(style: .grid)
+                ActiveMatchRulesSummaryButtonView()
+                
+                if !match.hasEnded {
+                    EndActiveMatchButtonView()
                 }
             }
         }
     }
 }
 
-struct ActiveMatchRulesSummaryView: View {
+struct ActiveMatchRulesSummaryButtonView: View {
     @Environment(Match.self) private var match
     
     private var systemImage: String {
@@ -60,16 +58,32 @@ struct ActiveMatchRulesSummaryView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label(match.template?.name ?? fallbackName, systemImage: systemImage)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.subheadline)
+        Button {
+            print("TODO: edit settings")
+        } label: {
+            VStack(alignment: .leading, spacing: 4) {
+                // TODO: would be nice to have an interface shared between `Match` and `MatchTemplate` that simplified this element...
+                MatchRulesDetailView(
+                    name: match.template?.name ?? fallbackName,
+                    sport: match.sport,
+                    scoring: match.scoring,
+                    includeImage: true
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background {
+                if let template = match.template {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(template.color.color.opacity(0.2))
+                } else {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.quaternary)
+                }
+            }
+            .tint(match.template?.color.color ?? .secondary)
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-        .padding(12)
-        .background(.quaternary)
-        .cornerRadius(12)
+        .buttonStyle(.plain)
     }
 }
 
@@ -276,63 +290,19 @@ struct StartNextGameForActiveMatchButtonView: View {
     }
 }
 
-struct UpdateSettingsForActiveMatchButtonView: View {
-    @Environment(NavigationManager.self) private var navigation
-    @Environment(Match.self) private var match
-
-    var body: some View {
-        let isDisabled = match.hasEnded
-
-        VStack {
-            Button {
-                print("TODO update settings")
-            } label: {
-                Image(systemName: "gearshape")
-            }
-            .font(.title2)
-            .fontWeight(.medium)
-            .disabled(isDisabled)
-
-            Text("Settings")
-                .foregroundStyle(isDisabled ? .gray : .primary)
-        }
-    }
-}
-
 struct EndActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
     @Environment(Match.self) private var match
     @Environment(WorkoutManager.self) private var workoutManager
     @Environment(\.modelContext) private var context
-    
-    enum Style {
-        case grid, primary
-    }
-    
-    var style: Style
 
     var body: some View {
-        if style == .grid {
-            VStack {
-                Button {
-                    endMatch()
-                } label: {
-                    Image(systemName: "xmark")
-                }
-                .tint(.red)
-                .font(.title2)
-                .fontWeight(.medium)
-
-                Text("End")
-            }
-        } else {
-            Button {
-                endMatch()
-            } label: {
-                Text("End match")
-            }
-            .tint(.green)
+        Button {
+            endMatch()
+        } label: {
+            Text("End match")
         }
+        .tint(match.hasEnded ? .green : .red)
     }
     
     private func endMatch() {
@@ -350,20 +320,23 @@ struct EndActiveMatchButtonView: View {
         .environment(WorkoutManager())
         .environment(
             Match(
-                .volleyball,
-                scoring: MatchScoringRules(
-                    setsWinAt: 5,
-                    setScoring: MatchSetScoringRules(
-                        gamesWinAt: 5,
-                        gameScoring: MatchGameScoringRules(
-                            winScore: 10
+                from: MatchTemplate(
+                    .volleyball,
+                    name: "Indoor volleyball",
+                    scoring: MatchScoringRules(
+                        setsWinAt: 5,
+                        setScoring: MatchSetScoringRules(
+                            gamesWinAt: 5,
+                            gameScoring: MatchGameScoringRules(
+                                winScore: 10
+                            )
                         )
                     )
                 ),
                 sets: [
                     MatchSet(
                         games: [
-                            MatchGame(us: 10, them: 2)
+                            MatchGame(us: 9, them: 2)
                         ]
                     )
                 ]

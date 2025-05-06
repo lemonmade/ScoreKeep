@@ -144,31 +144,6 @@ struct StartMatchNavigationLinkView: View {
     
     @Environment(NavigationManager.self) private var navigation
 
-    private var detailText: String {
-        var ofText: String = ""
-        
-        if template.scoring.isMultiSet {
-            ofText =
-                template.scoring.playItOut
-                ? "Best of \(template.scoring.setsMaximum) sets"
-                : "First to \(template.scoring.setsWinAt) sets"
-        } else {
-            if template.scoring.setScoring.isMultiGame {
-                ofText = "Best of \(template.scoring.setScoring.gamesMaximum) games"
-            }
-        }
-
-        return "\(ofText)"
-    }
-
-    private var detailSecondaryText: String {
-        if template.scoring.setScoring.isMultiGame {
-            return "Games to \(template.scoring.setScoring.gameScoring.winScore) points"
-        }
-
-        return "First to \(template.scoring.setScoring.gameScoring.winScore) points"
-    }
-    
     private var systemImage: String {
         switch template.sport {
         case .squash: return "figure.squash"
@@ -189,20 +164,11 @@ struct StartMatchNavigationLinkView: View {
                     .fontWeight(.bold)
                     .foregroundStyle(.tint)
 
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(template.name)
-                        .font(.headline)
-                    
-                    if !detailText.isEmpty {
-                        Text(detailText)
-                            .font(.caption2)
-                            .foregroundStyle(.tint)
-                    }
-
-                    Text(detailSecondaryText)
-                        .font(.caption2)
-                        .foregroundStyle(.tint)
-                }
+                MatchRulesDetailView(
+                    name: template.name,
+                    sport: template.sport,
+                    scoring: template.scoring
+                )
             }
 
         }

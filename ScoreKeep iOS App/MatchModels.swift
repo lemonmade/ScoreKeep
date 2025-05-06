@@ -121,19 +121,20 @@ class Match {
         return "\((latestSet?.games ?? []).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
     }
 
-    init(from template: MatchTemplate, markAsUsed: Bool = true) {
+    init(from template: MatchTemplate, markAsUsed: Bool = true, sets: [MatchSet] = [MatchSet()], startedAt: Date = .now, endedAt: Date? = nil) {
         self.template = markAsUsed ? template : nil
         self.sport = template.sport
         self.environment = template.environment
         self._scoring = template.scoring
-        self._sets = [MatchSet()]
-        self.startedAt = Date()
+        self._sets = sets
+        self.startedAt = startedAt
+        self.endedAt = endedAt
     }
 
     init(
         _ sport: MatchSport = .volleyball,
         environment: MatchEnvironment = .indoor, scoring: MatchScoringRules,
-        sets: [MatchSet] = [MatchSet()], startedAt: Date = Date(),
+        sets: [MatchSet] = [MatchSet()], startedAt: Date = .now,
         endedAt: Date? = nil
     ) {
         self.sport = sport
@@ -559,6 +560,27 @@ struct MatchScoringRules: Codable, Equatable {
     var isMultiSet: Bool {
         return setsWinAt > 1
     }
+    
+//    var primaryDetailText: String {
+//        if isMultiSet {
+//            
+//        }
+//        
+//        var ofText: String = ""
+//        
+//        if scoring.isMultiSet {
+//            ofText =
+//                scoring.playItOut
+//                ? "Best of \(scoring.setsMaximum) sets"
+//                : "First to \(scoring.setsWinAt) sets"
+//        } else {
+//            if scoring.setScoring.isMultiGame {
+//                ofText = "Best of \(scoring.setScoring.gamesMaximum) games"
+//            }
+//        }
+//
+//        return "\(ofText)"
+//    }
 
     init(
         setsWinAt: Int, setsMaximum: Int? = nil, playItOut: Bool = false,

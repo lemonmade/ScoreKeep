@@ -34,7 +34,6 @@ struct StartView: View {
                             number: 1,
                             us: 25,
                             them: 22,
-                            scores: [],
                             startedAt: .now.advanced(by: -100),
                             endedAt: .now
                         )
@@ -101,7 +100,6 @@ struct StartView: View {
                                 number: 1,
                                 us: 25,
                                 them: 23,
-                                scores: [],
                                 serve: .us,
                                 startedAt: startedAt,
                                 endedAt: endedAt
