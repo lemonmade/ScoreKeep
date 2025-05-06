@@ -58,6 +58,7 @@ class WorkoutManager: NSObject {
 
         configuration.activityType =
             switch match.sport {
+            case .squash: .squash
             case .ultimate: .discSports
             case .volleyball: .volleyball
             }

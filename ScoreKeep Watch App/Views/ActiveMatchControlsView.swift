@@ -45,6 +45,7 @@ struct ActiveMatchRulesSummaryView: View {
     
     private var systemImage: String {
         switch match.sport {
+        case .squash: return "figure.squash"
         case .ultimate: return "figure.disc.sports"
         case .volleyball: return "figure.volleyball"
         }
@@ -52,6 +53,7 @@ struct ActiveMatchRulesSummaryView: View {
     
     private var fallbackName: String {
         switch match.sport {
+        case .squash: return "Squash"
         case .ultimate: return "Ultimate frisbee"
         case .volleyball: return "Volleyball"
         }

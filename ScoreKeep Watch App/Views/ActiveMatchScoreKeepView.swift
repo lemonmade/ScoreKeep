@@ -179,6 +179,7 @@ struct GameScoreTeamServeIndicatorView: View {
     
     var systemName: String {
         switch match.sport {
+        case .squash: return "circle.fill"
         case .ultimate: return "circle.circle.fill"
         case .volleyball: return "volleyball.fill"
         }

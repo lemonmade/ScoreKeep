@@ -13,6 +13,7 @@ import CloudKit
 enum MatchSport: String, Codable {
     case volleyball
     case ultimate
+    case squash
 }
 
 enum MatchTeam: String, Codable {

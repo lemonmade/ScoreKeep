@@ -65,6 +65,9 @@ struct CreateMatchTemplateView: View {
                 TextField("Name", text: $name)
                 
                 Picker("Sport", selection: $sport) {
+                    Label("Squash", systemImage: "circle.fill")
+                        .tag(MatchSport.squash)
+
                     Label("Ultimate", systemImage: "circle.circle.fill")
                         .tag(MatchSport.ultimate)
 

@@ -31,7 +31,7 @@ struct ActiveMatchView: View {
                 
                 // TODO: we currently start the first game, even if there is a warmup.
                 // we should only be creating the game after the warmup has ended
-                if (template.startWorkout) {
+                if (template.warmup != .none) {
                     match.startWarmup()
                 }
                 

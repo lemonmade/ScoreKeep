@@ -57,12 +57,27 @@ struct StartView: View {
         environment: .outdoor,
         scoring: MatchScoringRules(
             setsWinAt: 1,
-            playItOut: true,
             setScoring: MatchSetScoringRules(
                 gamesWinAt: 1,
                 gameScoring: MatchGameScoringRules(
                     winScore: 15
                 )
+            )
+        )
+    )
+    
+    private let squash = MatchTemplate(
+        .squash,
+        name: "Squash",
+        color: .pink,
+        environment: .outdoor,
+        scoring: MatchScoringRules(
+            setsWinAt: 1,
+            setScoring: MatchSetScoringRules(
+                gamesWinAt: 3,
+                gameScoring: MatchGameScoringRules(
+                    winScore: 11
+                ),
             )
         )
     )
@@ -82,6 +97,8 @@ struct StartView: View {
                     StartMatchNavigationLinkView(template: beachVolleyball)
                     
                     StartMatchNavigationLinkView(template: ultimate)
+                    
+                    StartMatchNavigationLinkView(template: squash)
                 }
 
                 CreateMatchTemplateButtonView()
@@ -154,6 +171,7 @@ struct StartMatchNavigationLinkView: View {
     
     private var systemImage: String {
         switch template.sport {
+        case .squash: return "figure.squash"
         case .ultimate: return "figure.disc.sports"
         case .volleyball: return "figure.volleyball"
         }
