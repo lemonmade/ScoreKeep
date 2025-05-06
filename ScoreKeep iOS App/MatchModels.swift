@@ -155,12 +155,12 @@ class Match {
         }.joined(separator: " | ")
     }
 
-    func score(_ team: MatchTeam) {
+    func scorePoint(_ team: MatchTeam) {
         guard let set = latestSet, !set.hasEnded, let game = set.latestGame,
             !game.hasEnded
         else { return }
 
-        game.score(team)
+        game.scorePoint(team)
 
         if scoring.setScoring.gameScoring.hasWinner(game) {
             game.endedAt = Date.now
@@ -278,6 +278,8 @@ class MatchSet {
     var isTied: Bool {
         gamesUs == gamesThem
     }
+    
+    var isMultiGame: Bool { match?.scoring.setScoring.isMultiGame ?? true }
 
     init(
         number: Int = 1, games: [MatchGame]? = nil,
@@ -313,9 +315,6 @@ class MatchGame {
     
     var number: Int = 1
 
-    var scoreUs: Int = 0
-    var scoreThem: Int = 0
-
     var createdAt: Date = Date.now
     var startedAt: Date = Date.now
     var endedAt: Date?
@@ -326,6 +325,9 @@ class MatchGame {
         
         return scores.sorted { $0.timestamp < $1.timestamp }
     }
+    
+    var scoreUs: Int { _scores?.reduce(0) { $0 + $1.us } ?? 0 }
+    var scoreThem: Int { _scores?.reduce(0) { $0 + $1.them } ?? 0 }
 
     var hasEnded: Bool { endedAt != nil }
 
@@ -348,44 +350,54 @@ class MatchGame {
     var nextServe: MatchTeam? {
         if hasEnded { return nil }
 
-        if let lastScore = scores.last {
-            return lastScore.team
+        if let lastScore = scores.last(where: { $0.source == .point }) {
+            return lastScore.us > lastScore.them ? .us : .them
         }
 
         return initialServe
     }
 
     init(
-        number: Int = 1, us scoreUs: Int = 0, them scoreThem: Int = 0,
-        scores: [MatchGameScore] = [], serve: MatchTeam? = nil,
-        startedAt: Date = Date(), endedAt: Date? = nil
+        number: Int = 1,
+        scores: [MatchGameScore] = [],
+        serve: MatchTeam? = nil,
+        startedAt: Date = .now,
+        endedAt: Date? = nil
     ) {
         self.number = number
-        self.scoreUs = scoreUs
-        self.scoreThem = scoreThem
         self._scores = scores
         self.startedAt = startedAt
         self.endedAt = endedAt
-        self.createdAt = Date()
+        self.createdAt = .now
+        self.initialServe = serve
+    }
+    
+    init(
+        number: Int = 1,
+        us: Int,
+        them: Int,
+        serve: MatchTeam? = nil,
+        startedAt: Date = .now,
+        endedAt: Date? = nil
+    ) {
+        // Append an amount of `MatchTeam`s to an array, according to the `us` and `them` values
+        let usScores: [MatchGameScore] = Array(repeating: MatchGameScore(.us, at: startedAt), count: us)
+        let themScores: [MatchGameScore] = Array(repeating: MatchGameScore(.them, at: startedAt), count: them)
+        
+        self._scores = (usScores + themScores).shuffled()
+     
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.createdAt = .now
         self.initialServe = serve
     }
 
-    func score(_ team: MatchTeam, to: Int? = nil, at timestamp: Date = Date()) {
-        let currentScore = scoreFor(team)
-        let finalTo = to ?? currentScore + 1
-
-        if team == .us {
-            self.scoreUs = finalTo
-        } else {
-            self.scoreThem = finalTo
-        }
-        
+    func scorePoint(_ team: MatchTeam, at timestamp: Date = .now) {
         var scores = self._scores ?? []
-        scores.append(
-            MatchGameScore(
-                team: team, change: finalTo - currentScore, total: finalTo,
-                timestamp: timestamp)
-        )
+        
+        let score = MatchGameScore(team, at: timestamp);
+        
+        scores.append(score)
         _scores = scores
     }
 
@@ -397,19 +409,46 @@ class MatchGame {
         var streak = 0
         
         for score in scores.sorted(by: { $0.timestamp > $1.timestamp }) {
-            if score.team != team { break }
-            streak += score.change
+            if score.source != .point || score.adjustment(team) < 1 { break }
+            streak += 1
         }
         
         return streak
     }
 }
 
+enum MatchGameScoreSource: String, Codable {
+    case point, edit
+}
+
 struct MatchGameScore: Codable, Equatable {
-    var team: MatchTeam
-    var change: Int
-    var total: Int
+    var us: Int
+    var them: Int
     var timestamp: Date
+    var source: MatchGameScoreSource
+    
+    init(us: Int = 0, them: Int = 0, at timestamp: Date = .now, source: MatchGameScoreSource = .point) {
+        self.us = us
+        self.them = them
+        self.timestamp = timestamp
+        self.source = source
+    }
+    
+    init(_ team: MatchTeam, at timestamp: Date = .now) {
+        self.us = team == .us ? 1 : 0
+        self.them = team == .them ? 1 : 0
+        self.timestamp = timestamp
+        self.source = .point
+    }
+    
+    func adjustment(_ team: MatchTeam) -> Int {
+        switch team {
+        case .us:
+            return us
+        case .them:
+            return them
+        }
+    }
 }
 
 @Model

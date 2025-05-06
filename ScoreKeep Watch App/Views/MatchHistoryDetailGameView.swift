@@ -80,9 +80,8 @@ struct GameScoreChartView: View {
         
         for score in game.scores {
             index += 1
-
-            if score.team == .us { scoreUs = score.total }
-            else { scoreThem = score.total }
+            scoreUs += score.us
+            scoreThem += score.them
             
             data.append(
                 MatchHistoryGameScoreData(
@@ -153,99 +152,22 @@ struct GameScoreChartView: View {
         MatchHistoryDetailGameView(
             game: MatchGame(
                 number: 1,
-                us: 5,
-                them: 10,
                 scores: [
-                    MatchGameScore(
-                        team: .us,
-                        change: 1,
-                        total: 1,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .us,
-                        change: 1,
-                        total: 2,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 1,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 2,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 3,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 4,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 5,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 6,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .us,
-                        change: 1,
-                        total: 3,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 7,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 8,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .us,
-                        change: 1,
-                        total: 4,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .us,
-                        change: 1,
-                        total: 5,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 9,
-                        timestamp: Date()
-                    ),
-                    MatchGameScore(
-                        team: .them,
-                        change: 1,
-                        total: 10,
-                        timestamp: Date()
-                    ),
+                    MatchGameScore(.us),
+                    MatchGameScore(.us),
+                    MatchGameScore(.them),
+                    MatchGameScore(.them),
+                    MatchGameScore(.them),
+                    MatchGameScore(.them),
+                    MatchGameScore(.them),
+                    MatchGameScore(.them),
+                    MatchGameScore(.us),
+                    MatchGameScore(.them),
+                    MatchGameScore(.them),
+                    MatchGameScore(.us),
+                    MatchGameScore(.us),
+                    MatchGameScore(.them),
+                    MatchGameScore(.them),
                 ],
                 startedAt: Date.now.addingTimeInterval(-20 * 60),
                 endedAt: Date.now

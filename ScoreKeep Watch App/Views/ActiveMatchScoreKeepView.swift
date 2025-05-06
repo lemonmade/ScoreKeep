@@ -76,7 +76,7 @@ struct GameScoreTeamButtonView: View {
 
     var body: some View {
         Button(action: {
-            match.score(team)
+            match.scorePoint(team)
         }) {
             GameScoreTeamScoreView(match: match, team: team, game: game, size: size)
                 .foregroundStyle(keyColor)
