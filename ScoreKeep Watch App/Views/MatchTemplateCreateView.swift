@@ -1,5 +1,5 @@
 //
-//  CreateMatchTemplateView.swift
+//  MatchTemplateCreateView.swift
 //  ScoreKeep Watch App
 //
 //  Created by Chris Sauve on 2024-12-17.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct CreateMatchTemplateView: View {
+struct MatchTemplateCreateView: View {
     var template: MatchTemplate? = nil
 
     @Environment(\.modelContext) private var context
@@ -427,7 +427,7 @@ struct MatchTemplateColorPickerSheetView: View {
 
 #Preview {
     NavigationView {
-        CreateMatchTemplateView()
+        MatchTemplateCreateView()
             .environment(NavigationManager())
             .environment(
                 Match(

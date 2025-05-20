@@ -125,7 +125,7 @@ struct StartView: View {
             }
             .navigationDestination(for: NavigationLocation.TemplateCreate.self)
             { createMatchTemplateDestination in
-                CreateMatchTemplateView(template: createMatchTemplateDestination.template)
+                MatchTemplateCreateView(template: createMatchTemplateDestination.template)
                     .environment(navigation)
             }
             .environment(navigation)
