@@ -200,7 +200,8 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
     }
 
     private var scoreMinWidth: CGFloat {
-        match.scoring.setScoring.gameScoring.maximumScore >= 10 ? 38 : 0
+        let maximum = match.scoring.setScoring.gameScoring.maximum ?? 10
+        return maximum >= 10 ? 38 : 0
     }
 
     var body: some View {
@@ -264,9 +265,7 @@ struct StartNextGameForActiveMatchButtonView: View {
     }
     
     private var nextGameNumber: Int {
-        return [
-            (match.latestGame?.number ?? 0) + 1, match.scoring.setScoring.gamesMaximum,
-        ].min()!
+        return (match.latestGame?.number ?? 0) + 1
     }
 
     var body: some View {
@@ -324,11 +323,11 @@ struct EndActiveMatchButtonView: View {
                     .volleyball,
                     name: "Indoor volleyball",
                     scoring: MatchScoringRules(
-                        setsWinAt: 5,
+                        winAt: 5,
                         setScoring: MatchSetScoringRules(
-                            gamesWinAt: 5,
+                            winAt: 6,
                             gameScoring: MatchGameScoringRules(
-                                winScore: 10
+                                winAt: 10
                             )
                         )
                     )

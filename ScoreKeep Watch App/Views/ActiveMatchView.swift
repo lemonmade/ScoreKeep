@@ -92,11 +92,11 @@ struct ActiveMatchTabView: View {
             name: "Indoor volleyball",
             environment: .indoor,
             scoring: MatchScoringRules(
-                setsWinAt: 3,
+                winAt: 3,
                 setScoring: MatchSetScoringRules(
-                    gamesWinAt: 6,
+                    winAt: 6,
                     gameScoring: MatchGameScoringRules(
-                        winScore: 25
+                        winAt: 25
                     )
                 )
             )

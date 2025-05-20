@@ -40,12 +40,12 @@ struct CreateMatchTemplateView: View {
         self.sport = template?.sport ?? .volleyball
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
-        self.setsWinAt = template?.scoring.setsWinAt ?? 1
+        self.setsWinAt = template?.scoring.winAt ?? 1
         self.setsPlayItOut = template?.scoring.playItOut ?? false
-        self.gamesWinAt = template?.scoring.setScoring.gamesWinAt ?? 3
+        self.gamesWinAt = template?.scoring.setScoring.winAt ?? 3
         self.gamesPlayItOut = template?.scoring.setScoring.playItOut ?? false
-        self.gameScoringWinScore = template?.scoring.setScoring.gameScoring.winScore ?? 25
-        self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.maximumScore ?? 27
+        self.gameScoringWinScore = template?.scoring.setScoring.gameScoring.winAt ?? 25
+        self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.winAt ?? 27
         self.gameScoringWinBy = template?.scoring.setScoring.gameScoring.winBy ?? 2
         self.navigationTitle = template == nil ? "New match" : template!.name
         
@@ -262,17 +262,19 @@ struct CreateMatchTemplateView: View {
     
     private func asScoringRules() -> MatchScoringRules {
         return MatchScoringRules(
-            setsWinAt: setsWinAt,
-            setsMaximum: (setsWinAt * 2) - 1,
+            winAt: setsWinAt,
+            winBy: 1,
+            maximum: setsWinAt,
             playItOut: setsPlayItOut,
             setScoring: MatchSetScoringRules(
-                gamesWinAt: gamesWinAt,
-                gamesMaximum: (gamesWinAt * 2) - 1,
+                winAt: gamesWinAt,
+                winBy: 1,
+                maximum: gamesWinAt,
                 playItOut: gamesPlayItOut,
                 gameScoring: MatchGameScoringRules(
-                    winScore: gameScoringWinScore,
-                    maximumScore: gameScoringMaximumScore,
-                    winBy: gameScoringWinBy
+                    winAt: gameScoringWinScore,
+                    winBy: gameScoringWinBy,
+                    maximum: gameScoringMaximumScore
                 )
             )
         )
@@ -431,11 +433,11 @@ struct MatchTemplateColorPickerSheetView: View {
                 Match(
                     .volleyball,
                     scoring: MatchScoringRules(
-                        setsWinAt: 5,
+                        winAt: 5,
                         setScoring: MatchSetScoringRules(
-                            gamesWinAt: 5,
+                            winAt: 6,
                             gameScoring: MatchGameScoringRules(
-                                winScore: 25
+                                winAt: 25
                             )
                         )
                     )

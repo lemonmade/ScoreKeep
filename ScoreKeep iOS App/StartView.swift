@@ -18,11 +18,11 @@ struct StartView: View {
             .volleyball,
             environment: .indoor,
             scoring: MatchScoringRules(
-                setsWinAt: 1,
+                winAt: 1,
                 setScoring: MatchSetScoringRules(
-                    gamesWinAt: 3,
+                    winAt: 3,
                     gameScoring: MatchGameScoringRules(
-                        winScore: 25
+                        winAt: 25
                     )
                 )
             ),
@@ -80,14 +80,11 @@ struct StartView: View {
                 .volleyball,
                 environment: .indoor,
                 scoring: MatchScoringRules(
-                    setsWinAt: 1,
-                    setsMaximum: 1,
-                    playItOut: true,
+                    winAt: 1,
                     setScoring: MatchSetScoringRules(
-                        gamesWinAt: 1,
+                        winAt: 1,
                         gameScoring: MatchGameScoringRules(
-                            winScore: 25,
-                            maximumScore: 25,
+                            winAt: 25,
                             winBy: 1
                         )
                     )

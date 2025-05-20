@@ -351,11 +351,11 @@ struct MatchSummaryScoreTableBackgroundView: View {
         match: Match(
             .volleyball,
             scoring: MatchScoringRules(
-                setsWinAt: 1,
+                winAt: 1,
                 setScoring: MatchSetScoringRules(
-                    gamesWinAt: 2,
+                    winAt: 2,
                     gameScoring: MatchGameScoringRules(
-                        winScore: 10
+                        winAt: 10
                     )
                 )
             ),

@@ -101,28 +101,6 @@ struct GameScoreChartView: View {
             )
         }
         
-        if scoreUs != game.scoreUs || scoreThem != game.scoreThem {
-            index += 1
-            let lastScore = data.last!
-            
-            data.append(
-                MatchHistoryGameScoreData(
-                    score: game.scoreUs,
-                    team: "Us",
-                    index: index,
-                    timestamp: game.endedAt ?? lastScore.timestamp
-                )
-            )
-            data.append(
-                MatchHistoryGameScoreData(
-                    score: game.scoreThem,
-                    team: "Them",
-                    index: index,
-                    timestamp: game.endedAt ?? lastScore.timestamp
-                )
-            )
-        }
-        
         return data
     }
     

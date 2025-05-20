@@ -32,11 +32,11 @@ struct ActiveMatchMainView: View {
             Match(
                 .volleyball,
                 scoring: MatchScoringRules(
-                    setsWinAt: 5,
+                    winAt: 5,
                     setScoring: MatchSetScoringRules(
-                        gamesWinAt: 5,
+                        winAt: 6,
                         gameScoring: MatchGameScoringRules(
-                            winScore: 25
+                            winAt: 25
                         )
                     )
                 )

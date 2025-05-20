@@ -551,61 +551,57 @@ enum MatchWarmupRules: Codable, Equatable {
 }
 
 struct MatchScoringRules: Codable, Equatable {
-    var setsWinAt: Int
-    var setsMaximum: Int
-    var playItOut: Bool
+    var winAt: Int? = nil
+    var winBy: Int? = nil
+    var maximum: Int? = nil
+    var playItOut: Bool = false
     var setScoring: MatchSetScoringRules
-    var setTimebreakerScoring: MatchSetScoringRules
+    var lastSetScoring: MatchSetScoringRules? = nil
 
     var isMultiSet: Bool {
-        return setsWinAt > 1
+        guard let winAt else { return false }
+        return winAt > 1
     }
     
-//    var primaryDetailText: String {
-//        if isMultiSet {
-//            
-//        }
-//        
-//        var ofText: String = ""
-//        
-//        if scoring.isMultiSet {
-//            ofText =
-//                scoring.playItOut
-//                ? "Best of \(scoring.setsMaximum) sets"
-//                : "First to \(scoring.setsWinAt) sets"
-//        } else {
-//            if scoring.setScoring.isMultiGame {
-//                ofText = "Best of \(scoring.setScoring.gamesMaximum) games"
-//            }
-//        }
-//
-//        return "\(ofText)"
-//    }
+    var primaryLabel: String {
+        guard let winAt, let impliedMaximumSetNumber else { return "Open match" }
+        
+        if winAt == 1 {
+            return setScoring.primaryLabel
+        }
+        
+        if playItOut {
+            return "Best of \(impliedMaximumSetNumber) sets"
+        }
 
-    init(
-        setsWinAt: Int, setsMaximum: Int? = nil, playItOut: Bool = false,
-        setScoring: MatchSetScoringRules,
-        setTiebreakerScoring: MatchSetScoringRules? = nil
-    ) {
-        self.setsWinAt = setsWinAt
-        self.setsMaximum = setsMaximum ?? ((setsWinAt * 2) - 1)
-        self.playItOut = playItOut
-        self.setScoring = setScoring
-        self.setTimebreakerScoring = setTiebreakerScoring ?? setScoring
+        return "First to \(winAt) sets"
+    }
+
+    var secondaryLabel: String {
+        if winAt == nil { return "" }
+        
+        return setScoring.secondaryLabel
     }
 
     func checkForWinner(_ match: Match) -> MatchTeam? {
         if let winner = match.winner { return winner }
+        
+        guard let winAt else { return nil }
+        
+        let winBy = self.winBy ?? 1
+        
+        let setsUs = match.setsUs, setsThem = match.setsThem
 
-        let setsUs = match.setsUs
-        let setsThem = match.setsThem
-
-        if setsUs >= setsWinAt {
-            return .us
+        if setsUs >= winAt {
+            if (setsUs - setsThem >= winBy) || (maximum != nil && (setsUs >= maximum!)) {
+                return .us
+            }
         }
-
-        if setsThem >= setsWinAt {
-            return .them
+        
+        if setsThem >= winAt {
+            if (setsThem - setsUs >= winBy) || (maximum != nil && (setsThem >= maximum!)) {
+                return .them
+            }
         }
 
         return nil
@@ -616,81 +612,132 @@ struct MatchScoringRules: Codable, Equatable {
     }
 
     func canPlayAnotherSet(_ match: Match) -> Bool {
-        return playItOut ? (match.sets.count + 1) <= setsMaximum : !hasWinner(match)
+        if winAt == nil { return true }
+        
+        if hasWinner(match) && !playItOut { return false }
+        
+        guard let impliedMaximumSetNumber else { return true }
+        
+        return match.sets.count < impliedMaximumSetNumber
+    }
+    
+    private var impliedMaximumSetNumber: Int? {
+        if let maximum { return (maximum * 2) - 1 }
+        if let winAt { return (winAt * 2) - 1 }
+        return nil
     }
 }
 
 struct MatchSetScoringRules: Codable, Equatable {
-    var gamesWinAt: Int
-    var gamesMaximum: Int
-    var playItOut: Bool
+    var winAt: Int? = nil
+    var winBy: Int? = nil
+    var maximum: Int? = nil
+    var playItOut: Bool = false
     var gameScoring: MatchGameScoringRules
-    var gameTimebreakerScoring: MatchGameScoringRules
+    var lastGameScoring: MatchGameScoringRules? = nil
 
     var isMultiGame: Bool {
-        return gamesWinAt > 1
+        guard let winAt else { return false }
+        return winAt > 1
+    }
+    
+    var primaryLabel: String {
+        guard let winAt, let impliedMaximumGameNumber else { return "Open set" }
+        
+        if winAt == 1 {
+            return gameScoring.primaryLabel
+        }
+        
+        if playItOut {
+            return "Best of \(impliedMaximumGameNumber) games"
+        }
+        
+        return "First to \(winAt) games"
     }
 
-    init(
-        gamesWinAt: Int, gamesMaximum: Int? = nil, playItOut: Bool = false,
-        gameScoring: MatchGameScoringRules,
-        gameTimebreakerScoring: MatchGameScoringRules? = nil
-    ) {
-        self.gamesWinAt = gamesWinAt
-        self.gamesMaximum = gamesMaximum ?? ((gamesWinAt * 2) - 1)
-        self.playItOut = playItOut
-        self.gameScoring = gameScoring
-        self.gameTimebreakerScoring = gameTimebreakerScoring ?? gameScoring
+    var secondaryLabel: String {
+        guard let winAt, winAt > 1 else { return "" }
+        
+        guard let gamesWinAt = gameScoring.winAt else { return "Open games" }
+        
+        return "Games to \(gamesWinAt) points"
     }
 
     func checkForWinner(_ set: MatchSet) -> MatchTeam? {
         if let winner = set.winner { return winner }
+        
+        guard let winAt else { return nil }
+        
+        let winBy = self.winBy ?? 1
+        
+        let gamesUs = set.gamesUs, gamesThem = set.gamesThem
 
-        let gamesUs = set.gamesUs
-        let gamesThem = set.gamesThem
-
-        if gamesUs >= gamesWinAt {
-            return .us
+        if gamesUs >= winAt {
+            if (gamesUs - gamesThem >= winBy) || (maximum != nil && (gamesUs >= maximum!)) {
+                return .us
+            }
         }
-
-        if gamesThem >= gamesWinAt {
-            return .them
+        
+        if gamesThem >= winAt {
+            if (gamesThem - gamesUs >= winBy) || (maximum != nil && (gamesThem >= maximum!)) {
+                return .them
+            }
         }
 
         return nil
     }
 
-    func hasWinner(_ game: MatchSet) -> Bool {
-        checkForWinner(game) != nil
+    func hasWinner(_ set: MatchSet) -> Bool {
+        checkForWinner(set) != nil
     }
 
     func canPlayAnotherGame(_ set: MatchSet) -> Bool {
-        return playItOut
-            ? (set.games.count + 1) <= gamesMaximum : !hasWinner(set)
+        if winAt == nil { return true }
+        
+        print("winAt: \(winAt ?? -1), hasWinner: \(hasWinner(set)), playItOut: \(playItOut), impliedMaximumGameNumber: \(impliedMaximumGameNumber ?? -1)")
+        
+        if hasWinner(set) && !playItOut { return false }
+        
+        guard let impliedMaximumGameNumber else { return true }
+        
+        return set.games.count < impliedMaximumGameNumber
+    }
+    
+    private var impliedMaximumGameNumber: Int? {
+        if let maximum { return (maximum * 2) - 1 }
+        if let winAt { return (winAt * 2) - 1 }
+        return nil
     }
 }
 
 struct MatchGameScoringRules: Codable, Equatable {
-    var winScore: Int
-    var maximumScore: Int
-    var winBy: Int
-
-    init(winScore: Int, maximumScore: Int? = nil, winBy: Int = 1) {
-        self.winScore = winScore
-        self.maximumScore = maximumScore ?? winScore
-        self.winBy = winBy
+    var winAt: Int? = nil
+    var winBy: Int? = nil
+    var maximum: Int? = nil
+    
+    var primaryLabel: String {
+        guard let winAt else { return "Open game" }
+        
+        return "First to \(winAt) points"
     }
 
     func checkForWinner(_ game: MatchGame) -> MatchTeam? {
-        let scoreUs = game.scoreUs
-        let scoreThem = game.scoreThem
+        if let winner = game.winner { return winner }
+        
+        guard let winAt else { return nil }
+        
+        let winBy = self.winBy ?? 1
+        
+        let scoreUs = game.scoreUs, scoreThem = game.scoreThem
 
-        if scoreUs >= winScore {
-            if scoreUs - scoreThem >= winBy {
+        if scoreUs >= winAt {
+            if (scoreUs - scoreThem >= winBy) || (maximum != nil && (scoreUs >= maximum!)) {
                 return .us
             }
-        } else if scoreThem >= winScore {
-            if scoreThem - scoreUs >= winBy {
+        }
+        
+        if scoreThem >= winAt {
+            if (scoreThem - scoreUs >= winBy) || (maximum != nil && (scoreThem >= maximum!)) {
                 return .them
             }
         }
@@ -705,10 +752,10 @@ struct MatchGameScoringRules: Codable, Equatable {
 
 private func defaultScoringRules() -> MatchScoringRules {
     MatchScoringRules(
-        setsWinAt: 2,
+        winAt: 2,
         setScoring: MatchSetScoringRules(
-            gamesWinAt: 3,
-            gameScoring: MatchGameScoringRules(winScore: 25)
+            winAt: 3,
+            gameScoring: MatchGameScoringRules(winAt: 25)
         )
     )
 }

@@ -12,31 +12,6 @@ struct MatchRulesDetailView: View {
     var sport: MatchSport
     var scoring: MatchScoringRules
     var includeImage: Bool = false
-    
-    private var detailText: String {
-        var ofText: String = ""
-        
-        if scoring.isMultiSet {
-            ofText =
-                scoring.playItOut
-                ? "Best of \(scoring.setsMaximum) sets"
-                : "First to \(scoring.setsWinAt) sets"
-        } else {
-            if scoring.setScoring.isMultiGame {
-                ofText = "Best of \(scoring.setScoring.gamesMaximum) games"
-            }
-        }
-
-        return "\(ofText)"
-    }
-
-    private var detailSecondaryText: String {
-        if scoring.setScoring.isMultiGame {
-            return "Games to \(scoring.setScoring.gameScoring.winScore) points"
-        }
-
-        return "First to \(scoring.setScoring.gameScoring.winScore) points"
-    }
 
     private var systemImage: String {
         switch sport {
@@ -56,15 +31,19 @@ struct MatchRulesDetailView: View {
                     .font(.headline)
             }
             
-            if !detailText.isEmpty {
-                Text(detailText)
+            let primaryLabel = scoring.primaryLabel
+            if !primaryLabel.isEmpty {
+                Text(primaryLabel)
                     .font(.caption2)
                     .foregroundStyle(.tint)
             }
-
-            Text(detailSecondaryText)
-                .font(.caption2)
-                .foregroundStyle(.tint)
+            
+            let secondaryLabel = scoring.secondaryLabel
+            if !secondaryLabel.isEmpty {
+                Text(secondaryLabel)
+                    .font(.caption2)
+                    .foregroundStyle(.tint)
+            }
         }
     }
 }

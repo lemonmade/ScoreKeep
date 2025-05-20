@@ -22,12 +22,11 @@ struct StartView: View {
         color: .green,
         environment: .indoor,
         scoring: MatchScoringRules(
-            setsWinAt: 3,
-            playItOut: false,
+            winAt: 3,
             setScoring: MatchSetScoringRules(
-                gamesWinAt: 6,
+                winAt: 6,
                 gameScoring: MatchGameScoringRules(
-                    winScore: 25
+                    winAt: 25
                 )
             )
         )
@@ -39,12 +38,11 @@ struct StartView: View {
         color: .yellow,
         environment: .outdoor,
         scoring: MatchScoringRules(
-            setsWinAt: 1,
-            playItOut: true,
+            winAt: 1,
             setScoring: MatchSetScoringRules(
-                gamesWinAt: 3,
+                winAt: 3,
                 gameScoring: MatchGameScoringRules(
-                    winScore: 25
+                    winAt: 25
                 )
             )
         )
@@ -56,11 +54,11 @@ struct StartView: View {
         color: .purple,
         environment: .outdoor,
         scoring: MatchScoringRules(
-            setsWinAt: 1,
+            winAt: 1,
             setScoring: MatchSetScoringRules(
-                gamesWinAt: 1,
+                winAt: 1,
                 gameScoring: MatchGameScoringRules(
-                    winScore: 15
+                    winAt: 15
                 )
             )
         )
@@ -72,15 +70,21 @@ struct StartView: View {
         color: .pink,
         environment: .outdoor,
         scoring: MatchScoringRules(
-            setsWinAt: 1,
+            winAt: 1,
             setScoring: MatchSetScoringRules(
-                gamesWinAt: 3,
+                winAt: 3,
                 gameScoring: MatchGameScoringRules(
-                    winScore: 11
+                    winAt: 11
                 ),
             )
         )
     )
+    
+    private var unusedBuiltinTemplates: [MatchTemplate] {
+        return [indoorVolleyball, beachVolleyball, ultimate, squash].filter {
+            !templates.contains($0)
+        }
+    }
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -90,15 +94,9 @@ struct StartView: View {
                 ForEach(templates) { template in
                     StartMatchNavigationLinkView(template: template)
                 }
-
-                if templates.isEmpty {
-                    StartMatchNavigationLinkView(template: indoorVolleyball)
-
-                    StartMatchNavigationLinkView(template: beachVolleyball)
-                    
-                    StartMatchNavigationLinkView(template: ultimate)
-                    
-                    StartMatchNavigationLinkView(template: squash)
+                
+                ForEach(unusedBuiltinTemplates) { template in
+                    StartMatchNavigationLinkView(template: template)
                 }
 
                 CreateMatchTemplateButtonView()
