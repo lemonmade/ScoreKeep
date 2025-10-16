@@ -18,6 +18,8 @@ struct MatchTemplateCreateView: View {
     @State private var environment: MatchEnvironment
     @State private var color: MatchTemplateColor
     
+    @State private var isMultiSet: Bool
+    
     @State private var setsWinAt: Int
     @State private var setsPlayItOut: Bool
 
@@ -40,13 +42,19 @@ struct MatchTemplateCreateView: View {
         self.sport = template?.sport ?? .volleyball
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
-        self.setsWinAt = template?.scoring.winAt ?? 1
+        
+        let setsWinAt = template?.scoring.winAt ?? 1
+        let gameScoringWinScore = template?.scoring.setScoring.gameScoring.winAt ?? 25
+        let gameScoringWinBy = template?.scoring.setScoring.gameScoring.winBy ?? 2
+        
+        self.setsWinAt = setsWinAt
+        self.isMultiSet = setsWinAt > 1
         self.setsPlayItOut = template?.scoring.playItOut ?? false
         self.gamesWinAt = template?.scoring.setScoring.winAt ?? 3
         self.gamesPlayItOut = template?.scoring.setScoring.playItOut ?? false
-        self.gameScoringWinScore = template?.scoring.setScoring.gameScoring.winAt ?? 25
-        self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.winAt ?? 27
-        self.gameScoringWinBy = template?.scoring.setScoring.gameScoring.winBy ?? 2
+        self.gameScoringWinScore = gameScoringWinScore
+        self.gameScoringWinBy = gameScoringWinBy
+        self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.maximum ?? (gameScoringWinScore + gameScoringWinBy)
         self.navigationTitle = template == nil ? "New match" : template!.name
         
         let warmup = template?.warmup ?? .none
@@ -54,10 +62,8 @@ struct MatchTemplateCreateView: View {
 
         self.startWorkout = template?.startWorkout ?? true
     }
-    
-    private var isMultiSet: Bool {
-        return setsWinAt > 1
-    }
+
+    private let maximumBasicScore = 50
     
     var body: some View {
         Form {
@@ -85,27 +91,71 @@ struct MatchTemplateCreateView: View {
                 .pickerStyle(.navigationLink)
             }
             
-            Section(header: Text("Sets")) {
+            Section(header: Text("Points")) {
                 VStack {
-                    Text("First to")
-                    Stepper(value: $setsWinAt, in: 1...50, step: 1) {
+                    Text("Win at")
+                    
+                    Stepper(value: $gameScoringWinScore, in: 1...maximumBasicScore, step: 1) {
                         HStack(spacing: 0) {
-                            Text("\(setsWinAt)")
+                            Text("\(gameScoringWinScore)")
                         }
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .monospacedDigit()
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .monospacedDigit()
+                    }
+                    .onChange(of: gameScoringWinScore) {
+                        let impliedMaximum = gameScoringWinScore + gameScoringWinBy - 1
+                        
+                        if impliedMaximum > gameScoringMaximumScore {
+                            gameScoringMaximumScore = impliedMaximum
+                        }
                     }
                 }
                 .padding([.top, .bottom], 8)
                 
-                Picker("After win", selection: $setsPlayItOut) {
-                    Text("End match").tag(false)
-                    Text("Play it out").tag(true)
-                }
-                .pickerStyle(.navigationLink)
-            }
+                VStack {
+                    Text("Win by")
 
+                    Stepper(value: $gameScoringWinBy, in: 1...10, step: 1) {
+                        HStack(spacing: 0) {
+                            Text("\(gameScoringWinBy)")
+                        }
+                            .fontWeight(.bold)
+                            .font(.title2)
+                            .monospacedDigit()
+                    }
+                    .onChange(of: gameScoringWinBy) {
+                        if gameScoringWinBy == 1, gameScoringWinScore != gameScoringMaximumScore {
+                            gameScoringMaximumScore = gameScoringWinScore
+                        }
+                    }
+                }
+                .padding([.top, .bottom], 8)
+                
+                if gameScoringWinBy > 1 {
+                    VStack {
+                        Text("Max score")
+
+                        Stepper(value: $gameScoringMaximumScore, in: (gameScoringWinScore + gameScoringWinBy - 1)...(maximumBasicScore + gameScoringWinBy - 1), step: 1) {
+                            HStack(spacing: 0) {
+                                Text("\(gameScoringMaximumScore)")
+                            }
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .monospacedDigit()
+                        }
+                        .onChange(of: gameScoringMaximumScore) {
+                            let impliedWinScore = gameScoringMaximumScore - gameScoringWinBy + 1
+
+                            if impliedWinScore < gameScoringWinScore {
+                                gameScoringWinScore = impliedWinScore
+                            }
+                        }
+                    }
+                    .padding([.top, .bottom], 8)
+                }
+            }
+            
             Section(header: Text("Games")) {
                 VStack {
                     Text("First to")
@@ -126,59 +176,39 @@ struct MatchTemplateCreateView: View {
                 }
                 .pickerStyle(.navigationLink)
             }
+            
+            Section(header: Text("Sets")) {
+                Toggle(isOn: $isMultiSet) {
+                    Text("Multiple sets")
+                }
+                .onChange(of: isMultiSet) {
+                    if isMultiSet {
+                        if setsWinAt <= 1 { setsWinAt = 2 }
+                    } else {
+                        if setsWinAt > 1 { setsWinAt = 1 }
+                    }
+                }
                 
-            Section(header: Text("Points")) {
-                VStack {
-                    Text("Win at")
+                if setsWinAt > 1 {
+                    VStack {
+                        Text("First to")
+                        Stepper(value: $setsWinAt, in: 2...50, step: 1) {
+                            HStack(spacing: 0) {
+                                Text("\(setsWinAt)")
+                            }
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .monospacedDigit()
+                        }
+                    }
+                    .padding([.top, .bottom], 8)
                     
-                    Stepper(value: $gameScoringWinScore, in: 1...50, step: 1) {
-                        HStack(spacing: 0) {
-                            Text("\(gameScoringWinScore)")
-                        }
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .monospacedDigit()
+                    Picker("After win", selection: $setsPlayItOut) {
+                        Text("End match").tag(false)
+                        Text("Play it out").tag(true)
                     }
-                    .onChange(of: gameScoringWinScore) {
-                        if gameScoringWinScore > gameScoringMaximumScore {
-                            gameScoringMaximumScore = gameScoringWinScore
-                        }
-                    }
+                    .pickerStyle(.navigationLink)
                 }
-                .padding([.top, .bottom], 8)
-                
-                VStack {
-                    Text("Max score")
-
-                    Stepper(value: $gameScoringMaximumScore, in: gameScoringWinScore...50, step: 1) {
-                        HStack(spacing: 0) {
-                            Text("\(gameScoringMaximumScore)")
-                        }
-                            .font(.title2)
-                            .fontWeight(.bold)
-                            .monospacedDigit()
-                    }
-                    .onChange(of: gameScoringMaximumScore) {
-                        if gameScoringWinScore > gameScoringMaximumScore {
-                            gameScoringWinScore = gameScoringMaximumScore
-                        }
-                    }
-                }
-                .padding([.top, .bottom], 8)
-                
-                VStack {
-                    Text("Win by")
-
-                    Stepper(value: $gameScoringWinBy, in: 1...10, step: 1) {
-                        HStack(spacing: 0) {
-                            Text("\(gameScoringWinBy)")
-                        }
-                            .fontWeight(.bold)
-                            .font(.title2)
-                            .monospacedDigit()
-                    }
-                }
-                .padding([.top, .bottom], 8)
             }
             
             Section(header: Text("Warmup")) {
@@ -437,7 +467,8 @@ struct MatchTemplateColorPickerSheetView: View {
                         setScoring: MatchSetScoringRules(
                             winAt: 6,
                             gameScoring: MatchGameScoringRules(
-                                winAt: 25
+                                winAt: 25,
+                                winBy: 2
                             )
                         )
                     )
