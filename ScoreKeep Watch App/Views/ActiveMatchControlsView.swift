@@ -30,7 +30,7 @@ struct ActiveMatchControlsView: View {
                 
                 ActiveMatchRulesSummaryButtonView()
                 
-                if !match.hasEnded {
+                if match.hasMoreGames || match.latestGame?.hasWinner != true {
                     EndActiveMatchButtonView()
                 }
             }

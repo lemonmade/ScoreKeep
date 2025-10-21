@@ -11,8 +11,8 @@ struct ActiveMatchScoreKeepView: View {
     @Environment(Match.self) private var match
 
     var body: some View {
-        if let game = match.latestGame {
-            ActiveMatchScoreKeepGameView(match: match, game: game)
+        if match.latestGame != nil {
+            ActiveMatchScoreKeepGameView(match: match)
         } else {
             // TODO
             EmptyView()
@@ -22,7 +22,6 @@ struct ActiveMatchScoreKeepView: View {
 
 struct ActiveMatchScoreKeepGameView: View {
     var match: Match
-    var game: MatchGame
 
     private let spacing: CGFloat = 8
     private let outerPadding = EdgeInsets(
@@ -32,12 +31,12 @@ struct ActiveMatchScoreKeepGameView: View {
         GeometryReader { geometry in
             VStack(spacing: spacing) {
                 GameScoreTeamButtonView(
-                    team: .them, match: match, game: game,
+                    team: .them, match: match,
                     size: geometryToButtonSize(geometry)
                 )
 
                 GameScoreTeamButtonView(
-                    team: .us, match: match, game: game,
+                    team: .us, match: match,
                     size: geometryToButtonSize(geometry)
                 )
             }
@@ -67,14 +66,18 @@ struct ActiveMatchScoreKeepGameView: View {
 struct GameScoreTeamButtonView: View {
     var team: MatchTeam
     var match: Match
-    var game: MatchGame
     var size: CGSize
     
     var keyColor: Color {
         team == .us ? .blue : .red
     }
+    
+    var game: MatchGame {
+        match.latestGame!
+    }
 
     var body: some View {
+        
         Button(action: {
             match.scorePoint(team)
         }) {
@@ -87,6 +90,9 @@ struct GameScoreTeamButtonView: View {
         .sensoryFeedback(.impact(weight: .medium), trigger: game.scoreFor(team)) { old, new in
             return old != new
             
+        }
+        .onChange(of: game.number) {
+            print("GameScoreTeamButtonView, number: \(game.number), hasEnded: \(game.hasEnded), match: \(game.set?.match?.scoreSummaryString ?? "<no match>")")
         }
     }
 }
@@ -186,14 +192,14 @@ struct GameScoreTeamServeIndicatorView: View {
     }
     
     var body: some View {
-        if team == game.nextServe {
+        if team == game.servingTeam {
             HStack(alignment: .bottom, spacing: 2) {
                 Image(systemName: systemName)
                     .resizable()
                     .frame(width: 24, height: 24)
                 
-                let streak = game.scoreStreakFor(team)
-                if streak > 1 {
+                let streak = game.serveStreakFor(team)
+                if streak > 0 {
                     Text("\(streak)")
                         .font(.system(size: 14,  weight: .semibold, design: .rounded))
                         .frame(height: 14)

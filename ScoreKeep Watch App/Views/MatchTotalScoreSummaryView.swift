@@ -130,6 +130,37 @@ struct MatchSummaryScoreTableView: View {
     var match: Match
     var layout: ScoreLayout = .selfFirst
 
+    var body: some View {
+        VStack(spacing: 2) {
+            switch layout {
+            case .selfFirst:
+                MatchSummaryScoreTableRowView(match: match, team: .us)
+                MatchSummaryScoreTableRowView(match: match, team: .them)
+            case .selfPointsInward:
+                MatchSummaryScoreTableRowView(match: match, team: .them)
+                MatchSummaryScoreTableRowView(match: match, team: .us)
+            }
+        }
+        .monospacedDigit()
+    }
+}
+
+struct MatchSummaryScoreTableRowView: View {
+    @Bindable var match: Match
+    var team: MatchTeam
+    
+    @State private var latestGame: MatchGame?
+    
+    init(match: Match, team: MatchTeam) {
+        self.match = match
+        self.team = team
+        self.latestGame = match.latestGame
+    }
+    
+    private var latestSet: MatchSet? {
+        latestGame?.set
+    }
+    
     private let cornerRadiusOutside: CGFloat = 12
     private let innerPadding: CGFloat = 8
     private let outerPadding: CGFloat = 12
@@ -144,13 +175,11 @@ struct MatchSummaryScoreTableView: View {
         return winner ? winnerFontWeight : nonWinnerFontWeight
     }
     
-    func row(for team: MatchTeam) -> some View {
-        let latestSet = match.latestSet!
-        let latestGame = latestSet.latestGame!
+    var body: some View {
         let color = team == .us ? Color.blue : Color.red
         let label = team == .us ? "Us" : "Them"
         
-        return HStack(spacing: 0) {
+        HStack(spacing: 0) {
             let fontWeight = fontWeight(winner: match.winner == team)
             
             Text(label)
@@ -162,12 +191,12 @@ struct MatchSummaryScoreTableView: View {
 
             Spacer()
             
-            ForEach(latestSet.games) { game in
-                MatchSummaryScoreTableNumberView(game.scoreFor(team), pad: true, verticalPosition: .top, horizontalPosition: game == latestGame ? .trailing : .inner)
+            ForEach(latestSet?.games ?? []) { game in
+                MatchSummaryScoreTableNumberView(game.scoreFor(team), pad: true, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
                     .fontWeight(boldestFontWeight)
                     .opacity(0)
                     .overlay {
-                        MatchSummaryScoreTableNumberView(game.scoreFor(team), verticalPosition: .top, horizontalPosition: game == latestGame ? .trailing : .inner)
+                        MatchSummaryScoreTableNumberView(game.scoreFor(team), verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                             .fontWeight(fontWeight)
                             .foregroundColor(color)
@@ -181,20 +210,12 @@ struct MatchSummaryScoreTableView: View {
                 .stroke(color.opacity(match.winner == team ? 1 : 0), lineWidth: 2)
         }
         .foregroundColor(color)
-    }
-    
-    var body: some View {
-        VStack(spacing: 2) {
-            switch layout {
-            case .selfFirst:
-                row(for: .us)
-                row(for: .them)
-            case .selfPointsInward:
-                row(for: .them)
-                row(for: .us)
-            }
+        .onAppear {
+            self.latestGame = match.latestGame
         }
-        .monospacedDigit()
+        .onChange(of: match.latestGame) {
+            self.latestGame = match.latestGame
+        }
     }
 }
 

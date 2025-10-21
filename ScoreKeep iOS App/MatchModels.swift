@@ -18,6 +18,10 @@ enum MatchSport: String, Codable {
 
 enum MatchTeam: String, Codable {
     case us, them
+    
+    var opposingTeam: MatchTeam {
+        self == .us ? .them : .us
+    }
 }
 
 enum MatchEnvironment: String, Codable {
@@ -59,7 +63,7 @@ class Match {
     var sport: MatchSport = MatchSport.volleyball
     var environment: MatchEnvironment = MatchEnvironment.outdoor
 
-    @Relationship(inverse: \MatchSet.match)
+    @Relationship(deleteRule: .cascade, inverse: \MatchSet.match)
     var _sets: [MatchSet]?
     var sets: [MatchSet] {
         guard let _sets else { return [] }
@@ -89,6 +93,8 @@ class Match {
 
     var latestSet: MatchSet? { sets.last }
     var latestGame: MatchGame? { latestSet?.latestGame }
+    
+    var startingServe: MatchTeam?
 
     var hasMoreGames: Bool {
         if hasEnded { return false }
@@ -121,7 +127,7 @@ class Match {
         return "\((latestSet?.games ?? []).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
     }
 
-    init(from template: MatchTemplate, markAsUsed: Bool = true, sets: [MatchSet] = [MatchSet()], startedAt: Date = .now, endedAt: Date? = nil) {
+    init(from template: MatchTemplate, markAsUsed: Bool = true, sets: [MatchSet] = [MatchSet()], startedAt: Date = .now, endedAt: Date? = nil, startingServe: MatchTeam? = nil) {
         self.template = markAsUsed ? template : nil
         self.sport = template.sport
         self.environment = template.environment
@@ -129,13 +135,15 @@ class Match {
         self._sets = sets
         self.startedAt = startedAt
         self.endedAt = endedAt
+        self.startingServe = startingServe
     }
 
     init(
         _ sport: MatchSport = .volleyball,
         environment: MatchEnvironment = .indoor, scoring: MatchScoringRules,
         sets: [MatchSet] = [MatchSet()], startedAt: Date = .now,
-        endedAt: Date? = nil
+        endedAt: Date? = nil,
+        startingServe: MatchTeam? = nil
     ) {
         self.sport = sport
         self.environment = environment
@@ -143,6 +151,7 @@ class Match {
         self.startedAt = startedAt
         self.endedAt = endedAt
         self._scoring = scoring
+        self.startingServe = startingServe
     }
 
     func setsFor(_ team: MatchTeam) -> Int {
@@ -191,7 +200,7 @@ class Match {
         }
 
         guard let latestSet else { return }
-
+        
         guard let latestGame = latestSet.latestGame else {
             latestSet.startGame(startedAt: now)
             return
@@ -230,12 +239,13 @@ class Match {
     }
     
     private func addSet(startedAt: Date = .now) {
+        let latestSet = latestSet
         let latestNumber = latestSet?.number ?? 0
+        let latestStartingServe = latestSet?.startingServe
         
-        let set = MatchSet(number: latestNumber + 1, startedAt: startedAt)
-        set.match = self
+        let set = MatchSet(number: latestNumber + 1, startedAt: startedAt, startingServe: latestStartingServe?.opposingTeam)
         
-        var sets = _sets ?? []
+        var sets = self.sets
         sets.append(set)
         _sets = sets
     }
@@ -243,12 +253,11 @@ class Match {
 
 @Model
 class MatchSet {
-    @Relationship
     var match: Match?
     
     var number: Int = 1
     
-    @Relationship(inverse: \MatchGame.set)
+    @Relationship(deleteRule: .cascade, inverse: \MatchGame.set)
     var _games: [MatchGame]?
     var games: [MatchGame] {
         guard let _games else { return [] }
@@ -282,13 +291,25 @@ class MatchSet {
     }
     
     var isMultiGame: Bool { match?.scoring.setScoring.isMultiGame ?? true }
+    
+    var startingServe: MatchTeam? { games.first?.startingServe }
+    
+    var isLatestInMatch: Bool {
+        guard let latestSet = match?.latestSet else { return false }
+        return latestSet.number == number
+    }
 
     init(
         number: Int = 1, games: [MatchGame]? = nil,
-        startedAt: Date = Date(), endedAt: Date? = nil
+        startedAt: Date = Date(), endedAt: Date? = nil, startingServe: MatchTeam? = nil
     ) {
+        let games = games ?? [MatchGame(startedAt: startedAt, startingServe: startingServe)]
+        for game in games {
+            game.set = self
+        }
+        
         self.number = number
-        self._games = games ?? [MatchGame(startedAt: startedAt)]
+        self._games = games
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.createdAt = Date()
@@ -298,21 +319,21 @@ class MatchSet {
         return team == .us ? gamesUs : gamesThem
     }
     
-    func startGame(startedAt: Date = .now) {
+    func startGame(startedAt: Date = .now, startingServe: MatchTeam? = nil) {
+        let latestGame = latestGame
         let latestNumber = latestGame?.number ?? 0
+        let latestStartingServe = latestGame?.startingServe
         
-        let game = MatchGame(number: latestNumber + 1, startedAt: startedAt)
-        game.set = self
-        
-        var games = _games ?? []
+        let game = MatchGame(number: latestNumber + 1, startedAt: startedAt, startingServe: startingServe ?? latestStartingServe?.opposingTeam)
+
+        var games = self.games
         games.append(game)
-        _games = games
+        self._games = games
     }
 }
 
 @Model
 class MatchGame {
-    @Relationship
     var set: MatchSet?
     
     var number: Int = 1
@@ -347,40 +368,45 @@ class MatchGame {
         scoreUs == scoreThem
     }
 
-    private var initialServe: MatchTeam?
+    var startingServe: MatchTeam?
 
-    var nextServe: MatchTeam? {
+    var servingTeam: MatchTeam? {
         if hasEnded { return nil }
 
         if let lastScore = scores.last(where: { $0.source == .point }) {
             return lastScore.us > lastScore.them ? .us : .them
         }
 
-        return initialServe
+        return startingServe
+    }
+    
+    var isLatestInSet: Bool {
+        guard let latestGame = set?.latestGame else { return false }
+        return latestGame.number == number
     }
 
     init(
         number: Int = 1,
         scores: [MatchGameScore] = [],
-        serve: MatchTeam? = nil,
         startedAt: Date = .now,
-        endedAt: Date? = nil
+        endedAt: Date? = nil,
+        startingServe: MatchTeam? = nil
     ) {
         self.number = number
         self._scores = scores
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.createdAt = .now
-        self.initialServe = serve
+        self.startingServe = startingServe
     }
     
     init(
         number: Int = 1,
         us: Int,
         them: Int,
-        serve: MatchTeam? = nil,
         startedAt: Date = .now,
-        endedAt: Date? = nil
+        endedAt: Date? = nil,
+        startingServe: MatchTeam? = nil
     ) {
         // Append an amount of `MatchTeam`s to an array, according to the `us` and `them` values
         let usScores: [MatchGameScore] = Array(repeating: MatchGameScore(.us, at: startedAt), count: us)
@@ -391,13 +417,13 @@ class MatchGame {
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.createdAt = .now
-        self.initialServe = serve
+        self.startingServe = startingServe
     }
 
     func scorePoint(_ team: MatchTeam, at timestamp: Date = .now) {
         var scores = self._scores ?? []
         
-        let score = MatchGameScore(team, at: timestamp);
+        let score = MatchGameScore(team, serve: servingTeam, at: timestamp);
         
         scores.append(score)
         _scores = scores
@@ -407,11 +433,11 @@ class MatchGame {
         team == .us ? scoreUs : scoreThem
     }
     
-    func scoreStreakFor(_ team: MatchTeam) -> Int {
+    func serveStreakFor(_ team: MatchTeam) -> Int {
         var streak = 0
         
         for score in scores.sorted(by: { $0.timestamp > $1.timestamp }) {
-            if score.source != .point || score.adjustment(team) < 1 { break }
+            if score.source != .point || score.adjustment(team) < 1 || score.serve != team { break }
             streak += 1
         }
         
@@ -428,18 +454,21 @@ struct MatchGameScore: Codable, Equatable {
     var them: Int
     var timestamp: Date
     var source: MatchGameScoreSource
+    var serve: MatchTeam?
     
-    init(us: Int = 0, them: Int = 0, at timestamp: Date = .now, source: MatchGameScoreSource = .point) {
+    init(us: Int = 0, them: Int = 0, serve: MatchTeam? = nil, at timestamp: Date = .now, source: MatchGameScoreSource = .point) {
         self.us = us
         self.them = them
         self.timestamp = timestamp
+        self.serve = serve
         self.source = source
     }
     
-    init(_ team: MatchTeam, at timestamp: Date = .now) {
+    init(_ team: MatchTeam, serve: MatchTeam? = nil, at timestamp: Date = .now) {
         self.us = team == .us ? 1 : 0
         self.them = team == .them ? 1 : 0
         self.timestamp = timestamp
+        self.serve = serve
         self.source = .point
     }
     
@@ -694,6 +723,8 @@ struct MatchSetScoringRules: Codable, Equatable {
     func canPlayAnotherGame(_ set: MatchSet) -> Bool {
         if winAt == nil { return true }
         
+        print("MatchSetScoringRules.canPlayAnotherGame()")
+        print("match: \(set.match?.scoreSummaryString ?? "<no match>")")
         print("winAt: \(winAt ?? -1), hasWinner: \(hasWinner(set)), playItOut: \(playItOut), impliedMaximumGameNumber: \(impliedMaximumGameNumber ?? -1)")
         
         if hasWinner(set) && !playItOut { return false }
