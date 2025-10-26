@@ -32,17 +32,20 @@ struct StartView: View {
         )
     )
 
-    private let beachVolleyball = MatchTemplate(
-        .volleyball,
-        name: "Beach volleyball",
+    private let tennis = MatchTemplate(
+        .tennis,
+        name: "Tennis",
         color: .yellow,
         environment: .outdoor,
         scoring: MatchScoringRules(
             winAt: 1,
             setScoring: MatchSetScoringRules(
-                winAt: 3,
+                winAt: 6,
+                winBy: 2,
+                maximum: 7,
+                playItOut: false,
                 gameScoring: MatchGameScoringRules(
-                    winAt: 25
+                    winAt: 4, winBy: 2
                 )
             )
         )
@@ -81,7 +84,7 @@ struct StartView: View {
     )
     
     private var unusedBuiltinTemplates: [MatchTemplate] {
-        return [indoorVolleyball, beachVolleyball, ultimate, squash].filter {
+        return [indoorVolleyball, tennis, ultimate, squash].filter {
             !templates.contains($0)
         }
     }
@@ -147,6 +150,7 @@ struct StartMatchNavigationLinkView: View {
         case .squash: return "figure.squash"
         case .ultimate: return "figure.disc.sports"
         case .volleyball: return "figure.volleyball"
+        case .tennis: return "figure.tennis"
         }
     }
 

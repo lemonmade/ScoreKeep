@@ -91,9 +91,13 @@ struct MatchHistoryMatchDetailTextView: View {
     var match: Match
     
     var body: some View {
-        Text(match.scoreSummaryString)
-            .font(.caption)
-            .foregroundColor(.secondary)
+        if match.isMultiSet || (match.latestSet?.isMultiGame ?? true) {
+            if let scoreSummaryString = match.scoreSummaryString {
+                Text(scoreSummaryString)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
     }
 }
 

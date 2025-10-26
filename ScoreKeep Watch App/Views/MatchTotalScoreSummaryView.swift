@@ -130,18 +130,37 @@ struct MatchSummaryScoreTableView: View {
     var match: Match
     var layout: ScoreLayout = .selfFirst
 
+//    var body: some View {
+//        VStack(spacing: 2) {
+//            switch layout {
+//            case .selfFirst:
+//                MatchSummaryScoreTableRowView(match: match, team: .us)
+//                MatchSummaryScoreTableRowView(match: match, team: .them)
+//            case .selfPointsInward:
+//                MatchSummaryScoreTableRowView(match: match, team: .them)
+//                MatchSummaryScoreTableRowView(match: match, team: .us)
+//            }
+//        }
+//        .monospacedDigit()
+//    }
     var body: some View {
-        VStack(spacing: 2) {
-            switch layout {
-            case .selfFirst:
-                MatchSummaryScoreTableRowView(match: match, team: .us)
-                MatchSummaryScoreTableRowView(match: match, team: .them)
-            case .selfPointsInward:
-                MatchSummaryScoreTableRowView(match: match, team: .them)
-                MatchSummaryScoreTableRowView(match: match, team: .us)
+        Grid(verticalSpacing: 2) {
+            GridRow {
+                Text("Us")
+                Spacer().frame(height: 0)
+                Text("Them")
+            }
+            
+            if let latestGame = match.latestGame {
+                GridRow {
+                    Text("\(match.sport.normalizedScoreLabelFor(.us, game: latestGame))")
+                    
+                    Text("Game \(latestGame.number)").frame(width: .infinity)
+                    
+                    Text("\(match.sport.normalizedScoreLabelFor(.them, game: latestGame))")
+                }
             }
         }
-        .monospacedDigit()
     }
 }
 
@@ -192,11 +211,13 @@ struct MatchSummaryScoreTableRowView: View {
             Spacer()
             
             ForEach(latestSet?.games ?? []) { game in
-                MatchSummaryScoreTableNumberView(game.scoreFor(team), pad: true, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
+                let score = match.sport.normalizedScoreFor(team, game: game)
+                
+                MatchSummaryScoreTableNumberView(score, pad: true, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
                     .fontWeight(boldestFontWeight)
                     .opacity(0)
                     .overlay {
-                        MatchSummaryScoreTableNumberView(game.scoreFor(team), verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
+                        MatchSummaryScoreTableNumberView(score, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                             .fontWeight(fontWeight)
                             .foregroundColor(color)
@@ -369,22 +390,47 @@ struct MatchSummaryScoreTableBackgroundView: View {
 
 #Preview {
     MatchSummaryScoreTableView(
+//        match: Match(
+//            .volleyball,
+//            scoring: MatchScoringRules(
+//                winAt: 1,
+//                setScoring: MatchSetScoringRules(
+//                    winAt: 2,
+//                    gameScoring: MatchGameScoringRules(
+//                        winAt: 10
+//                    )
+//                )
+//            ),
+//            sets: [
+//                MatchSet(
+//                    games: [
+//                        MatchGame(us: 10, them: 5, endedAt: .now.advanced(by: -1000)),
+//                        MatchGame(us: 10, them: 2, endedAt: .now),
+//                    ],
+//                    endedAt: .now
+//                )
+//            ],
+//            startedAt: .now.advanced(by: -2000),
+//            endedAt: .now
+//        )
         match: Match(
-            .volleyball,
+            .tennis,
             scoring: MatchScoringRules(
                 winAt: 1,
                 setScoring: MatchSetScoringRules(
-                    winAt: 2,
+                    winAt: 6,
                     gameScoring: MatchGameScoringRules(
-                        winAt: 10
+                        winAt: 4
                     )
                 )
             ),
             sets: [
                 MatchSet(
                     games: [
-                        MatchGame(us: 10, them: 5, endedAt: .now.advanced(by: -1000)),
-                        MatchGame(us: 10, them: 2, endedAt: .now),
+                        MatchGame(number: 1, us: 6, them: 4, endedAt: .now.advanced(by: -1000)),
+                        MatchGame(number: 2, us: 4, them: 2, endedAt: .now),
+                        MatchGame(number: 3, us: 1, them: 4, endedAt: .now),
+                        MatchGame(number: 4, us: 6, them: 4, endedAt: .now),
                     ],
                     endedAt: .now
                 )

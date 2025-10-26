@@ -136,6 +136,14 @@ struct GameScoreTeamScoreView: View {
         game.scoreFor(team)
     }
     
+    var normalizedScore: Int {
+        match.sport.normalizedScoreFor(team, game: game)
+    }
+    
+    var normalizedScoreLabel: String {
+        match.sport.normalizedScoreLabelFor(team, game: game)
+    }
+    
     var keyColor: Color {
         team == .us ? .blue : .red
     }
@@ -143,7 +151,13 @@ struct GameScoreTeamScoreView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             VStack(alignment: .leading, spacing: 8) {
-                GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
+                if game.winner == team {
+                    Image(systemName: "checkmark.circle.fill")
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                } else {
+                    GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
+                }
                 
                 Text(team == .us ? "Us" : "Them")
                     .textCase(.uppercase)
@@ -158,14 +172,14 @@ struct GameScoreTeamScoreView: View {
             Spacer()
             
             HStack(spacing: 0) {
-                if score < 10 {
+                if score < 10 && match.sport != .tennis {
                     Text("0")
                         .font(.system(size: 70, weight: .bold))
                         .opacity(0.5)
                 }
-                Text("\(score)")
+                Text(normalizedScoreLabel)
                     .font(.system(size: 70, weight: .bold))
-                    .contentTransition(.numericText(value: Double(score)))
+                    .contentTransition(.numericText(value: Double(normalizedScore)))
             }
             .fontDesign(.rounded)
         }
@@ -188,6 +202,7 @@ struct GameScoreTeamServeIndicatorView: View {
         case .squash: return "circle.fill"
         case .ultimate: return "circle.circle.fill"
         case .volleyball: return "volleyball.fill"
+        case .tennis: return "tennisball.fill"
         }
     }
     
@@ -198,11 +213,16 @@ struct GameScoreTeamServeIndicatorView: View {
                     .resizable()
                     .frame(width: 24, height: 24)
                 
-                let streak = game.serveStreakFor(team)
-                if streak > 0 {
-                    Text("\(streak)")
-                        .font(.system(size: 14,  weight: .semibold, design: .rounded))
-                        .frame(height: 14)
+                // If we aren’t rotating on every point, “service streaks” are a little odd.
+                // I should probably just make this an explicit option
+                // instead, though.
+                if match.sport.gameServiceRotation == .lastWinner {
+                    let streak = game.serveStreakFor(team)
+                    if streak > 0 {
+                        Text("\(streak)")
+                            .font(.system(size: 14,  weight: .semibold, design: .rounded))
+                            .frame(height: 14)
+                    }
                 }
             }
         } else {

@@ -18,6 +18,7 @@ struct MatchRulesDetailView: View {
         case .squash: return "figure.squash"
         case .ultimate: return "figure.disc.sports"
         case .volleyball: return "figure.volleyball"
+        case .tennis: return "figure.tennis"
         }
     }
 
@@ -39,7 +40,7 @@ struct MatchRulesDetailView: View {
             }
             
             let secondaryLabel = scoring.secondaryLabel
-            if !secondaryLabel.isEmpty {
+            if sport != .tennis && !secondaryLabel.isEmpty {
                 Text(secondaryLabel)
                     .font(.caption2)
                     .foregroundStyle(.tint)

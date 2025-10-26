@@ -46,6 +46,7 @@ struct ActiveMatchRulesSummaryButtonView: View {
         case .squash: return "figure.squash"
         case .ultimate: return "figure.disc.sports"
         case .volleyball: return "figure.volleyball"
+        case .tennis: return "figure.tennis"
         }
     }
     
@@ -54,6 +55,7 @@ struct ActiveMatchRulesSummaryButtonView: View {
         case .squash: return "Squash"
         case .ultimate: return "Ultimate frisbee"
         case .volleyball: return "Volleyball"
+        case .tennis: return "Tennis"
         }
     }
 

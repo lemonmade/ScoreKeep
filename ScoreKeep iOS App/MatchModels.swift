@@ -14,6 +14,69 @@ enum MatchSport: String, Codable {
     case volleyball
     case ultimate
     case squash
+    case tennis
+    
+    var gameServiceRotation: MatchServiceRotation {
+        switch self {
+        case .tennis: return .none
+        default: return .lastWinner
+        }
+    }
+    
+    var setServiceRotation: MatchServiceRotation {
+        return .every(count: 1)
+    }
+    
+    func normalizedScoreFor(_ team: MatchTeam, game: MatchGame) -> Int {
+        let score = game.scoreFor(team)
+        
+        switch self {
+        case .tennis:
+            switch score {
+            case 0: return 0
+            case 1: return 15
+            case 2: return 30
+            default: return 40
+        }
+        default: return score
+        }
+    }
+    
+    func normalizedScoreLabelFor(_ team: MatchTeam, game: MatchGame) -> String {
+        let normalizedScore = normalizedScoreFor(team, game: game)
+        
+        if (self != .tennis) {
+            return "\(normalizedScore)"
+        }
+        
+        guard let match = game.set?.match else {
+            return "\(normalizedScore)"
+        }
+        
+        let gameScoring = match.scoring.setScoring.gameScoring
+        
+        if (gameScoring.winBy != 2) {
+            return "\(normalizedScore)"
+        }
+            
+        let winAt = gameScoring.winAt
+        
+        if let winAt {
+            let score = game.scoreFor(team)
+            
+            if (score < winAt || (game.scoreFor(team.opposingTeam) < (winAt - 1))) {
+                return "\(normalizedScore)"
+            }
+        }
+        
+        return game.leading == team ? "Ad" : "\(normalizedScore)"
+    }
+}
+
+enum MatchServiceRotation: Codable, Equatable {
+    case none
+    case every(count: Int)
+    case lastWinner
 }
 
 enum MatchTeam: String, Codable {
@@ -119,12 +182,17 @@ class Match {
 
     var isMultiSet: Bool { scoring.isMultiSet }
     
-    var scoreSummaryString: String {
+    var scoreSummaryString: String? {
         if isMultiSet {
             return "\(sets.map { "\($0.gamesUs)-\($0.gamesThem)" }.joined(separator: ", "))"
         }
         
-        return "\((latestSet?.games ?? []).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
+        switch sport {
+        case .tennis: return nil
+        default:
+            guard let latestSet else { return nil }
+            return "\((latestSet.games).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
+        }
     }
 
     init(from template: MatchTemplate, markAsUsed: Bool = true, sets: [MatchSet] = [MatchSet()], startedAt: Date = .now, endedAt: Date? = nil, startingServe: MatchTeam? = nil) {
@@ -353,6 +421,14 @@ class MatchGame {
     var scoreThem: Int { _scores?.reduce(0) { $0 + $1.them } ?? 0 }
 
     var hasEnded: Bool { endedAt != nil }
+    
+    var leading: MatchTeam? {
+        let scoreUs = scoreUs, scoreThem = scoreThem
+        
+        if scoreUs > scoreThem { return .us }
+        if scoreThem > scoreUs { return .them }
+        return nil
+    }
 
     var winner: MatchTeam? {
         if !hasEnded { return nil }
@@ -372,9 +448,14 @@ class MatchGame {
 
     var servingTeam: MatchTeam? {
         if hasEnded { return nil }
+        
+        let sport = set?.match?.sport
+        let serviceRotation = sport?.gameServiceRotation ?? .lastWinner
 
-        if let lastScore = scores.last(where: { $0.source == .point }) {
-            return lastScore.us > lastScore.them ? .us : .them
+        if (serviceRotation == .lastWinner) {
+            if let lastScore = scores.last(where: { $0.source == .point }) {
+                return lastScore.us > lastScore.them ? .us : .them
+            }
         }
 
         return startingServe
@@ -745,7 +826,7 @@ struct MatchGameScoringRules: Codable, Equatable {
     var winAt: Int? = nil
     var winBy: Int? = nil
     var maximum: Int? = nil
-    
+
     var primaryLabel: String {
         guard let winAt else { return "Open game" }
         
@@ -790,3 +871,4 @@ private func defaultScoringRules() -> MatchScoringRules {
         )
     )
 }
+
