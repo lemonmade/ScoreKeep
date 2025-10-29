@@ -674,14 +674,14 @@ struct MatchScoringRules: Codable, Equatable {
     }
     
     var primaryLabel: String {
-        guard let winAt, let impliedMaximumSetNumber else { return "Open match" }
+        guard let winAt, let maximumSetCount else { return "Open match" }
         
         if winAt == 1 {
             return setScoring.primaryLabel
         }
         
         if playItOut {
-            return "Best of \(impliedMaximumSetNumber) sets"
+            return "Best of \(maximumSetCount) sets"
         }
 
         return "First to \(winAt) sets"
@@ -726,12 +726,12 @@ struct MatchScoringRules: Codable, Equatable {
         
         if hasWinner(match) && !playItOut { return false }
         
-        guard let impliedMaximumSetNumber else { return true }
+        guard let maximumSetCount else { return true }
         
-        return match.sets.count < impliedMaximumSetNumber
+        return match.sets.count < maximumSetCount
     }
     
-    private var impliedMaximumSetNumber: Int? {
+    var maximumSetCount: Int? {
         if let maximum { return (maximum * 2) - 1 }
         if let winAt { return (winAt * 2) - 1 }
         return nil
@@ -752,14 +752,14 @@ struct MatchSetScoringRules: Codable, Equatable {
     }
     
     var primaryLabel: String {
-        guard let winAt, let impliedMaximumGameNumber else { return "Open set" }
+        guard let winAt, let maximumGameCount else { return "Open set" }
         
         if winAt == 1 {
             return gameScoring.primaryLabel
         }
         
         if playItOut {
-            return "Best of \(impliedMaximumGameNumber) games"
+            return "Best of \(maximumGameCount) games"
         }
         
         return "First to \(winAt) games"
@@ -806,16 +806,16 @@ struct MatchSetScoringRules: Codable, Equatable {
         
         print("MatchSetScoringRules.canPlayAnotherGame()")
         print("match: \(set.match?.scoreSummaryString ?? "<no match>")")
-        print("winAt: \(winAt ?? -1), hasWinner: \(hasWinner(set)), playItOut: \(playItOut), impliedMaximumGameNumber: \(impliedMaximumGameNumber ?? -1)")
+        print("winAt: \(winAt ?? -1), hasWinner: \(hasWinner(set)), playItOut: \(playItOut), impliedMaximumGameNumber: \(maximumGameCount ?? -1)")
         
         if hasWinner(set) && !playItOut { return false }
         
-        guard let impliedMaximumGameNumber else { return true }
+        guard let maximumGameCount else { return true }
         
-        return set.games.count < impliedMaximumGameNumber
+        return set.games.count < maximumGameCount
     }
     
-    private var impliedMaximumGameNumber: Int? {
+    var maximumGameCount: Int? {
         if let maximum { return (maximum * 2) - 1 }
         if let winAt { return (winAt * 2) - 1 }
         return nil

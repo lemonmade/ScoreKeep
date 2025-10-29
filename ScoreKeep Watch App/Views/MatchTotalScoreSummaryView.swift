@@ -130,38 +130,38 @@ struct MatchSummaryScoreTableView: View {
     var match: Match
     var layout: ScoreLayout = .selfFirst
 
-//    var body: some View {
-//        VStack(spacing: 2) {
-//            switch layout {
-//            case .selfFirst:
-//                MatchSummaryScoreTableRowView(match: match, team: .us)
-//                MatchSummaryScoreTableRowView(match: match, team: .them)
-//            case .selfPointsInward:
-//                MatchSummaryScoreTableRowView(match: match, team: .them)
-//                MatchSummaryScoreTableRowView(match: match, team: .us)
-//            }
-//        }
-//        .monospacedDigit()
-//    }
     var body: some View {
-        Grid(verticalSpacing: 2) {
-            GridRow {
-                Text("Us")
-                Spacer().frame(height: 0)
-                Text("Them")
-            }
-            
-            if let latestGame = match.latestGame {
-                GridRow {
-                    Text("\(match.sport.normalizedScoreLabelFor(.us, game: latestGame))")
-                    
-                    Text("Game \(latestGame.number)").frame(width: .infinity)
-                    
-                    Text("\(match.sport.normalizedScoreLabelFor(.them, game: latestGame))")
-                }
+        VStack(spacing: 2) {
+            switch layout {
+            case .selfFirst:
+                MatchSummaryScoreTableRowView(match: match, team: .us)
+                MatchSummaryScoreTableRowView(match: match, team: .them)
+            case .selfPointsInward:
+                MatchSummaryScoreTableRowView(match: match, team: .them)
+                MatchSummaryScoreTableRowView(match: match, team: .us)
             }
         }
+        .monospacedDigit()
     }
+//    var body: some View {
+//        Grid(verticalSpacing: 2) {
+//            GridRow {
+//                Text("Us")
+//                Spacer().frame(height: 0)
+//                Text("Them")
+//            }
+//            
+//            if let latestGame = match.latestGame {
+//                GridRow {
+//                    Text("\(match.sport.normalizedScoreLabelFor(.us, game: latestGame))")
+//                    
+//                    Text("Game \(latestGame.number)").frame(width: .infinity)
+//                    
+//                    Text("\(match.sport.normalizedScoreLabelFor(.them, game: latestGame))")
+//                }
+//            }
+//        }
+//    }
 }
 
 struct MatchSummaryScoreTableRowView: View {
@@ -197,6 +197,8 @@ struct MatchSummaryScoreTableRowView: View {
     var body: some View {
         let color = team == .us ? Color.blue : Color.red
         let label = team == .us ? "Us" : "Them"
+        let hasWinner = match.hasWinner
+        let showLatestGame = !hasWinner && latestGame != nil
         
         HStack(spacing: 0) {
             let fontWeight = fontWeight(winner: match.winner == team)
@@ -210,19 +212,54 @@ struct MatchSummaryScoreTableRowView: View {
 
             Spacer()
             
-            ForEach(latestSet?.games ?? []) { game in
-                let score = match.sport.normalizedScoreFor(team, game: game)
+            if !match.isMultiSet, let set = latestSet, let maximumGameCount = match.scoring.setScoring.maximumGameCount, maximumGameCount <= 3 {
+                let filteredGames = hasWinner ? set.games : set.games.filter { $0 != latestGame }
                 
-                MatchSummaryScoreTableNumberView(score, pad: true, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
-                    .fontWeight(boldestFontWeight)
-                    .opacity(0)
-                    .overlay {
-                        MatchSummaryScoreTableNumberView(score, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-                            .fontWeight(fontWeight)
-                            .foregroundColor(color)
-                    }
-                
+                ForEach(filteredGames) { game in
+                    let score = match.sport.normalizedScoreFor(team, game: game)
+                    
+                    MatchSummaryScoreTableNumberView(score, pad: true, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
+                        .fontWeight(boldestFontWeight)
+                        .opacity(0)
+                        .overlay {
+                            MatchSummaryScoreTableNumberView(score, verticalPosition: .top, horizontalPosition: game.isLatestInSet ? .trailing : .inner)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                                .fontWeight(fontWeight)
+                                .foregroundColor(color)
+                        }
+                    
+                }
+            } else {
+                ForEach(match.sets) { set in
+                    let score = set.gamesFor(team)
+                    let horizontalPosition: MatchSummaryScoreTableCellHorizontalPosition = showLatestGame || !set.isLatestInMatch ? .inner : .trailing
+                    
+                    MatchSummaryScoreTableNumberView(score, verticalPosition: .top, horizontalPosition: horizontalPosition)
+                        .fontWeight(boldestFontWeight)
+                        .opacity(0)
+                        .overlay {
+                            MatchSummaryScoreTableNumberView(score, verticalPosition: .top, horizontalPosition: horizontalPosition)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                                .fontWeight(fontWeight)
+                                .foregroundColor(color)
+                        }
+                }
+            }
+            
+            if !hasWinner {
+                if let game = latestGame {
+                    let score = match.sport.normalizedScoreFor(team, game: game)
+
+                    MatchSummaryScoreTableNumberView(score, pad: true, verticalPosition: .top, horizontalPosition: .trailing)
+                        .fontWeight(boldestFontWeight)
+                        .opacity(0)
+                        .overlay {
+                            MatchSummaryScoreTableNumberView(score, verticalPosition: .top, horizontalPosition: .trailing)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                                .fontWeight(fontWeight)
+                                .foregroundColor(color)
+                        }
+                }
             }
         }
         .background {
