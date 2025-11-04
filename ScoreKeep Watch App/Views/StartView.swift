@@ -145,21 +145,12 @@ struct StartMatchNavigationLinkView: View {
     
     @Environment(NavigationManager.self) private var navigation
 
-    private var systemImage: String {
-        switch template.sport {
-        case .squash: return "figure.squash"
-        case .ultimate: return "figure.disc.sports"
-        case .volleyball: return "figure.volleyball"
-        case .tennis: return "figure.tennis"
-        }
-    }
-
     var body: some View {
         NavigationLink(
             value: NavigationLocation.ActiveMatch(template: template)
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: systemImage)
+                Image(systemName: template.sport.icon)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 42, height: 42)

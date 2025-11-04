@@ -38,8 +38,9 @@ struct MatchTemplateCreateView: View {
     
     init(template: MatchTemplate? = nil) {
         self.template = template
-        self.name = template?.name ?? "Volleyball"
-        self.sport = template?.sport ?? .volleyball
+        let sport = template?.sport ?? .volleyball
+        self.sport = sport
+        self.name = template?.name ?? sport.label
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
         

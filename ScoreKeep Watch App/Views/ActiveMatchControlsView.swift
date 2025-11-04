@@ -40,24 +40,6 @@ struct ActiveMatchControlsView: View {
 
 struct ActiveMatchRulesSummaryButtonView: View {
     @Environment(Match.self) private var match
-    
-    private var systemImage: String {
-        switch match.sport {
-        case .squash: return "figure.squash"
-        case .ultimate: return "figure.disc.sports"
-        case .volleyball: return "figure.volleyball"
-        case .tennis: return "figure.tennis"
-        }
-    }
-    
-    private var fallbackName: String {
-        switch match.sport {
-        case .squash: return "Squash"
-        case .ultimate: return "Ultimate frisbee"
-        case .volleyball: return "Volleyball"
-        case .tennis: return "Tennis"
-        }
-    }
 
     var body: some View {
         Button {
@@ -66,7 +48,7 @@ struct ActiveMatchRulesSummaryButtonView: View {
             VStack(alignment: .leading, spacing: 4) {
                 // TODO: would be nice to have an interface shared between `Match` and `MatchTemplate` that simplified this element...
                 MatchRulesDetailView(
-                    name: match.template?.name ?? fallbackName,
+                    name: match.template?.name ?? match.sport.label,
                     sport: match.sport,
                     scoring: match.scoring,
                     includeImage: true

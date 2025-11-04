@@ -23,11 +23,7 @@ struct MatchTotalScoreSummaryView: View {
         if match.isMultiSet {
             self.us = match.setsUs
             self.them = match.setsThem
-        }
-        
-        let lastSet = match.sets.last
-        
-        if let lastSet {
+        } else if let lastSet = match.sets.last {
             if lastSet.isMultiGame {
                 self.us = lastSet.gamesUs
                 self.them = lastSet.gamesThem

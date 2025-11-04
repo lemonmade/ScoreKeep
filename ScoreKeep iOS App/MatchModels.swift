@@ -16,6 +16,24 @@ enum MatchSport: String, Codable {
     case squash
     case tennis
     
+    var label: String {
+        switch self {
+        case .squash: return "Squash"
+        case .ultimate: return "Ultimate frisbee"
+        case .volleyball: return "Volleyball"
+        case .tennis: return "Tennis"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .squash: return "figure.squash"
+        case .ultimate: return "figure.disc.sports"
+        case .volleyball: return "figure.volleyball"
+        case .tennis: return "figure.tennis"
+        }
+    }
+    
     var gameServiceRotation: MatchServiceRotation {
         switch self {
         case .tennis: return .none

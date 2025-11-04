@@ -13,11 +13,6 @@ struct MatchHistoryListView: View {
     @Environment(\.modelContext) private var matchesContext
     @Environment(NavigationManager.self) private var navigation
     
-    private let dateFormatter = Date.FormatStyle(
-        date: .abbreviated,
-        time: .none
-    )
-    
     var body: some View {
         if matches.isEmpty {
             VStack(spacing: 12) {
@@ -38,24 +33,7 @@ struct MatchHistoryListView: View {
                         value: NavigationLocation
                             .MatchHistoryDetail(match: match)
                     ) {
-                        HStack(alignment: .top, spacing: 8) {
-                            MatchTotalScoreSummaryView(match: match)
-
-                            VStack(alignment: .leading) {
-                                Text(
-                                    (match.endedAt ?? match.startedAt).formatted(
-                                        dateFormatter
-                                    )
-                                )
-                                .font(.headline)
-                                
-                                MatchHistoryMatchDurationDetailView(
-                                    match: match
-                                )
-                                
-                                MatchHistoryMatchDetailTextView(match: match)
-                            }
-                        }
+                        MatchHistoryDetailView(match: match)
                     }
                     .padding(
                         EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0)
@@ -75,31 +53,7 @@ struct MatchHistoryListView: View {
     }
 }
 
-struct MatchHistoryMatchDurationDetailView: View {
-    var match: Match
-    
-    private var startedAt: Date { match.startedAt }
-    private var endedAt: Date { match.endedAt ?? match.startedAt }
-    
-    var body: some View {
-        Text(startedAt...endedAt)
-            .foregroundStyle(.secondary)
-    }
-}
 
-struct MatchHistoryMatchDetailTextView: View {
-    var match: Match
-    
-    var body: some View {
-        if match.isMultiSet || (match.latestSet?.isMultiGame ?? true) {
-            if let scoreSummaryString = match.scoreSummaryString {
-                Text(scoreSummaryString)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-        }
-    }
-}
 
 #Preview {
     MatchHistoryListView()

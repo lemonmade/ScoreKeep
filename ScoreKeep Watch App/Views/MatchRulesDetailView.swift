@@ -13,19 +13,10 @@ struct MatchRulesDetailView: View {
     var scoring: MatchScoringRules
     var includeImage: Bool = false
 
-    private var systemImage: String {
-        switch sport {
-        case .squash: return "figure.squash"
-        case .ultimate: return "figure.disc.sports"
-        case .volleyball: return "figure.volleyball"
-        case .tennis: return "figure.tennis"
-        }
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if includeImage {
-                Label(name, systemImage: systemImage)
+                Label(name, systemImage: sport.icon)
                     .font(.headline)
             } else {
                 Text(name)

@@ -14,7 +14,7 @@ struct MatchHistoryDetailView: View {
 
     var body: some View {
         TabView {
-            MatchHistoryDetailMatchView(match: match)
+            MatchHistorySummaryView(match: match)
             
             ForEach(match.sets) { set in
                 ForEach(set.games) { game in
@@ -50,7 +50,7 @@ struct MatchHistoryDetailMatchView: View {
     
     private var summary: String {
         let dateRange = self.dateRange
-        return "\(dateFormatter.format(endDate))\n\(dateRangeFormatter.string(from: dateRange.lowerBound, to: dateRange.upperBound))\n\(match.scoreSummaryString)"
+        return "\(dateFormatter.format(endDate))\n\(dateRangeFormatter.string(from: dateRange.lowerBound, to: dateRange.upperBound))\n\(match.scoreSummaryString ?? "")"
     }
     
     var body: some View {

@@ -197,19 +197,10 @@ struct GameScoreTeamServeIndicatorView: View {
     var match: Match
     var game: MatchGame
     
-    var systemName: String {
-        switch match.sport {
-        case .squash: return "circle.fill"
-        case .ultimate: return "circle.circle.fill"
-        case .volleyball: return "volleyball.fill"
-        case .tennis: return "tennisball.fill"
-        }
-    }
-    
     var body: some View {
         if team == game.servingTeam {
             HStack(alignment: .bottom, spacing: 2) {
-                Image(systemName: systemName)
+                Image(systemName: match.sport.icon)
                     .resizable()
                     .frame(width: 24, height: 24)
                 
