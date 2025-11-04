@@ -33,7 +33,7 @@ struct MatchHistoryListView: View {
                         value: NavigationLocation
                             .MatchHistoryDetail(match: match)
                     ) {
-                        MatchHistoryDetailView(match: match)
+                        MatchHistorySummaryView(match: match)
                     }
                     .padding(
                         EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0)

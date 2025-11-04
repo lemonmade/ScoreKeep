@@ -35,7 +35,7 @@ struct MatchHistoryDetailGameView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             
-            MatchGameChartView(match: match, game: game)
+            MatchGameChartView(game: game)
         }
         .containerBackground(
             backgroundColor?.gradient ?? Color.clear.gradient,
