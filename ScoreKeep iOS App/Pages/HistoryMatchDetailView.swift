@@ -21,9 +21,13 @@ struct HistoryMatchDetailView: View {
             }
             
             ForEach(match.sets) { set in
-                Section(header: Text("Set \(set.number)")) {
+                Section {
                     ForEach(set.games) { game in
                         HistoryMatchDetailGameView(match: match, game: game)
+                    }
+                } header: {
+                    if match.isMultiSet {
+                        Text("Set \(set.number)")
                     }
                 }
             }
@@ -37,8 +41,15 @@ struct HistoryMatchDetailGameView: View {
     var game: MatchGame
     
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 8) {
+        DisclosureGroup {
+            VStack {
+                MatchGameChartView(game: game)
+                    .padding(16)
+                    .background(.secondary.opacity(0.05))
+                    .cornerRadius(8)
+            }
+        } label: {
+            HStack(spacing: 12) {
                 MatchTotalScoreSummaryView(game: game)
                 
                 VStack(alignment: .leading) {
@@ -48,14 +59,15 @@ struct HistoryMatchDetailGameView: View {
                     
                     if let endedAt = game.endedAt {
                         Text(game.startedAt...endedAt)
-                            .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Spacer()
+                
+                MatchGameChartSparklineView(game: game)
             }
-            
-            MatchGameChartView(game: game)
         }
     }
 }
+
