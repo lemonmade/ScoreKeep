@@ -212,6 +212,10 @@ class Match {
             return "\((latestSet.games).map { "\($0.scoreUs)-\($0.scoreThem)" }.joined(separator: ", "))"
         }
     }
+    
+    var label: String {
+        template?.name ?? sport.label
+    }
 
     init(from template: MatchTemplate, markAsUsed: Bool = true, sets: [MatchSet] = [MatchSet()], startedAt: Date = .now, endedAt: Date? = nil, startingServe: MatchTeam? = nil) {
         self.template = markAsUsed ? template : nil

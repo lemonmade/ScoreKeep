@@ -9,11 +9,17 @@ import SwiftData
 import SwiftUI
 
 struct MatchTotalScoreSummaryView: View {
-    var us: Int
-    var them: Int
+    var us: String
+    var them: String
     var winner: MatchTeam? = nil
 
     init(us: Int, them: Int, winner: MatchTeam? = nil) {
+        self.us = String(us)
+        self.them = String(them)
+        self.winner = winner
+    }
+    
+    init(us: String, them: String, winner: MatchTeam? = nil) {
         self.us = us
         self.them = them
         self.winner = winner
@@ -21,28 +27,28 @@ struct MatchTotalScoreSummaryView: View {
 
     init(match: Match) {
         if match.isMultiSet {
-            self.us = match.setsUs
-            self.them = match.setsThem
+            self.us = String(match.setsUs)
+            self.them = String(match.setsThem)
         } else if let lastSet = match.sets.last {
             if lastSet.isMultiGame {
-                self.us = lastSet.gamesUs
-                self.them = lastSet.gamesThem
+                self.us = String(lastSet.gamesUs)
+                self.them = String(lastSet.gamesThem)
             } else {
                 let lastGame = lastSet.games.last
-                self.us = lastGame?.scoreUs ?? 0
-                self.them = lastGame?.scoreThem ?? 0
+                self.us = String(lastGame?.scoreUs ?? 0)
+                self.them = String(lastGame?.scoreThem ?? 0)
             }
         } else {
-            self.us = 0
-            self.them = 0
+            self.us = "0"
+            self.them = "0"
         }
 
         self.winner = match.winner
     }
 
     init(game: MatchGame) {
-        self.us = game.scoreUs
-        self.them = game.scoreThem
+        self.us = game.set?.match?.sport.normalizedScoreLabelFor(.us, game: game) ?? String(game.scoreUs)
+        self.them = game.set?.match?.sport.normalizedScoreLabelFor(.them, game: game) ?? String(game.scoreThem)
         self.winner = game.winner
     }
 
@@ -55,7 +61,7 @@ struct MatchTotalScoreSummaryView: View {
     var body: some View {
         Grid(verticalSpacing: 0) {
             GridRow {
-                Text("\(us)")
+                Text(us)
                     .fontWeight(winner == .us ? .bold : .regular)
                     .foregroundColor(.blue)
                     .padding(
@@ -84,7 +90,7 @@ struct MatchTotalScoreSummaryView: View {
             }
 
             GridRow {
-                Text("\(them)")
+                Text(them)
                     .fontWeight(winner == .them ? .bold : .regular)
                     .foregroundColor(.red)
                     .padding(

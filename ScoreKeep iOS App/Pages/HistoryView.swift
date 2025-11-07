@@ -14,14 +14,16 @@ struct HistoryView: View {
                     } label: {
                         MatchHistorySummaryView(match: match)
                     }
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            context.delete(match)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                 }
             }
             .navigationTitle("History")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-            }
         }
     }
 }

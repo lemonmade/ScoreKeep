@@ -11,11 +11,6 @@ import SwiftData
 struct MatchHistorySummaryView: View {
     var match: Match
     
-    private let dateFormatter = Date.FormatStyle(
-        date: .abbreviated,
-        time: .none
-    )
-    
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             MatchTotalScoreSummaryView(match: match)
@@ -27,20 +22,30 @@ struct MatchHistorySummaryView: View {
                         .scaledToFit()
                         .frame(width: 18, height: 18)
                     
-                    Text(match.sport.label).font(.headline)
+                    Text(match.label).font(.headline)
                 }
                 .foregroundStyle(.primary)
                     
-                Text(
-                    (match.endedAt ?? match.startedAt).formatted(dateFormatter)
-                )
-                
-//                .font(.headline)
+                MatchHistoryDetailDateView(match: match)
                 
                 MatchHistoryDetailDurationView(match: match)
-//                MatchHistoryDetailDetailView(match: match)
             }
         }
+    }
+}
+
+struct MatchHistoryDetailDateView: View {
+    var match: Match
+    
+    private let dateFormatter = Date.FormatStyle(
+        date: .abbreviated,
+        time: .none
+    )
+    
+    var body: some View {
+        Text(
+            (match.endedAt ?? match.startedAt).formatted(dateFormatter)
+        )
     }
 }
 

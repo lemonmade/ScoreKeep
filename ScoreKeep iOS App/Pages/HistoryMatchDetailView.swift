@@ -8,16 +8,25 @@
 import SwiftUI
 
 struct HistoryMatchDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var context
     var match: Match
     
     var body: some View {
         List {
             Section {
-                MatchSummaryScoreTableView(match: match)
-                    .listStyle(.plain)
-                    .listRowInsets(.none)
-                    .listRowBackground(Color.clear)
-                    .padding(0)
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        MatchHistoryDetailDateView(match: match)
+                        
+                        MatchHistoryDetailDurationView(match: match)
+                    }
+
+                    MatchSummaryScoreTableView(match: match)
+                }
+                .listStyle(.plain)
+                .listRowInsets(.none)
+                .listRowBackground(Color.clear)
             }
             
             ForEach(match.sets) { set in
@@ -33,6 +42,30 @@ struct HistoryMatchDetailView: View {
             }
         }
         .listSectionSpacing(.compact)
+        .navigationTitle(match.label)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        print("Share tapped")
+                    } label: {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        context.delete(match)
+                        dismiss()
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.title2)
+                }
+            }
+        }
     }
 }
 
