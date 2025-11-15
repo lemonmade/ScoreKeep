@@ -7,6 +7,7 @@
 
 import SwiftData
 import SwiftUI
+import ScoreKeepCore
 
 struct MatchTotalScoreSummaryView: View {
     var us: String

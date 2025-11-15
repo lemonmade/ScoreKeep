@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScoreKeepCore
 
 struct MatchTemplateCreateView: View {
     var template: MatchTemplate? = nil

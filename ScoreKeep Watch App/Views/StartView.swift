@@ -8,6 +8,7 @@
 import HealthKit
 import SwiftData
 import SwiftUI
+import ScoreKeepCore
 
 struct StartView: View {
     private let navigation = NavigationManager()

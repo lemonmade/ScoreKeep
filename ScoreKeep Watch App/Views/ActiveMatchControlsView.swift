@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScoreKeepCore
 
 struct ActiveMatchControlsView: View {
     @Environment(Match.self) private var match

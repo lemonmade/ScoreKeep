@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Charts
+import ScoreKeepCore
 
 struct MatchGameChartView: View {
     var game: MatchGame

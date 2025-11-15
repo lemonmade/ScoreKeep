@@ -10,13 +10,13 @@ import SwiftData
 import SwiftUI
 import CloudKit
 
-enum MatchSport: String, Codable {
+public enum MatchSport: String, Codable {
     case volleyball
     case ultimate
     case squash
     case tennis
     
-    var label: String {
+    public var label: String {
         switch self {
         case .squash: return "Squash"
         case .ultimate: return "Ultimate frisbee"
@@ -25,7 +25,7 @@ enum MatchSport: String, Codable {
         }
     }
     
-    var figureIcon: String {
+    public var figureIcon: String {
         switch self {
         case .squash: return "figure.squash"
         case .ultimate: return "figure.disc.sports"
@@ -34,7 +34,7 @@ enum MatchSport: String, Codable {
         }
     }
     
-    var ballIcon: String {
+    public var ballIcon: String {
         switch self {
         case .squash: return "circle.fill"
         case .ultimate: return "circle.circle.fill"
@@ -43,18 +43,18 @@ enum MatchSport: String, Codable {
         }
     }
     
-    var gameServiceRotation: MatchServiceRotation {
+    public var gameServiceRotation: MatchServiceRotation {
         switch self {
         case .tennis: return .none
         default: return .lastWinner
         }
     }
     
-    var setServiceRotation: MatchServiceRotation {
+    public var setServiceRotation: MatchServiceRotation {
         return .every(count: 1)
     }
     
-    func normalizedScoreFor(_ team: MatchTeam, game: MatchGame) -> Int {
+    public func normalizedScoreFor(_ team: MatchTeam, game: MatchGame) -> Int {
         let score = game.scoreFor(team)
         
         switch self {
@@ -69,7 +69,7 @@ enum MatchSport: String, Codable {
         }
     }
     
-    func normalizedScoreLabelFor(_ team: MatchTeam, game: MatchGame) -> String {
+    public func normalizedScoreLabelFor(_ team: MatchTeam, game: MatchGame) -> String {
         let normalizedScore = normalizedScoreFor(team, game: game)
         
         if (self != .tennis) {
@@ -100,26 +100,26 @@ enum MatchSport: String, Codable {
     }
 }
 
-enum MatchServiceRotation: Codable, Equatable {
+public enum MatchServiceRotation: Codable, Equatable {
     case none
     case every(count: Int)
     case lastWinner
 }
 
-enum MatchTeam: String, Codable {
+public enum MatchTeam: String, Codable {
     case us, them
     
-    var opposingTeam: MatchTeam {
+    public var opposingTeam: MatchTeam {
         self == .us ? .them : .us
     }
 }
 
-enum MatchEnvironment: String, Codable {
+public enum MatchEnvironment: String, Codable {
     case indoor, outdoor
 }
 
-class MatchModelContainer {
-    let schema = Schema([
+public class MatchModelContainer {
+    public let schema = Schema([
         Match.self,
         MatchSet.self,
         MatchGame.self,
@@ -127,7 +127,11 @@ class MatchModelContainer {
         MatchTemplate.self,
     ])
     
-    func sharedModelContainer() -> ModelContainer {
+    public init() {
+        
+    }
+    
+    public func sharedModelContainer() -> ModelContainer {
         let configuration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
@@ -137,7 +141,7 @@ class MatchModelContainer {
         return try! ModelContainer(for: schema, configurations: [configuration])
     }
     
-    func testModelContainer() -> ModelContainer {
+    public func testModelContainer() -> ModelContainer {
         let configuration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: true,
@@ -149,44 +153,44 @@ class MatchModelContainer {
 }
 
 @Model
-class Match {
-    var sport: MatchSport = MatchSport.volleyball
-    var environment: MatchEnvironment = MatchEnvironment.outdoor
+public class Match {
+    public var sport: MatchSport = MatchSport.volleyball
+    public var environment: MatchEnvironment = MatchEnvironment.outdoor
 
     @Relationship(deleteRule: .cascade, inverse: \MatchSet.match)
-    var _sets: [MatchSet]?
-    var sets: [MatchSet] {
+    public var _sets: [MatchSet]?
+    public var sets: [MatchSet] {
         guard let _sets else { return [] }
         
         // @see https://stackoverflow.com/questions/76889986/swiftdata-ios-17-array-in-random-order
         return _sets.sorted { $0.number < $1.number }
     }
 
-    var startedAt: Date = Date.now
-    var endedAt: Date?
+    public var startedAt: Date = Date.now
+    public var endedAt: Date?
     
-    var _scoring: MatchScoringRules?
-    var scoring: MatchScoringRules {
+    public var _scoring: MatchScoringRules?
+    public var scoring: MatchScoringRules {
         _scoring ?? defaultScoringRules()
     }
     
     @Relationship
-    var template: MatchTemplate?
+    public var template: MatchTemplate?
     
     @Relationship
-    var warmup: MatchWarmup?
-    var hasWarmup: Bool { warmup != nil }
+    public var warmup: MatchWarmup?
+    public var hasWarmup: Bool { warmup != nil }
 
-    var hasEnded: Bool { endedAt != nil }
+    public var hasEnded: Bool { endedAt != nil }
 
-    var duration: TimeInterval { endedAt?.timeIntervalSince(startedAt) ?? 0 }
+    public var duration: TimeInterval { endedAt?.timeIntervalSince(startedAt) ?? 0 }
 
-    var latestSet: MatchSet? { sets.last }
-    var latestGame: MatchGame? { latestSet?.latestGame }
+    public var latestSet: MatchSet? { sets.last }
+    public var latestGame: MatchGame? { latestSet?.latestGame }
     
-    var startingServe: MatchTeam?
+    public var startingServe: MatchTeam?
 
-    var hasMoreGames: Bool {
+    public var hasMoreGames: Bool {
         if hasEnded { return false }
         guard let latestSet else { return true }
 
@@ -194,10 +198,10 @@ class Match {
             || scoring.canPlayAnotherSet(self)
     }
 
-    var setsUs: Int { sets.count { $0.winner == .us } }
-    var setsThem: Int { sets.count { $0.winner == .them } }
+    public var setsUs: Int { sets.count { $0.winner == .us } }
+    public var setsThem: Int { sets.count { $0.winner == .them } }
 
-    var winner: MatchTeam? {
+    public var winner: MatchTeam? {
         if !hasEnded { return nil }
 
         let setsUs = setsUs
@@ -205,11 +209,11 @@ class Match {
         return setsUs > setsThem ? .us : setsThem > setsUs ? .them : nil
     }
 
-    var hasWinner: Bool { winner != nil }
+    public var hasWinner: Bool { winner != nil }
 
-    var isMultiSet: Bool { scoring.isMultiSet }
+    public var isMultiSet: Bool { scoring.isMultiSet }
     
-    var scoreSummaryString: String? {
+    public var scoreSummaryString: String? {
         if isMultiSet {
             return "\(sets.map { "\($0.gamesUs)-\($0.gamesThem)" }.joined(separator: ", "))"
         }
@@ -222,11 +226,11 @@ class Match {
         }
     }
     
-    var label: String {
+    public var label: String {
         template?.name ?? sport.label
     }
 
-    init(from template: MatchTemplate, markAsUsed: Bool = true, sets: [MatchSet] = [MatchSet()], startedAt: Date = .now, endedAt: Date? = nil, startingServe: MatchTeam? = nil) {
+    public init(from template: MatchTemplate, markAsUsed: Bool = true, sets: [MatchSet] = [MatchSet()], startedAt: Date = .now, endedAt: Date? = nil, startingServe: MatchTeam? = nil) {
         self.template = markAsUsed ? template : nil
         self.sport = template.sport
         self.environment = template.environment
@@ -237,7 +241,7 @@ class Match {
         self.startingServe = startingServe
     }
 
-    init(
+    public init(
         _ sport: MatchSport = .volleyball,
         environment: MatchEnvironment = .indoor, scoring: MatchScoringRules,
         sets: [MatchSet] = [MatchSet()], startedAt: Date = .now,
@@ -253,7 +257,7 @@ class Match {
         self.startingServe = startingServe
     }
 
-    func setsFor(_ team: MatchTeam) -> Int {
+    public func setsFor(_ team: MatchTeam) -> Int {
         return team == .us ? setsUs : setsThem
     }
 
@@ -265,7 +269,7 @@ class Match {
         }.joined(separator: " | ")
     }
 
-    func scorePoint(_ team: MatchTeam) {
+    public func scorePoint(_ team: MatchTeam) {
         guard let set = latestSet, !set.hasEnded, let game = set.latestGame,
             !game.hasEnded
         else { return }
@@ -281,13 +285,13 @@ class Match {
         }
     }
     
-    func startWarmup() {
+    public func startWarmup() {
         if warmup != nil { return }
 
         warmup = MatchWarmup(startedAt: Date.now)
     }
 
-    func startGame() {
+    public func startGame() {
         let now = Date.now
         
         if let warmup {
@@ -321,7 +325,7 @@ class Match {
         addSet(startedAt: now)
     }
 
-    func end() {
+    public func end() {
         if hasEnded { return }
 
         let now = Date()
@@ -351,31 +355,31 @@ class Match {
 }
 
 @Model
-class MatchSet {
-    var match: Match?
+public class MatchSet {
+    public var match: Match?
     
-    var number: Int = 1
+    public var number: Int = 1
     
     @Relationship(deleteRule: .cascade, inverse: \MatchGame.set)
-    var _games: [MatchGame]?
-    var games: [MatchGame] {
+    public var _games: [MatchGame]?
+    public var games: [MatchGame] {
         guard let _games else { return [] }
 
         // @see https://stackoverflow.com/questions/76889986/swiftdata-ios-17-array-in-random-order
         return _games.sorted { $0.number < $1.number }
     }
-    var latestGame: MatchGame? { games.last }
+    public var latestGame: MatchGame? { games.last }
 
-    var createdAt: Date = Date.now
-    var startedAt: Date = Date.now
-    var endedAt: Date?
+    public var createdAt: Date = Date.now
+    public var startedAt: Date = Date.now
+    public var endedAt: Date?
 
-    var hasEnded: Bool { endedAt != nil }
+    public var hasEnded: Bool { endedAt != nil }
 
-    var gamesUs: Int { games.count { $0.winner == .us } }
-    var gamesThem: Int { games.count { $0.winner == .them } }
+    public var gamesUs: Int { games.count { $0.winner == .us } }
+    public var gamesThem: Int { games.count { $0.winner == .them } }
 
-    var winner: MatchTeam? {
+    public var winner: MatchTeam? {
         if !hasEnded { return nil }
 
         let gamesUs = gamesUs
@@ -383,22 +387,22 @@ class MatchSet {
         return gamesUs > gamesThem ? .us : gamesThem > gamesUs ? .them : nil
     }
 
-    var hasWinner: Bool { winner != nil }
+    public var hasWinner: Bool { winner != nil }
 
-    var isTied: Bool {
+    public var isTied: Bool {
         gamesUs == gamesThem
     }
     
-    var isMultiGame: Bool { match?.scoring.setScoring.isMultiGame ?? true }
+    public var isMultiGame: Bool { match?.scoring.setScoring.isMultiGame ?? true }
     
-    var startingServe: MatchTeam? { games.first?.startingServe }
+    public var startingServe: MatchTeam? { games.first?.startingServe }
     
-    var isLatestInMatch: Bool {
+    public var isLatestInMatch: Bool {
         guard let latestSet = match?.latestSet else { return false }
         return latestSet.number == number
     }
 
-    init(
+    public init(
         number: Int = 1, games: [MatchGame]? = nil,
         startedAt: Date = Date(), endedAt: Date? = nil, startingServe: MatchTeam? = nil
     ) {
@@ -414,11 +418,11 @@ class MatchSet {
         self.createdAt = Date()
     }
 
-    func gamesFor(_ team: MatchTeam) -> Int {
+    public func gamesFor(_ team: MatchTeam) -> Int {
         return team == .us ? gamesUs : gamesThem
     }
     
-    func startGame(startedAt: Date = .now, startingServe: MatchTeam? = nil) {
+    public func startGame(startedAt: Date = .now, startingServe: MatchTeam? = nil) {
         let latestGame = latestGame
         let latestNumber = latestGame?.number ?? 0
         let latestStartingServe = latestGame?.startingServe
@@ -432,28 +436,28 @@ class MatchSet {
 }
 
 @Model
-class MatchGame {
-    var set: MatchSet?
+public class MatchGame {
+    public var set: MatchSet?
     
-    var number: Int = 1
+    public var number: Int = 1
 
-    var createdAt: Date = Date.now
-    var startedAt: Date = Date.now
-    var endedAt: Date?
+    public var createdAt: Date = Date.now
+    public var startedAt: Date = Date.now
+    public var endedAt: Date?
 
-    var _scores: [MatchGameScore]?
-    var scores: [MatchGameScore] {
+    public var _scores: [MatchGameScore]?
+    public var scores: [MatchGameScore] {
         guard let scores = _scores else { return [] }
         
         return scores.sorted { $0.timestamp < $1.timestamp }
     }
     
-    var scoreUs: Int { _scores?.reduce(0) { $0 + $1.us } ?? 0 }
-    var scoreThem: Int { _scores?.reduce(0) { $0 + $1.them } ?? 0 }
+    public var scoreUs: Int { _scores?.reduce(0) { $0 + $1.us } ?? 0 }
+    public var scoreThem: Int { _scores?.reduce(0) { $0 + $1.them } ?? 0 }
 
-    var hasEnded: Bool { endedAt != nil }
+    public var hasEnded: Bool { endedAt != nil }
     
-    var leading: MatchTeam? {
+    public var leading: MatchTeam? {
         let scoreUs = scoreUs, scoreThem = scoreThem
         
         if scoreUs > scoreThem { return .us }
@@ -461,7 +465,7 @@ class MatchGame {
         return nil
     }
 
-    var winner: MatchTeam? {
+    public var winner: MatchTeam? {
         if !hasEnded { return nil }
 
         let scoreUs = scoreUs
@@ -469,15 +473,15 @@ class MatchGame {
         return scoreUs > scoreThem ? .us : scoreThem > scoreUs ? .them : nil
     }
 
-    var hasWinner: Bool { winner != nil }
+    public var hasWinner: Bool { winner != nil }
 
-    var isTied: Bool {
+    public var isTied: Bool {
         scoreUs == scoreThem
     }
 
-    var startingServe: MatchTeam?
+    public var startingServe: MatchTeam?
 
-    var servingTeam: MatchTeam? {
+    public var servingTeam: MatchTeam? {
         if hasEnded { return nil }
         
         let sport = set?.match?.sport
@@ -492,12 +496,12 @@ class MatchGame {
         return startingServe
     }
     
-    var isLatestInSet: Bool {
+    public var isLatestInSet: Bool {
         guard let latestGame = set?.latestGame else { return false }
         return latestGame.number == number
     }
 
-    init(
+    public init(
         number: Int = 1,
         scores: [MatchGameScore] = [],
         startedAt: Date = .now,
@@ -512,7 +516,7 @@ class MatchGame {
         self.startingServe = startingServe
     }
     
-    init(
+    public init(
         number: Int = 1,
         us: Int,
         them: Int,
@@ -532,7 +536,7 @@ class MatchGame {
         self.startingServe = startingServe
     }
 
-    func scorePoint(_ team: MatchTeam, at timestamp: Date = .now) {
+    public func scorePoint(_ team: MatchTeam, at timestamp: Date = .now) {
         var scores = self._scores ?? []
         
         let score = MatchGameScore(team, serve: servingTeam, at: timestamp);
@@ -541,11 +545,11 @@ class MatchGame {
         _scores = scores
     }
 
-    func scoreFor(_ team: MatchTeam) -> Int {
+    public func scoreFor(_ team: MatchTeam) -> Int {
         team == .us ? scoreUs : scoreThem
     }
     
-    func serveStreakFor(_ team: MatchTeam) -> Int {
+    public func serveStreakFor(_ team: MatchTeam) -> Int {
         var streak = 0
         
         for score in scores.sorted(by: { $0.timestamp > $1.timestamp }) {
@@ -557,18 +561,18 @@ class MatchGame {
     }
 }
 
-enum MatchGameScoreSource: String, Codable {
+public enum MatchGameScoreSource: String, Codable {
     case point, edit
 }
 
-struct MatchGameScore: Codable, Equatable {
-    var us: Int
-    var them: Int
-    var timestamp: Date
-    var source: MatchGameScoreSource
-    var serve: MatchTeam?
+public struct MatchGameScore: Codable, Equatable {
+    public var us: Int
+    public var them: Int
+    public var timestamp: Date
+    public var source: MatchGameScoreSource
+    public var serve: MatchTeam?
     
-    init(us: Int = 0, them: Int = 0, serve: MatchTeam? = nil, at timestamp: Date = .now, source: MatchGameScoreSource = .point) {
+    public init(us: Int = 0, them: Int = 0, serve: MatchTeam? = nil, at timestamp: Date = .now, source: MatchGameScoreSource = .point) {
         self.us = us
         self.them = them
         self.timestamp = timestamp
@@ -576,7 +580,7 @@ struct MatchGameScore: Codable, Equatable {
         self.source = source
     }
     
-    init(_ team: MatchTeam, serve: MatchTeam? = nil, at timestamp: Date = .now) {
+    public init(_ team: MatchTeam, serve: MatchTeam? = nil, at timestamp: Date = .now) {
         self.us = team == .us ? 1 : 0
         self.them = team == .them ? 1 : 0
         self.timestamp = timestamp
@@ -584,7 +588,7 @@ struct MatchGameScore: Codable, Equatable {
         self.source = .point
     }
     
-    func adjustment(_ team: MatchTeam) -> Int {
+    public func adjustment(_ team: MatchTeam) -> Int {
         switch team {
         case .us:
             return us
@@ -595,17 +599,17 @@ struct MatchGameScore: Codable, Equatable {
 }
 
 @Model
-class MatchWarmup {
+public class MatchWarmup {
     @Relationship(inverse: \Match.warmup)
-    var match: Match?
+    public var match: Match?
     
-    var createdAt: Date = Date.now
-    var startedAt: Date = Date.now
-    var endedAt: Date?
+    public var createdAt: Date = Date.now
+    public var startedAt: Date = Date.now
+    public var endedAt: Date?
     
-    var hasEnded: Bool { endedAt != nil }
+    public var hasEnded: Bool { endedAt != nil }
     
-    init(
+    public init(
         startedAt: Date = Date.now,
         endedAt: Date? = nil
     ) {
@@ -614,16 +618,16 @@ class MatchWarmup {
         self.createdAt = Date.now
     }
     
-    func end() {
+    public func end() {
         if hasEnded { return }
         endedAt = Date.now
     }
 }
 
-enum MatchTemplateColor: String, Codable {
+public enum MatchTemplateColor: String, Codable {
     case green, yellow, indigo, purple, teal, blue, orange, pink
 
-    var color: Color {
+    public var color: Color {
         switch self {
         case .green: return Color.green
         case .yellow: return Color.yellow
@@ -636,32 +640,32 @@ enum MatchTemplateColor: String, Codable {
         }
     }
 
-    static var allCases: [MatchTemplateColor] {
+    public static var allCases: [MatchTemplateColor] {
         [.green, .yellow, .indigo, .purple, .teal, .blue, .orange, .pink]
     }
 }
 
 @Model
-class MatchTemplate {
+public class MatchTemplate {
     @Relationship(inverse: \Match.template)
-    var _matches: [Match]?
+    public var _matches: [Match]?
     
-    var sport: MatchSport = MatchSport.volleyball
-    var name: String = "Volleyball"
-    var color: MatchTemplateColor = MatchTemplateColor.green
-    var environment: MatchEnvironment = MatchEnvironment.indoor
-    var _scoring: MatchScoringRules?
-    var scoring: MatchScoringRules {
+    public var sport: MatchSport = MatchSport.volleyball
+    public var name: String = "Volleyball"
+    public var color: MatchTemplateColor = MatchTemplateColor.green
+    public var environment: MatchEnvironment = MatchEnvironment.indoor
+    public var _scoring: MatchScoringRules?
+    public var scoring: MatchScoringRules {
         get { _scoring ?? defaultScoringRules() }
         set { _scoring = newValue }
     }
     
-    var createdAt: Date = Date.now
-    var lastUsedAt: Date?
-    var warmup: MatchWarmupRules = MatchWarmupRules.none
-    var startWorkout: Bool = true
+    public var createdAt: Date = Date.now
+    public var lastUsedAt: Date?
+    public var warmup: MatchWarmupRules = MatchWarmupRules.none
+    public var startWorkout: Bool = true
 
-    init(
+    public init(
         _ sport: MatchSport, name: String, color: MatchTemplateColor = .green,
         environment: MatchEnvironment = .indoor, scoring: MatchScoringRules,
         warmup: MatchWarmupRules = .none,
@@ -677,7 +681,7 @@ class MatchTemplate {
         self.startWorkout = startWorkout
     }
 
-    func createMatch(markAsUsed: Bool = true) -> Match {
+    public func createMatch(markAsUsed: Bool = true) -> Match {
         if markAsUsed {
             lastUsedAt = Date()
         }
@@ -686,25 +690,34 @@ class MatchTemplate {
     }
 }
 
-enum MatchWarmupRules: Codable, Equatable {
+public enum MatchWarmupRules: Codable, Equatable {
     case none
     case open
 }
 
-struct MatchScoringRules: Codable, Equatable {
-    var winAt: Int? = nil
-    var winBy: Int? = nil
-    var maximum: Int? = nil
-    var playItOut: Bool = false
-    var setScoring: MatchSetScoringRules
-    var lastSetScoring: MatchSetScoringRules? = nil
+public struct MatchScoringRules: Codable, Equatable {
+    public var winAt: Int? = nil
+    public var winBy: Int? = nil
+    public var maximum: Int? = nil
+    public var playItOut: Bool = false
+    public var setScoring: MatchSetScoringRules
+    public var lastSetScoring: MatchSetScoringRules? = nil
+    
+    public init(winAt: Int? = nil, winBy: Int? = nil, maximum: Int? = nil, playItOut: Bool = false, setScoring: MatchSetScoringRules, lastSetScoring: MatchSetScoringRules? = nil) {
+        self.winAt = winAt
+        self.winBy = winBy
+        self.maximum = maximum
+        self.playItOut = playItOut
+        self.setScoring = setScoring
+        self.lastSetScoring = lastSetScoring
+    }
 
-    var isMultiSet: Bool {
+    public var isMultiSet: Bool {
         guard let winAt else { return false }
         return winAt > 1
     }
     
-    var primaryLabel: String {
+    public var primaryLabel: String {
         guard let winAt, let maximumSetCount else { return "Open match" }
         
         if winAt == 1 {
@@ -718,13 +731,13 @@ struct MatchScoringRules: Codable, Equatable {
         return "First to \(winAt) sets"
     }
 
-    var secondaryLabel: String {
+    public var secondaryLabel: String {
         if winAt == nil { return "" }
         
         return setScoring.secondaryLabel
     }
 
-    func checkForWinner(_ match: Match) -> MatchTeam? {
+    public func checkForWinner(_ match: Match) -> MatchTeam? {
         if let winner = match.winner { return winner }
         
         guard let winAt else { return nil }
@@ -748,11 +761,11 @@ struct MatchScoringRules: Codable, Equatable {
         return nil
     }
 
-    func hasWinner(_ match: Match) -> Bool {
+    public func hasWinner(_ match: Match) -> Bool {
         checkForWinner(match) != nil
     }
 
-    func canPlayAnotherSet(_ match: Match) -> Bool {
+    public func canPlayAnotherSet(_ match: Match) -> Bool {
         if winAt == nil { return true }
         
         if hasWinner(match) && !playItOut { return false }
@@ -762,27 +775,36 @@ struct MatchScoringRules: Codable, Equatable {
         return match.sets.count < maximumSetCount
     }
     
-    var maximumSetCount: Int? {
+    public var maximumSetCount: Int? {
         if let maximum { return (maximum * 2) - 1 }
         if let winAt { return (winAt * 2) - 1 }
         return nil
     }
 }
 
-struct MatchSetScoringRules: Codable, Equatable {
-    var winAt: Int? = nil
-    var winBy: Int? = nil
-    var maximum: Int? = nil
-    var playItOut: Bool = false
-    var gameScoring: MatchGameScoringRules
-    var lastGameScoring: MatchGameScoringRules? = nil
+public struct MatchSetScoringRules: Codable, Equatable {
+    public var winAt: Int? = nil
+    public var winBy: Int? = nil
+    public var maximum: Int? = nil
+    public var playItOut: Bool = false
+    public var gameScoring: MatchGameScoringRules
+    public var lastGameScoring: MatchGameScoringRules? = nil
+    
+    public init(winAt: Int? = nil, winBy: Int? = nil, maximum: Int? = nil, playItOut: Bool = false, gameScoring: MatchGameScoringRules, lastGameScoring: MatchGameScoringRules? = nil) {
+        self.winAt = winAt
+        self.winBy = winBy
+        self.maximum = maximum
+        self.playItOut = playItOut
+        self.gameScoring = gameScoring
+        self.lastGameScoring = lastGameScoring
+    }
 
-    var isMultiGame: Bool {
+    public var isMultiGame: Bool {
         guard let winAt else { return false }
         return winAt > 1
     }
     
-    var primaryLabel: String {
+    public var primaryLabel: String {
         guard let winAt, let maximumGameCount else { return "Open set" }
         
         if winAt == 1 {
@@ -796,7 +818,7 @@ struct MatchSetScoringRules: Codable, Equatable {
         return "First to \(winAt) games"
     }
 
-    var secondaryLabel: String {
+    public var secondaryLabel: String {
         guard let winAt, winAt > 1 else { return "" }
         
         guard let gamesWinAt = gameScoring.winAt else { return "Open games" }
@@ -804,7 +826,7 @@ struct MatchSetScoringRules: Codable, Equatable {
         return "Games to \(gamesWinAt) points"
     }
 
-    func checkForWinner(_ set: MatchSet) -> MatchTeam? {
+    public func checkForWinner(_ set: MatchSet) -> MatchTeam? {
         if let winner = set.winner { return winner }
         
         guard let winAt else { return nil }
@@ -828,11 +850,11 @@ struct MatchSetScoringRules: Codable, Equatable {
         return nil
     }
 
-    func hasWinner(_ set: MatchSet) -> Bool {
+    public func hasWinner(_ set: MatchSet) -> Bool {
         checkForWinner(set) != nil
     }
 
-    func canPlayAnotherGame(_ set: MatchSet) -> Bool {
+    public func canPlayAnotherGame(_ set: MatchSet) -> Bool {
         if winAt == nil { return true }
         
         print("MatchSetScoringRules.canPlayAnotherGame()")
@@ -846,25 +868,31 @@ struct MatchSetScoringRules: Codable, Equatable {
         return set.games.count < maximumGameCount
     }
     
-    var maximumGameCount: Int? {
+    public var maximumGameCount: Int? {
         if let maximum { return (maximum * 2) - 1 }
         if let winAt { return (winAt * 2) - 1 }
         return nil
     }
 }
 
-struct MatchGameScoringRules: Codable, Equatable {
-    var winAt: Int? = nil
-    var winBy: Int? = nil
-    var maximum: Int? = nil
+public struct MatchGameScoringRules: Codable, Equatable {
+    public var winAt: Int? = nil
+    public var winBy: Int? = nil
+    public var maximum: Int? = nil
+    
+    public init(winAt: Int? = nil, winBy: Int? = nil, maximum: Int? = nil) {
+        self.winAt = winAt
+        self.winBy = winBy
+        self.maximum = maximum
+    }
 
-    var primaryLabel: String {
+    public var primaryLabel: String {
         guard let winAt else { return "Open game" }
         
         return "First to \(winAt) points"
     }
 
-    func checkForWinner(_ game: MatchGame) -> MatchTeam? {
+    public func checkForWinner(_ game: MatchGame) -> MatchTeam? {
         if let winner = game.winner { return winner }
         
         guard let winAt else { return nil }
@@ -888,12 +916,12 @@ struct MatchGameScoringRules: Codable, Equatable {
         return nil
     }
 
-    func hasWinner(_ game: MatchGame) -> Bool {
+    public func hasWinner(_ game: MatchGame) -> Bool {
         checkForWinner(game) != nil
     }
 }
 
-private func defaultScoringRules() -> MatchScoringRules {
+public func defaultScoringRules() -> MatchScoringRules {
     MatchScoringRules(
         winAt: 2,
         setScoring: MatchSetScoringRules(
@@ -902,4 +930,3 @@ private func defaultScoringRules() -> MatchScoringRules {
         )
     )
 }
-

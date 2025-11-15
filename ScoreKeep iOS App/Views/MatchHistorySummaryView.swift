@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import ScoreKeepCore
 
 struct MatchHistorySummaryView: View {
     var match: Match

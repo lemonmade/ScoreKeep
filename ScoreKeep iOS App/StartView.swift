@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import ScoreKeepCore
 
 struct StartView: View {
     @Environment(\.modelContext) private var context

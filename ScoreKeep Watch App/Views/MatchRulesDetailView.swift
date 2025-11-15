@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScoreKeepCore
 
 struct MatchRulesDetailView: View {
     var name: String

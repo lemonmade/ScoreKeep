@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Charts
+import ScoreKeepCore
 
 struct MatchHistoryDetailView: View {
     var match: Match

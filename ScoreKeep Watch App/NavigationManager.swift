@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import ScoreKeepCore
 
 protocol NavigationLocationProtocol : Hashable {}
 

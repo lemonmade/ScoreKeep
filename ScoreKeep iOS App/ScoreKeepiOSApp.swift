@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import ScoreKeepCore
 
 @main
 struct ScoreKeepiOSApp: App {

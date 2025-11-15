@@ -6,6 +6,7 @@
 //
 
 import HealthKit
+import ScoreKeepCore
 
 @Observable
 class WorkoutManagerActiveWorkout {

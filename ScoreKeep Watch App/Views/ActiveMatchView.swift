@@ -7,6 +7,7 @@
 
 import SwiftUI
 import WatchKit
+import ScoreKeepCore
 
 struct ActiveMatchView: View {
     var template: MatchTemplate

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScoreKeepCore
 
 struct MatchHistoryDetailGameView: View {
     var game: MatchGame

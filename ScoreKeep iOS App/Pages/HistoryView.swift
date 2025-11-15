@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import ScoreKeepCore
 
 struct HistoryView: View {
     @Environment(\.modelContext) private var context

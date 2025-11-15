@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ScoreKeepCore
 
 struct ActiveMatchActivityViewWithData: View {
     @Environment(Match.self) var match

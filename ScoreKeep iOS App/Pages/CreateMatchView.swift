@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import ScoreKeepCore
 
 struct CreateMatchView: View {
     var body: some View {
