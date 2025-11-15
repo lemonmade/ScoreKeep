@@ -16,7 +16,7 @@ struct MatchRulesDetailView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if includeImage {
-                Label(name, systemImage: sport.icon)
+                Label(name, systemImage: sport.figureIcon)
                     .font(.headline)
             } else {
                 Text(name)

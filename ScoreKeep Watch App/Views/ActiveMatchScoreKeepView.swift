@@ -200,8 +200,9 @@ struct GameScoreTeamServeIndicatorView: View {
     var body: some View {
         if team == game.servingTeam {
             HStack(alignment: .bottom, spacing: 2) {
-                Image(systemName: match.sport.icon)
+                Image(systemName: match.sport.ballIcon)
                     .resizable()
+                    .scaledToFit()
                     .frame(width: 24, height: 24)
                 
                 // If we aren’t rotating on every point, “service streaks” are a little odd.

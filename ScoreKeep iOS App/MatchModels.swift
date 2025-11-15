@@ -25,12 +25,21 @@ enum MatchSport: String, Codable {
         }
     }
     
-    var icon: String {
+    var figureIcon: String {
         switch self {
         case .squash: return "figure.squash"
         case .ultimate: return "figure.disc.sports"
         case .volleyball: return "figure.volleyball"
         case .tennis: return "figure.tennis"
+        }
+    }
+    
+    var ballIcon: String {
+        switch self {
+        case .squash: return "circle.fill"
+        case .ultimate: return "circle.circle.fill"
+        case .volleyball: return "volleyball.fill"
+        case .tennis: return "tennisball.fill"
         }
     }
     

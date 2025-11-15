@@ -150,7 +150,7 @@ struct StartMatchNavigationLinkView: View {
             value: NavigationLocation.ActiveMatch(template: template)
         ) {
             VStack(alignment: .leading, spacing: 8) {
-                Image(systemName: template.sport.icon)
+                Image(systemName: template.sport.figureIcon)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 42, height: 42)

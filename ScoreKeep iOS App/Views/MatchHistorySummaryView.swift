@@ -17,7 +17,7 @@ struct MatchHistorySummaryView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 2) {
-                    Image(systemName: match.sport.icon)
+                    Image(systemName: match.sport.figureIcon)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 18, height: 18)
