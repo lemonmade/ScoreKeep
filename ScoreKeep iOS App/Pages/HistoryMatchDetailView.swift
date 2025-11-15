@@ -7,6 +7,7 @@
 
 import SwiftUI
 import ScoreKeepCore
+import ScoreKeepUI
 
 struct HistoryMatchDetailView: View {
     @Environment(\.dismiss) private var dismiss

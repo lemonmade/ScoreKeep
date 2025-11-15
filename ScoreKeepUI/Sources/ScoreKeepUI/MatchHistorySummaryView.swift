@@ -9,10 +9,14 @@ import SwiftUI
 import SwiftData
 import ScoreKeepCore
 
-struct MatchHistorySummaryView: View {
+public struct MatchHistorySummaryView: View {
     var match: Match
     
-    var body: some View {
+    public init(match: Match) {
+        self.match = match
+    }
+    
+    public var body: some View {
         HStack(alignment: .top, spacing: 8) {
             MatchTotalScoreSummaryView(match: match)
 
@@ -35,37 +39,49 @@ struct MatchHistorySummaryView: View {
     }
 }
 
-struct MatchHistoryDetailDateView: View {
-    var match: Match
+public struct MatchHistoryDetailDateView: View {
+    public var match: Match
+    
+    public init(match: Match) {
+        self.match = match
+    }
     
     private let dateFormatter = Date.FormatStyle(
         date: .abbreviated,
         time: .none
     )
     
-    var body: some View {
+    public var body: some View {
         Text(
             (match.endedAt ?? match.startedAt).formatted(dateFormatter)
         )
     }
 }
 
-struct MatchHistoryDetailDurationView: View {
+public struct MatchHistoryDetailDurationView: View {
     var match: Match
+    
+    public init(match: Match) {
+        self.match = match
+    }
     
     private var startedAt: Date { match.startedAt }
     private var endedAt: Date { match.endedAt ?? match.startedAt }
     
-    var body: some View {
+    public var body: some View {
         Text(startedAt...endedAt)
             .foregroundStyle(.secondary)
     }
 }
 
-struct MatchHistoryDetailDetailView: View {
+public struct MatchHistoryDetailDetailView: View {
     var match: Match
     
-    var body: some View {
+    public init(match: Match) {
+        self.match = match
+    }
+    
+    public var body: some View {
         if match.isMultiSet || (match.latestSet?.isMultiGame ?? true) {
             if let scoreSummaryString = match.scoreSummaryString {
                 Text(scoreSummaryString)

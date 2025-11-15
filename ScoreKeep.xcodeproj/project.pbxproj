@@ -10,6 +10,8 @@
 		6C3DCA522D0921D2004A9BBF /* ScoreKeep Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 6C3DCA512D0921D2004A9BBF /* ScoreKeep Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		6C91C14B2EC83D3F00AC114B /* ScoreKeepCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6C91C14A2EC83D3F00AC114B /* ScoreKeepCore */; };
 		6C91C14D2EC83D5300AC114B /* ScoreKeepCore in Frameworks */ = {isa = PBXBuildFile; productRef = 6C91C14C2EC83D5300AC114B /* ScoreKeepCore */; };
+		6C91C1522EC84C3C00AC114B /* ScoreKeepUI in Frameworks */ = {isa = PBXBuildFile; productRef = 6C91C1512EC84C3C00AC114B /* ScoreKeepUI */; };
+		6C91C1542EC84C6500AC114B /* ScoreKeepUI in Frameworks */ = {isa = PBXBuildFile; productRef = 6C91C1532EC84C6500AC114B /* ScoreKeepUI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -73,6 +75,7 @@
 		6C3DCA632D0921D3004A9BBF /* ScoreKeep Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ScoreKeep Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C3DCA6D2D0921D3004A9BBF /* ScoreKeep Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ScoreKeep Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6C91C1482EC83C0D00AC114B /* ScoreKeepCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ScoreKeepCore; sourceTree = "<group>"; };
+		6C91C14E2EC84AEE00AC114B /* ScoreKeepUI */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ScoreKeepUI; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -87,8 +90,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Views/MatchGameChartView.swift,
-				Views/MatchHistorySummaryView.swift,
-				Views/MatchTotalScoreSummaryView.swift,
 			);
 			target = 6C3DCA502D0921D2004A9BBF /* ScoreKeep Watch App */;
 		};
@@ -136,6 +137,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6C91C1522EC84C3C00AC114B /* ScoreKeepUI in Frameworks */,
 				6C91C14B2EC83D3F00AC114B /* ScoreKeepCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -158,6 +160,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6C91C1542EC84C6500AC114B /* ScoreKeepUI in Frameworks */,
 				6C91C14D2EC83D5300AC114B /* ScoreKeepCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -182,6 +185,7 @@
 		6C3DCA442D0921D1004A9BBF = {
 			isa = PBXGroup;
 			children = (
+				6C91C14E2EC84AEE00AC114B /* ScoreKeepUI */,
 				6C91C1482EC83C0D00AC114B /* ScoreKeepCore */,
 				6C3DCA552D0921D2004A9BBF /* ScoreKeep Watch App */,
 				6C3DCA662D0921D3004A9BBF /* ScoreKeep Watch AppTests */,
@@ -236,6 +240,7 @@
 			name = "ScoreKeep iOS App";
 			packageProductDependencies = (
 				6C91C14A2EC83D3F00AC114B /* ScoreKeepCore */,
+				6C91C1512EC84C3C00AC114B /* ScoreKeepUI */,
 			);
 			productName = "ScoreKeep iOS App";
 			productReference = 6C1376BD2D90B46C003AB248 /* ScoreKeep iOS App.app */;
@@ -324,6 +329,7 @@
 			name = "ScoreKeep Watch App";
 			packageProductDependencies = (
 				6C91C14C2EC83D5300AC114B /* ScoreKeepCore */,
+				6C91C1532EC84C6500AC114B /* ScoreKeepUI */,
 			);
 			productName = "ScoreKeep Watch App";
 			productReference = 6C3DCA512D0921D2004A9BBF /* ScoreKeep Watch App.app */;
@@ -421,6 +427,10 @@
 			);
 			mainGroup = 6C3DCA442D0921D1004A9BBF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				6C91C14F2EC84B4D00AC114B /* XCLocalSwiftPackageReference "ScoreKeepCore" */,
+				6C91C1502EC84C3C00AC114B /* XCLocalSwiftPackageReference "ScoreKeepUI" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6C3DCA4C2D0921D2004A9BBF /* Products */;
 			projectDirPath = "";
@@ -1093,6 +1103,17 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		6C91C14F2EC84B4D00AC114B /* XCLocalSwiftPackageReference "ScoreKeepCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ScoreKeepCore;
+		};
+		6C91C1502EC84C3C00AC114B /* XCLocalSwiftPackageReference "ScoreKeepUI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ScoreKeepUI;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		6C91C14A2EC83D3F00AC114B /* ScoreKeepCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1101,6 +1122,14 @@
 		6C91C14C2EC83D5300AC114B /* ScoreKeepCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ScoreKeepCore;
+		};
+		6C91C1512EC84C3C00AC114B /* ScoreKeepUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScoreKeepUI;
+		};
+		6C91C1532EC84C6500AC114B /* ScoreKeepUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScoreKeepUI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

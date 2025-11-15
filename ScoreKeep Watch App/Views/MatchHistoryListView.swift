@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import ScoreKeepCore
+import ScoreKeepUI
 
 struct MatchHistoryListView: View {
     @Query(sort: \Match.startedAt, order: .reverse) private var matches: [Match]

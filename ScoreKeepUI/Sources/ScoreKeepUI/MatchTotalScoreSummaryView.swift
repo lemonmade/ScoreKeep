@@ -9,24 +9,24 @@ import SwiftData
 import SwiftUI
 import ScoreKeepCore
 
-struct MatchTotalScoreSummaryView: View {
+public struct MatchTotalScoreSummaryView: View {
     var us: String
     var them: String
     var winner: MatchTeam? = nil
 
-    init(us: Int, them: Int, winner: MatchTeam? = nil) {
+    public init(us: Int, them: Int, winner: MatchTeam? = nil) {
         self.us = String(us)
         self.them = String(them)
         self.winner = winner
     }
     
-    init(us: String, them: String, winner: MatchTeam? = nil) {
+    public init(us: String, them: String, winner: MatchTeam? = nil) {
         self.us = us
         self.them = them
         self.winner = winner
     }
 
-    init(match: Match) {
+    public init(match: Match) {
         if match.isMultiSet {
             self.us = String(match.setsUs)
             self.them = String(match.setsThem)
@@ -47,7 +47,7 @@ struct MatchTotalScoreSummaryView: View {
         self.winner = match.winner
     }
 
-    init(game: MatchGame) {
+    public init(game: MatchGame) {
         self.us = game.set?.match?.sport.normalizedScoreLabelFor(.us, game: game) ?? String(game.scoreUs)
         self.them = game.set?.match?.sport.normalizedScoreLabelFor(.them, game: game) ?? String(game.scoreThem)
         self.winner = game.winner
@@ -59,7 +59,7 @@ struct MatchTotalScoreSummaryView: View {
     private let outerPadding: CGFloat = 16
     private let backgroundOpacity = 0.25
 
-    var body: some View {
+    public var body: some View {
         Grid(verticalSpacing: 0) {
             GridRow {
                 Text(us)
@@ -124,16 +124,21 @@ struct MatchTotalScoreSummaryView: View {
     }
 }
 
-enum ScoreLayout {
+public enum ScoreLayout {
     case selfFirst
     case selfPointsInward
 }
 
-struct MatchSummaryScoreTableView: View {
+public struct MatchSummaryScoreTableView: View {
     var match: Match
     var layout: ScoreLayout = .selfFirst
+    
+    public init(match: Match, layout: ScoreLayout = .selfFirst) {
+        self.match = match
+        self.layout = layout
+    }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 2) {
             switch layout {
             case .selfFirst:
@@ -167,13 +172,13 @@ struct MatchSummaryScoreTableView: View {
 //    }
 }
 
-struct MatchSummaryScoreTableRowView: View {
+public struct MatchSummaryScoreTableRowView: View {
     @Bindable var match: Match
     var team: MatchTeam
     
     @State private var latestGame: MatchGame?
     
-    init(match: Match, team: MatchTeam) {
+    public init(match: Match, team: MatchTeam) {
         self.match = match
         self.team = team
         self.latestGame = match.latestGame
@@ -197,7 +202,7 @@ struct MatchSummaryScoreTableRowView: View {
         return winner ? winnerFontWeight : nonWinnerFontWeight
     }
     
-    var body: some View {
+    public var body: some View {
         let color = team == .us ? Color.blue : Color.red
         let label = team == .us ? "Us" : "Them"
         let hasWinner = match.hasWinner
@@ -280,15 +285,15 @@ struct MatchSummaryScoreTableRowView: View {
     }
 }
 
-enum MatchSummaryScoreTableCellVerticalPosition {
+public enum MatchSummaryScoreTableCellVerticalPosition {
     case top, bottom
 }
 
-enum MatchSummaryScoreTableCellHorizontalPosition {
+public enum MatchSummaryScoreTableCellHorizontalPosition {
     case leading, inner, trailing
 }
 
-struct MatchSummaryScoreTableNumberView: View {
+public struct MatchSummaryScoreTableNumberView: View {
     private let number: Int
     private let pad: Bool
     private let verticalPosition: MatchSummaryScoreTableCellVerticalPosition
@@ -318,17 +323,24 @@ struct MatchSummaryScoreTableNumberView: View {
         self.horizontalPosition = horizontalPosition
     }
     
-    var body: some View {
+    public var body: some View {
         Text("\(pad && number < 10 ? "0" : "")\(number)")
             .padding(EdgeInsets(top: verticalPadding, leading: leadingPadding, bottom: verticalPadding, trailing: trailingPadding))
     }
 }
 
-struct MatchSummaryScoreTableBackgroundView: View {
+public struct MatchSummaryScoreTableBackgroundView: View {
     let color: Color
     let winner: Bool
     let horizontalPosition: MatchSummaryScoreTableCellHorizontalPosition
     let verticalPosition: MatchSummaryScoreTableCellVerticalPosition
+    
+    public init(color: Color, winner: Bool, horizontalPosition: MatchSummaryScoreTableCellHorizontalPosition, verticalPosition: MatchSummaryScoreTableCellVerticalPosition) {
+        self.color = color
+        self.winner = winner
+        self.horizontalPosition = horizontalPosition
+        self.verticalPosition = verticalPosition
+    }
     
     private let cornerRadiusOutside: CGFloat = 12
     private let cornerRadiusInside: CGFloat = 8
@@ -378,7 +390,7 @@ struct MatchSummaryScoreTableBackgroundView: View {
         }
     }
     
-    var body: some View {
+    public var body: some View {
         if winner {
             UnevenRoundedRectangle(cornerRadii: cornerRadii)
                 .fill(color.opacity(backgroundOpacity))
