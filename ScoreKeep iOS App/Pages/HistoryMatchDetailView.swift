@@ -12,6 +12,12 @@ struct HistoryMatchDetailView: View {
     @Environment(\.modelContext) private var context
     var match: Match
     
+    private let web = ScoreKeepWeb()
+    
+    @State private var shareURL: URL?
+    @State private var isPresentingShare = false
+    @State private var shareError: Error?
+    
     var body: some View {
         List {
             Section {
@@ -47,7 +53,18 @@ struct HistoryMatchDetailView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
                     Button {
-                        print("Share tapped")
+                        Task {
+                            do {
+                                let response = try await web.share(match: match)
+                                shareURL = response.url
+                                print("Share response: \(response.url.absoluteString)")
+                                isPresentingShare = true
+                            } catch {
+                                shareError = error
+                                print("Share error: \(shareError?.localizedDescription ?? "")")
+                                // Optional: show an alert
+                            }
+                        }
                     } label: {
                         Label("Share", systemImage: "square.and.arrow.up")
                     }
@@ -64,6 +81,15 @@ struct HistoryMatchDetailView: View {
                     Image(systemName: "ellipsis")
                         .font(.title2)
                 }
+            }
+        }
+        .sheet(isPresented: $isPresentingShare) {
+            if let shareURL {
+                ActivityView(activityItems: [shareURL])
+                    .ignoresSafeArea()
+            } else {
+                // Safety fallback if URL disappeared
+                Text("Nothing to share")
             }
         }
     }
