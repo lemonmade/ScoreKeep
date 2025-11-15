@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ScoreKeepCore
 
 struct ScoreKeepWeb {
     // Payloads that mirror the zod schemas:
