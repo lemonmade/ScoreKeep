@@ -89,6 +89,7 @@
 		6C1377092D90B7C3003AB248 /* Exceptions for "ScoreKeep iOS App" folder in "ScoreKeep Watch App" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				ScoreKeepIcon2.icon,
 				Views/MatchGameChartView.swift,
 			);
 			target = 6C3DCA502D0921D2004A9BBF /* ScoreKeep Watch App */;
@@ -576,7 +577,7 @@
 		6C1376E22D90B46E003AB248 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = ScoreKeepIcon2;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "ScoreKeep iOS App/ScoreKeep_iOS_App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
@@ -612,7 +613,7 @@
 		6C1376E32D90B46E003AB248 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = ScoreKeepIcon2;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "ScoreKeep iOS App/ScoreKeep_iOS_App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
@@ -847,7 +848,7 @@
 		6C3DCA782D0921D3004A9BBF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = ScoreKeepIcon2;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "ScoreKeep Watch App/ScoreKeep Watch App.entitlements";
@@ -884,7 +885,7 @@
 		6C3DCA792D0921D3004A9BBF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = ScoreKeepIcon2;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = "ScoreKeep Watch App/ScoreKeep Watch App.entitlements";
