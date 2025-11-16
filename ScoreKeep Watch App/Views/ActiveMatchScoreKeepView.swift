@@ -27,24 +27,35 @@ struct ActiveMatchScoreKeepGameView: View {
     private let spacing: CGFloat = 8
     private let outerPadding = EdgeInsets(
         top: 40, leading: 12, bottom: 21, trailing: 12)
+    
+    @State private var showUndoSheet: Bool = false
+    
+    private func toggleUndoSheet() {
+        showUndoSheet = !showUndoSheet
+    }
 
     var body: some View {
         GeometryReader { geometry in
             VStack(spacing: spacing) {
                 GameScoreTeamButtonView(
                     team: .them, match: match,
-                    size: geometryToButtonSize(geometry)
+                    size: geometryToButtonSize(geometry),
+                    onLongPress: toggleUndoSheet
                 )
 
                 GameScoreTeamButtonView(
                     team: .us, match: match,
-                    size: geometryToButtonSize(geometry)
+                    size: geometryToButtonSize(geometry),
+                    onLongPress: toggleUndoSheet
                 )
             }
             .padding(outerPadding)
         }
         .edgesIgnoringSafeArea(.all)
-
+        .contentShape(Rectangle())
+        .sheet(isPresented: $showUndoSheet) {
+            ActiveMatchScoreKeepEditView(match: match)
+        }
     }
     
     private func geometryToButtonSize(_ geometry: GeometryProxy) -> CGSize {
@@ -64,10 +75,38 @@ struct ActiveMatchScoreKeepGameView: View {
     }
 }
 
+struct ActiveMatchScoreKeepEditView: View {
+    @Environment(\.dismiss) var dismiss
+    
+    var match: Match
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Actions")
+                .font(.headline)
+
+            Button() {
+                match.undo()
+                dismiss()
+            } label: {
+                Label("Undo last score", systemImage: "arrow.uturn.backward")
+            }
+            .disabled(!match.canUndo)
+        }
+        .padding()
+    }
+}
+
 struct GameScoreTeamButtonView: View {
     var team: MatchTeam
     var match: Match
     var size: CGSize
+    var onLongPress: (() -> Void)? = nil
+    
+    @State private var isPressing = false
+    @State private var longPressTriggered = false
+    @State private var pressWorkItem: DispatchWorkItem?
+    @State private var startLocation: CGPoint?
     
     var keyColor: Color {
         team == .us ? .blue : .red
@@ -80,18 +119,76 @@ struct GameScoreTeamButtonView: View {
     var body: some View {
         
         Button(action: {
+            if longPressTriggered { return }
             match.scorePoint(team)
         }) {
             GameScoreTeamScoreView(match: match, team: team, game: game, size: size)
                 .foregroundStyle(keyColor)
         }
-        .frame(width: size.width, height: size.height)
         .buttonStyle(CustomButtonStyle(keyColor: keyColor))
+//        .simultaneousGesture(
+//            LongPressGesture(minimumDuration: 1)
+//                .onChanged { value in
+//                    if startLocation == nil { startLocation = value.startLocation }
+//                    let dx = value.location.x - (startLocation?.x ?? value.location.x)
+//                    let dy = value.location.y - (startLocation?.y ?? value.location.y)
+//
+//                    // If the user is swiping mostly horizontally, cancel our press
+//                    if abs(dx) > 12 && abs(dx) > abs(dy) {
+//                      isPressing = false
+//                      pressWorkItem?.cancel()
+//                      pressWorkItem = nil
+//                      return
+//                    }
+//                    
+//                    if !isPressing {
+//                        isPressing = true
+//                        longPressTriggered = false
+//                        let task = DispatchWorkItem {
+//                            if self.isPressing && !self.game.hasEnded {
+//                                self.longPressTriggered = true
+//                                self.onLongPress?()
+//                            }
+//                        }
+//                        pressWorkItem = task
+//                        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: task)
+//                    }
+//                }
+//                .onEnded { _ in
+//                    startLocation = nil
+//                    isPressing = false
+//                    pressWorkItem?.cancel()
+//                    pressWorkItem = nil
+//                    // Allow the button to animate back; reset longPressTriggered shortly after
+//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+//                        longPressTriggered = false
+//                    }
+//                }
+//        )
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 1)
+                .onEnded { _ in
+                    longPressTriggered = true
+                    onLongPress?()
+                    
+                    // Give the button a moment to animate back before allowing taps again
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        longPressTriggered = false
+                    }
+                }
+        )
+//        .highPriorityGesture(
+//            LongPressGesture(minimumDuration: 1)
+//                .onEnded { _ in
+//                    if let onLongPress, !game.hasEnded { onLongPress() }
+//                }
+//        )
+//        .onLongPressGesture(minimumDuration: 2) { onLongPress?() }
         .disabled(game.hasEnded)
         .sensoryFeedback(.impact(weight: .medium), trigger: game.scoreFor(team)) { old, new in
             return old != new
-            
         }
+        .sensoryFeedback(.selection, trigger: longPressTriggered)
         .onChange(of: game.number) {
             print("GameScoreTeamButtonView, number: \(game.number), hasEnded: \(game.hasEnded), match: \(game.set?.match?.scoreSummaryString ?? "<no match>")")
         }

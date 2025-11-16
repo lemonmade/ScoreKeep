@@ -285,6 +285,16 @@ public class Match {
         }
     }
     
+    public var canUndo: Bool {
+        guard let game = latestGame else { return false }
+        return game.canUndo
+    }
+
+    public func undo() {
+        guard let game = latestGame else { return }
+        game.undo()
+    }
+    
     public func startWarmup() {
         if warmup != nil { return }
 
@@ -438,6 +448,7 @@ public class MatchSet {
 @Model
 public class MatchGame {
     public var set: MatchSet?
+    public var match: Match? { self.set?.match }
     
     public var number: Int = 1
 
@@ -543,6 +554,27 @@ public class MatchGame {
         
         scores.append(score)
         _scores = scores
+    }
+
+    public var canUndo: Bool {
+        // There must be at least one score whose source was a real point
+        guard let scores = _scores else { return false }
+        return scores.contains { $0.source == .point }
+    }
+
+    public func undo() {
+        var scores = self.scores
+        if scores.isEmpty { return }
+
+        guard let idx = scores.lastIndex(where: { $0.source == .point }) else { return }
+
+        scores.remove(at: idx)
+        self._scores = scores
+
+        self.endedAt = nil
+        // TODO: what to do if this is in the middle of a set?
+        if let set = set, set.endedAt != nil { set.endedAt = nil }
+        if let match = match, match.endedAt != nil { match.endedAt = nil }
     }
 
     public func scoreFor(_ team: MatchTeam) -> Int {
