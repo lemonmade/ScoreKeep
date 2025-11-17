@@ -15,6 +15,7 @@ public enum MatchSport: String, Codable {
     case ultimate
     case squash
     case tennis
+    case pickleball
     
     public var label: String {
         switch self {
@@ -22,6 +23,7 @@ public enum MatchSport: String, Codable {
         case .ultimate: return "Ultimate frisbee"
         case .volleyball: return "Volleyball"
         case .tennis: return "Tennis"
+        case .pickleball: return "Pickleball"
         }
     }
     
@@ -31,6 +33,7 @@ public enum MatchSport: String, Codable {
         case .ultimate: return "figure.disc.sports"
         case .volleyball: return "figure.volleyball"
         case .tennis: return "figure.tennis"
+        case .pickleball: return "figure.pickleball"
         }
     }
     
@@ -40,6 +43,7 @@ public enum MatchSport: String, Codable {
         case .ultimate: return "circle.circle.fill"
         case .volleyball: return "volleyball.fill"
         case .tennis: return "tennisball.fill"
+        case .pickleball: return "circle.fill"
         }
     }
     
@@ -52,6 +56,13 @@ public enum MatchSport: String, Codable {
     
     public var setServiceRotation: MatchServiceRotation {
         return .every(count: 1)
+    }
+    
+    public var gameServiceScoring: MatchServiceScoring {
+        switch self {
+        case .pickleball: return .sideOut
+        default: return .rally
+        }
     }
     
     public func normalizedScoreFor(_ team: MatchTeam, game: MatchGame) -> Int {
@@ -104,6 +115,11 @@ public enum MatchServiceRotation: Codable, Equatable {
     case none
     case every(count: Int)
     case lastWinner
+}
+
+public enum MatchServiceScoring: Codable, Equatable {
+    case rally
+    case sideOut
 }
 
 public enum MatchTeam: String, Codable {
@@ -270,19 +286,8 @@ public class Match {
     }
 
     public func scorePoint(_ team: MatchTeam) {
-        guard let set = latestSet, !set.hasEnded, let game = set.latestGame,
-            !game.hasEnded
-        else { return }
-
+        guard let game = latestGame else { return }
         game.scorePoint(team)
-
-        if scoring.setScoring.gameScoring.hasWinner(game) {
-            game.endedAt = Date.now
-
-            if !scoring.setScoring.canPlayAnotherGame(set) {
-                set.endedAt = Date.now
-            }
-        }
     }
     
     public var canUndo: Bool {
@@ -500,7 +505,7 @@ public class MatchGame {
 
         if (serviceRotation == .lastWinner) {
             if let lastScore = scores.last(where: { $0.source == .point }) {
-                return lastScore.us > lastScore.them ? .us : .them
+                return lastScore.teamWithLegacy
             }
         }
 
@@ -548,21 +553,35 @@ public class MatchGame {
     }
 
     public func scorePoint(_ team: MatchTeam, at timestamp: Date = .now) {
+        if hasEnded { return }
+        
         var scores = self._scores ?? []
         
-        let score = MatchGameScore(team, serve: servingTeam, at: timestamp);
+        let score = MatchGameScore(team, serve: servingTeam, scoring: match?.sport.gameServiceScoring, at: timestamp);
         
         scores.append(score)
         _scores = scores
+        
+        guard let match = match, let set = set else { return }
+        if match.scoring.setScoring.gameScoring.hasWinner(self) {
+            self.endedAt = Date.now
+
+            if !match.scoring.setScoring.canPlayAnotherGame(set) {
+                set.endedAt = endedAt
+            }
+        }
     }
 
     public var canUndo: Bool {
+        if hasEnded { return false }
         // There must be at least one score whose source was a real point
         guard let scores = _scores else { return false }
         return scores.contains { $0.source == .point }
     }
 
     public func undo() {
+        if hasEnded { return }
+        
         var scores = self.scores
         if scores.isEmpty { return }
 
@@ -585,7 +604,8 @@ public class MatchGame {
         var streak = 0
         
         for score in scores.sorted(by: { $0.timestamp > $1.timestamp }) {
-            if score.source != .point || score.adjustment(team) < 1 || score.serve != team { break }
+            
+            if score.teamWithLegacy != team || score.serve != team { break }
             streak += 1
         }
         
@@ -598,13 +618,24 @@ public enum MatchGameScoreSource: String, Codable {
 }
 
 public struct MatchGameScore: Codable, Equatable {
+    public var team: MatchTeam?
     public var us: Int
     public var them: Int
     public var timestamp: Date
     public var source: MatchGameScoreSource
     public var serve: MatchTeam?
     
+    public var teamWithLegacy: MatchTeam? {
+        if let team { return team }
+        if source != .point { return nil }
+        
+        if us > them { return .us }
+        if them > us { return .them }
+        return nil
+    }
+    
     public init(us: Int = 0, them: Int = 0, serve: MatchTeam? = nil, at timestamp: Date = .now, source: MatchGameScoreSource = .point) {
+        self.team = source == .point ? us > them ? .us : .them : nil
         self.us = us
         self.them = them
         self.timestamp = timestamp
@@ -612,9 +643,11 @@ public struct MatchGameScore: Codable, Equatable {
         self.source = source
     }
     
-    public init(_ team: MatchTeam, serve: MatchTeam? = nil, at timestamp: Date = .now) {
-        self.us = team == .us ? 1 : 0
-        self.them = team == .them ? 1 : 0
+    public init(_ team: MatchTeam, serve: MatchTeam? = nil, scoring: MatchServiceScoring? = nil, at timestamp: Date = .now) {
+        let adjustment = defaultAdjustmentForTeam(team, serve: serve, scoring: scoring)
+        self.team = team
+        self.us = team == .us ? adjustment : 0
+        self.them = team == .them ? adjustment : 0
         self.timestamp = timestamp
         self.serve = serve
         self.source = .point
@@ -627,6 +660,15 @@ public struct MatchGameScore: Codable, Equatable {
         case .them:
             return them
         }
+    }
+}
+
+private func defaultAdjustmentForTeam(_ team: MatchTeam, serve: MatchTeam? = nil, scoring: MatchServiceScoring? = nil) -> Int {
+    let scoring = scoring ?? .rally
+    
+    switch scoring {
+    case .rally: return 1
+    case .sideOut: return team == serve ? 1 : 0
     }
 }
 

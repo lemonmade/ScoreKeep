@@ -84,8 +84,26 @@ struct StartView: View {
         )
     )
     
+    private let pickleball = MatchTemplate(
+        .pickleball,
+        name: "Pickleball",
+        color: .green,
+        environment: .outdoor,
+        scoring: MatchScoringRules(
+            winAt: 1,
+            setScoring: MatchSetScoringRules(
+                winAt: 2,
+                gameScoring: MatchGameScoringRules(
+                    winAt: 11
+                )
+            )
+        )
+    )
+                
+                    
+    
     private var unusedBuiltinTemplates: [MatchTemplate] {
-        return [indoorVolleyball, tennis, ultimate, squash].filter {
+        return [indoorVolleyball, tennis, ultimate, squash, pickleball].filter {
             !templates.contains($0)
         }
     }

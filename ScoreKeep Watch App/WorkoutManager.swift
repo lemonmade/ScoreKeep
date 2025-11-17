@@ -63,6 +63,7 @@ class WorkoutManager: NSObject {
             case .ultimate: .discSports
             case .volleyball: .volleyball
             case .tennis: .tennis
+            case .pickleball: .pickleball
             }
 
         configuration.locationType =
