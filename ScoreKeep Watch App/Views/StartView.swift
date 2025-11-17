@@ -30,7 +30,8 @@ struct StartView: View {
                     winAt: 25
                 )
             )
-        )
+        ),
+        warmup: .open
     )
 
     private let tennis = MatchTemplate(
@@ -46,10 +47,12 @@ struct StartView: View {
                 maximum: 7,
                 playItOut: false,
                 gameScoring: MatchGameScoringRules(
-                    winAt: 4, winBy: 2
+                    winAt: 4,
+                    winBy: 2
                 )
             )
-        )
+        ),
+        warmup: .open
     )
     
     private let ultimate = MatchTemplate(
@@ -65,7 +68,8 @@ struct StartView: View {
                     winAt: 15
                 )
             )
-        )
+        ),
+        warmup: .open
     )
     
     private let squash = MatchTemplate(
@@ -81,7 +85,8 @@ struct StartView: View {
                     winAt: 11
                 ),
             )
-        )
+        ),
+        warmup: .open
     )
     
     private let pickleball = MatchTemplate(
@@ -93,11 +98,14 @@ struct StartView: View {
             winAt: 1,
             setScoring: MatchSetScoringRules(
                 winAt: 2,
+                playItOut: false,
                 gameScoring: MatchGameScoringRules(
-                    winAt: 11
+                    winAt: 11,
+                    winBy: 2
                 )
             )
-        )
+        ),
+        warmup: .open
     )
                 
                     
