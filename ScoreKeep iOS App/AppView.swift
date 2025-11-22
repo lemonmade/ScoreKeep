@@ -14,13 +14,13 @@ struct StartView: View {
 
     var body: some View {
         TabView {
-            HistoryView()
+            MatchHistoryListView()
                 .tabItem {
-                    Label("History", systemImage: "clock.arrow.circlepath")
+                    Label("History", systemImage: "calendar")
                 }
-            CreateMatchView()
+            SettingsView()
                 .tabItem {
-                    Label("Create", systemImage: "plus.circle")
+                    Label("Settings", systemImage: "gear")
                 }
         }
     }

@@ -18,7 +18,7 @@ struct HistoryView: View {
             List {
                 ForEach(matches) { match in
                     NavigationLink {
-                        HistoryMatchDetailView(match: match)
+                        MatchHistoryDetailView(match: match)
                     } label: {
                         MatchHistorySummaryView(match: match)
                     }

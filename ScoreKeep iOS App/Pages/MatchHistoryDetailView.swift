@@ -1,5 +1,5 @@
 //
-//  HistoryMatchDetailView.swift
+//  MatchHistoryDetailView.swift
 //  ScoreKeep
 //
 //  Created by Chris Sauve on 2025-11-03.
@@ -9,7 +9,7 @@ import SwiftUI
 import ScoreKeepCore
 import ScoreKeepUI
 
-struct HistoryMatchDetailView: View {
+struct MatchHistoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     var match: Match
@@ -40,7 +40,7 @@ struct HistoryMatchDetailView: View {
             ForEach(match.sets) { set in
                 Section {
                     ForEach(set.games) { game in
-                        HistoryMatchDetailGameView(match: match, game: game)
+                        MatchHistoryDetailGameView(match: match, game: game)
                     }
                 } header: {
                     if match.isMultiSet {
@@ -97,7 +97,7 @@ struct HistoryMatchDetailView: View {
     }
 }
 
-struct HistoryMatchDetailGameView: View {
+struct MatchHistoryDetailGameView: View {
     var match: Match
     var game: MatchGame
     
