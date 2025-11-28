@@ -9,24 +9,44 @@ import SwiftUI
 import SwiftData
 import ScoreKeepCore
 
-struct StartView: View {
+enum AppTab {
+    case start
+    case history
+    case settings
+}
+
+@Observable
+class AppNavigation {
+    var tab: AppTab = .start
+}
+
+struct AppView: View {
     @Environment(\.modelContext) private var context
+    @Bindable var navigation = AppNavigation()
 
     var body: some View {
-        TabView {
+        TabView(selection: $navigation.tab) {
+            StartView()
+                .tag(AppTab.start)
+                .tabItem {
+                    Label("Start", systemImage: "play.square.stack.fill")
+                }
             MatchHistoryListView()
+                .tag(AppTab.history)
                 .tabItem {
                     Label("History", systemImage: "calendar")
                 }
             SettingsView()
+                .tag(AppTab.settings)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
         }
+        .environment(navigation)
     }
 }
 
 #Preview {
-    StartView()
+    AppView()
         .modelContainer(MatchModelContainer().testModelContainer())
 }

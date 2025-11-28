@@ -3,7 +3,7 @@ import SwiftData
 import ScoreKeepCore
 import ScoreKeepUI
 
-struct HistoryView: View {
+struct MatchHistoryListView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Match.endedAt, order: .reverse) private var matches: [Match]
     
@@ -81,6 +81,6 @@ struct ActivityView: UIViewControllerRepresentable {
 }
 
 #Preview {
-    HistoryView()
+    MatchHistoryListView()
         .modelContainer(MatchModelContainer().testModelContainer())
 }

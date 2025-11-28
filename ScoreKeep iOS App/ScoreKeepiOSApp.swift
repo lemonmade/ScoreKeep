@@ -15,7 +15,7 @@ struct ScoreKeepiOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            StartView()
+            AppView()
         }
         .modelContainer(sharedModelContainer)
     }
