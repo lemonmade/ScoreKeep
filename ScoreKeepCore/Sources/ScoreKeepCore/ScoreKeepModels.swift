@@ -70,6 +70,10 @@ public enum ScoreKeepSport: String, Codable {
         
         switch self {
         case .tennis:
+            if let winAt = game.rules?.winAt, winAt != 4 {
+                return score
+            }
+            
             switch score {
             case 0: return 0
             case 1: return 15
@@ -109,6 +113,40 @@ public enum ScoreKeepSport: String, Codable {
         
         return game.leading == team ? "Ad" : "\(normalizedScore)"
     }
+    
+    public func defaultRules() -> ScoreKeepMatchRules {
+        switch self {
+        case .tennis:
+            return ScoreKeepMatchRules(
+                winAt: 1,
+                setRules: ScoreKeepSetRules(
+                    winAt: 6,
+                    winBy: 2,
+                    maximum: 7,
+                    gameRules: ScoreKeepGameRules(
+                        winAt: 4,
+                        winBy: 2
+                    ),
+                    lastGameRules: ScoreKeepGameRules(
+                        winAt: 7,
+                        winBy: 2
+                    )
+                )
+            )
+        case .pickleball:
+            return ScoreKeepMatchRules(
+                winAt: 1,
+                setRules: ScoreKeepSetRules(
+                    winAt: 2,
+                    gameRules: ScoreKeepGameRules(
+                        winAt: 11,
+                        winBy: 2
+                    )
+                )
+            )
+        default: return ScoreKeepMatchRules()
+        }
+    }
 }
 
 public enum ScoreKeepServiceRotationRule: Codable, Equatable {
@@ -128,6 +166,25 @@ public enum ScoreKeepTeam: String, Codable {
     public var opposingTeam: ScoreKeepTeam {
         self == .us ? .them : .us
     }
+    
+    public var defaultColor: ScoreKeepTeamColor {
+        self == .us ? .blue : .red
+    }
+    
+    public func defaultLabel(size: Int? = 1) -> String {
+        switch self {
+        case .us: return size == 1 ? "You" : "Us"
+        case .them: return "Opponent"
+        }
+    }
+    
+    public func defaultShortLabel(size: Int? = 1) -> String {
+        switch self {
+        case .us: return defaultLabel(size: size)
+        case .them: return "Opp"
+        }
+    }
+    
 }
 
 public enum ScoreKeepActivityEnvironment: String, Codable {
@@ -301,7 +358,7 @@ public class ScoreKeepMatch {
 
         latestSet.endedAt = now
 
-        if rules.hasWinner(self) && !rules.playItOut {
+        if rules.hasWinner(self) && rules.winBehavior == .end {
             return
         }
 
@@ -340,6 +397,7 @@ public class ScoreKeepMatch {
 @Model
 public class ScoreKeepSet {
     public var match: ScoreKeepMatch?
+    public var rules: ScoreKeepSetRules? { self.match?.rules.setRulesFor(self) }
     
     public var number: Int = 1
     
@@ -371,6 +429,11 @@ public class ScoreKeepSet {
     }
 
     public var hasWinner: Bool { winner != nil }
+    
+    public var hasMoreGames: Bool {
+        guard let rules = match?.rules.setRulesFor(self) else { return true }
+        return rules.canPlayAnotherGame(self)
+    }
 
     public var isTied: Bool {
         gamesUs == gamesThem
@@ -383,6 +446,11 @@ public class ScoreKeepSet {
     public var isLatestInMatch: Bool {
         guard let latestSet = match?.latestSet else { return false }
         return latestSet.number == number
+    }
+    
+    public var isLastInMatch: Bool {
+        guard let maximumSets = match?.rules.maximumSetCount else { return false }
+        return maximumSets == number
     }
 
     public init(
@@ -422,6 +490,7 @@ public class ScoreKeepSet {
 public class ScoreKeepGame {
     public var set: ScoreKeepSet?
     public var match: ScoreKeepMatch? { self.set?.match }
+    public var rules: ScoreKeepGameRules? { self.set?.rules?.gameRulesFor(game: self) }
     
     public var number: Int = 1
 
@@ -473,7 +542,7 @@ public class ScoreKeepGame {
 
         if (serviceRotation == .lastWinner) {
             if let lastScore = scores.last(where: { $0.source == .point }) {
-                return lastScore.teamWithLegacy
+                return lastScore.team
             }
         }
 
@@ -483,6 +552,11 @@ public class ScoreKeepGame {
     public var isLatestInSet: Bool {
         guard let latestGame = set?.latestGame else { return false }
         return latestGame.number == number
+    }
+    
+    public var isLastInSet: Bool {
+        guard let set, let maximumGames = match?.rules.setRulesFor(set).maximumGameCount else { return true }
+        return maximumGames == number
     }
 
     public init(
@@ -571,9 +645,8 @@ public class ScoreKeepGame {
     public func serveStreakFor(_ team: ScoreKeepTeam) -> Int {
         var streak = 0
         
-        for score in scores.sorted(by: { $0.timestamp > $1.timestamp }) {
-            
-            if score.teamWithLegacy != team || score.serve != team { break }
+        for score in scores {
+            if score.team != team || score.serve != team { break }
             streak += 1
         }
         
@@ -592,15 +665,6 @@ public struct ScoreKeepGameScore: Codable, Equatable {
     public var timestamp: Date
     public var source: ScoreKeepGameScoreSource
     public var serve: ScoreKeepTeam?
-    
-    public var teamWithLegacy: ScoreKeepTeam? {
-        if let team { return team }
-        if source != .point { return nil }
-        
-        if us > them { return .us }
-        if them > us { return .them }
-        return nil
-    }
     
     public init(us: Int = 0, them: Int = 0, serve: ScoreKeepTeam? = nil, at timestamp: Date = .now, source: ScoreKeepGameScoreSource = .point) {
         self.team = source == .point ? us > them ? .us : .them : nil
@@ -692,26 +756,29 @@ public class ScoreKeepMatchTemplate {
     @Relationship(inverse: \Match.template)
     public var _matches: [Match]?
     
-    public var sport: ScoreKeepSport = ScoreKeepSport.volleyball
+    public var sport: ScoreKeepSport
     public var name: String = "Volleyball"
-    public var color: ScoreKeepMatchColor = ScoreKeepMatchColor.green
-    public var environment: ScoreKeepActivityEnvironment = ScoreKeepActivityEnvironment.indoor
+    public var color: ScoreKeepMatchColor
+    public var environment: ScoreKeepActivityEnvironment
     public var _rules: ScoreKeepMatchRules?
     public var rules: ScoreKeepMatchRules {
         get { _rules ?? ScoreKeepMatchRules() }
         set { _rules = newValue }
     }
     
-    public var createdAt: Date = Date.now
+    public var createdAt: Date
     public var lastUsedAt: Date?
-    public var warmup: ScoreKeepWarmupRule = ScoreKeepWarmupRule.none
-    public var startWorkout: Bool = true
+    public var warmup: ScoreKeepWarmupRule
+    public var startWorkout: Bool
 
     public init(
-        _ sport: ScoreKeepSport, name: String, color: ScoreKeepMatchColor = .green,
-        environment: ScoreKeepActivityEnvironment = .indoor, rules: ScoreKeepMatchRules = ScoreKeepMatchRules(),
+        _ sport: ScoreKeepSport,
+        name: String,
+        color: ScoreKeepMatchColor = .green,
+        environment: ScoreKeepActivityEnvironment = .indoor,
+        rules: ScoreKeepMatchRules = ScoreKeepMatchRules(),
         warmup: ScoreKeepWarmupRule = .open,
-        startWorkout: Bool = true
+        startWorkout: Bool = false
     ) {
         self.sport = sport
         self.name = name
@@ -732,24 +799,74 @@ public class ScoreKeepMatchTemplate {
     }
 }
 
+public enum ScoreKeepTeamColor: String, Codable {
+    case green, yellow, indigo, purple, teal, blue, orange, pink, red
+
+    public var color: Color {
+        switch self {
+        case .blue: return Color.blue
+        case .red: return Color.red
+        case .green: return Color.green
+        case .yellow: return Color.yellow
+        case .indigo: return Color.indigo
+        case .purple: return Color.purple
+        case .teal: return Color.teal
+        case .orange: return Color.orange
+        case .pink: return Color.pink
+        }
+    }
+
+    public static var allCases: [ScoreKeepTeamColor] {
+        [.blue, .red, .green, .yellow, .indigo, .purple, .teal, .orange, .pink]
+    }
+}
+
+public struct ScoreKeepMatchTemplateTeam {
+    public let team: ScoreKeepTeam
+    public let label: String
+    public let shortLabel: String
+    public let color: ScoreKeepTeamColor
+    public let size: Int?
+
+    public init(team: ScoreKeepTeam, label: String? = nil, shortLabel: String? = nil, color: ScoreKeepTeamColor? = nil, size: Int? = nil) {
+        self.team = team
+        self.label = label ?? team.defaultLabel(size: size)
+        self.shortLabel = shortLabel ?? team.defaultShortLabel(size: size)
+        self.color = color ?? team.defaultColor
+        self.size = size
+    }
+    
+    
+}
+
+//@Model
+//public class ScoreKeepMatchTeam {
+//    public var label: String
+//    public var shortLabel: String
+//}
+
 public enum ScoreKeepWarmupRule: Codable, Equatable {
     case none
     case open
 }
 
+public enum ScoreKeepWinBehaviorRule: String, Codable {
+    case end, keepPlaying
+}
+
 public struct ScoreKeepMatchRules: Codable, Equatable {
-    public var winAt: Int? = nil
-    public var winBy: Int? = nil
-    public var maximum: Int? = nil
-    public var playItOut: Bool = false
+    public var winAt: Int?
+    public var winBy: Int?
+    public var maximum: Int?
+    public var winBehavior: ScoreKeepWinBehaviorRule
     public var setRules: ScoreKeepSetRules
-    public var lastSetRules: ScoreKeepSetRules? = nil
+    public var lastSetRules: ScoreKeepSetRules?
     
-    public init(winAt: Int? = 1, winBy: Int? = nil, maximum: Int? = nil, playItOut: Bool = false, setRules: ScoreKeepSetRules = ScoreKeepSetRules(), lastSetRules: ScoreKeepSetRules? = nil) {
+    public init(winAt: Int? = 1, winBy: Int? = nil, maximum: Int? = nil, winBehavior: ScoreKeepWinBehaviorRule = .end, setRules: ScoreKeepSetRules = ScoreKeepSetRules(), lastSetRules: ScoreKeepSetRules? = nil) {
         self.winAt = winAt
         self.winBy = winBy
         self.maximum = maximum
-        self.playItOut = playItOut
+        self.winBehavior = winBehavior
         self.setRules = setRules
         self.lastSetRules = lastSetRules
     }
@@ -759,6 +876,10 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
         return winAt > 1
     }
     
+    public func setRulesFor(_ set: ScoreKeepSet) -> ScoreKeepSetRules {
+        return set.isLastInMatch ? (lastSetRules ?? setRules) : setRules
+    }
+    
     public var primaryLabel: String {
         guard let winAt, let maximumSetCount else { return "Open match" }
         
@@ -766,7 +887,7 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
             return setRules.primaryLabel
         }
         
-        if playItOut {
+        if winBehavior == .keepPlaying {
             return "Best of \(maximumSetCount) sets"
         }
 
@@ -810,7 +931,7 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
     public func canPlayAnotherSet(_ match: ScoreKeepMatch) -> Bool {
         if winAt == nil { return true }
         
-        if hasWinner(match) && !playItOut { return false }
+        if hasWinner(match) && winBehavior == .end { return false }
         
         guard let maximumSetCount else { return true }
         
@@ -825,18 +946,18 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
 }
 
 public struct ScoreKeepSetRules: Codable, Equatable {
-    public var winAt: Int? = nil
-    public var winBy: Int? = nil
-    public var maximum: Int? = nil
-    public var playItOut: Bool = false
+    public var winAt: Int?
+    public var winBy: Int?
+    public var maximum: Int?
+    public var winBehavior: ScoreKeepWinBehaviorRule
     public var gameRules: ScoreKeepGameRules
-    public var lastGameRules: ScoreKeepGameRules? = nil
+    public var lastGameRules: ScoreKeepGameRules?
     
-    public init(winAt: Int? = nil, winBy: Int? = nil, maximum: Int? = nil, playItOut: Bool = false, gameRules: ScoreKeepGameRules = ScoreKeepGameRules(), lastGameRules: ScoreKeepGameRules? = nil) {
+    public init(winAt: Int? = nil, winBy: Int? = nil, maximum: Int? = nil, winBehavior: ScoreKeepWinBehaviorRule = .end, gameRules: ScoreKeepGameRules = ScoreKeepGameRules(), lastGameRules: ScoreKeepGameRules? = nil) {
         self.winAt = winAt
         self.winBy = winBy
         self.maximum = maximum
-        self.playItOut = playItOut
+        self.winBehavior = winBehavior
         self.gameRules = gameRules
         self.lastGameRules = lastGameRules
     }
@@ -846,6 +967,10 @@ public struct ScoreKeepSetRules: Codable, Equatable {
         return winAt > 1
     }
     
+    public func gameRulesFor(game: ScoreKeepGame) -> ScoreKeepGameRules {
+        return game.isLastInSet ? (lastGameRules ?? gameRules) : gameRules
+    }
+    
     public var primaryLabel: String {
         guard let winAt, let maximumGameCount else { return "Open set" }
         
@@ -853,7 +978,7 @@ public struct ScoreKeepSetRules: Codable, Equatable {
             return gameRules.primaryLabel
         }
         
-        if playItOut {
+        if winBehavior == .keepPlaying {
             return "Best of \(maximumGameCount) games"
         }
         
@@ -901,9 +1026,9 @@ public struct ScoreKeepSetRules: Codable, Equatable {
         
         print("ScoreKeepSetScoringRules.canPlayAnotherGame()")
         print("match: \(set.match?.scoreSummaryString ?? "<no match>")")
-        print("winAt: \(winAt ?? -1), hasWinner: \(hasWinner(set)), playItOut: \(playItOut), impliedMaximumGameNumber: \(maximumGameCount ?? -1)")
+        print("winAt: \(winAt ?? -1), hasWinner: \(hasWinner(set)), playItOut: \(winBehavior == .keepPlaying), impliedMaximumGameNumber: \(maximumGameCount ?? -1)")
         
-        if hasWinner(set) && !playItOut { return false }
+        if hasWinner(set) && winBehavior == .end { return false }
         
         guard let maximumGameCount else { return true }
         
