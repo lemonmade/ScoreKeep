@@ -17,21 +17,44 @@ struct MatchGameChartView: View {
     }
     
     var body: some View {
+        let gameScores = gameScores
+        let scoreSize: CGFloat = (gameScores.count / 2) > 10 ? 4 : 8
+        let startedAt = game.startedAt
+        let endedAt = gameScores.last!.timestamp
+        let xAxisInterval = endedAt.timeIntervalSince(startedAt) / 3
+
         Chart(gameScores) { score in
             LineMark(
-                x: .value("Index", score.index),
+                x: .value("Time", score.timestamp),
                 y: .value("Score", score.score)
             )
-            .foregroundStyle(by: .value("Team", score.team))
+            .foregroundStyle(by: .value("Team", score.teamName))
+            
+            if score.hasChange {
+                PointMark(
+                    x: .value("Time", score.timestamp),
+                    y: .value("Score", score.score)
+                )
+                .symbol {
+                    Circle()
+                        .frame(width: scoreSize, height: scoreSize)
+                        .foregroundStyle(score.team == .us ? .blue : .red)
+                }
+            }
         }
         .chartXAxis {
-            AxisMarks { value in
+            AxisMarks(values: [startedAt, startedAt.addingTimeInterval(xAxisInterval), startedAt.addingTimeInterval(xAxisInterval * 2)]) { value in
+                AxisGridLine()
                 AxisTick()
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(date, format: .dateTime.hour(.conversationalDefaultDigits(amPM: .omitted)).minute())
+                    }
+                }
             }
-
         }
         .chartLegend(.hidden)
-        .chartXScale(domain: [0, gameScores.last!.index])
+        .chartXScale(domain: [startedAt, endedAt])
         .chartYScale(domain: [0, [game.scoreUs, game.scoreThem].max()!])
         .chartForegroundStyleScale(["Us": .blue, "Them": .red])
     }
@@ -41,24 +64,26 @@ struct MatchGameChartSparklineView : View {
     var game: MatchGame
 
     private var gameScores: [MatchHistoryGameScoreData] {
-        MatchHistoryGameData(game: game).scores
+        MatchHistoryGameData(game: game, order: .winnerOnTop).scores
     }
     
     var body: some View {
+        let gameScores = gameScores
+
         Chart(gameScores) { score in
             LineMark(
-                x: .value("Index", score.index),
+                x: .value("Time", score.timestamp),
                 y: .value("Score", score.score)
             )
-            .foregroundStyle(by: .value("Team", score.team))
+            .foregroundStyle(by: .value("Team", score.teamName))
         }
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
-        .chartXScale(domain: [0, gameScores.last!.index])
+        .chartXScale(domain: [game.startedAt, gameScores.last!.timestamp])
         .chartYScale(domain: [0, [game.scoreUs, game.scoreThem].max()!])
         .chartForegroundStyleScale(["Us": .blue, "Them": .red])
-        .frame(width: 64, height: 32)
+        .frame(width: 48, height: 20)
     }
 }
 
@@ -68,55 +93,82 @@ private struct MatchHistoryGameScoreData: Identifiable {
     var id = UUID()
     
     var score: Int
-    var team: String
+    var team: MatchTeam
+    var teamName: String {
+        team == .us ? "Us" : "Them"
+    }
     var index: Int
     var timestamp: Date
+    var hasChange: Bool = false
 }
 
 private struct MatchHistoryGameData {
     var game: MatchGame
+    var order: Order = .scoreOnTop
+    
+    enum Order {
+        case scoreOnTop, winnerOnTop
+    }
     
     var scores: [MatchHistoryGameScoreData] {
         var scoreUs = 0
         var scoreThem = 0
         var index = 0
         
-        var scores: [MatchHistoryGameScoreData] = [
-            MatchHistoryGameScoreData(
-                score: 0,
-                team: "Us",
-                index: index,
-                timestamp: game.startedAt
-            ),
-            MatchHistoryGameScoreData(
-                score: 0,
-                team: "Them",
-                index: index,
-                timestamp: game.startedAt
-            )
-        ]
+        let showTop: MatchTeam = game.scoreUs >= game.scoreThem ? .us : .them
+        let initialUsScore = MatchHistoryGameScoreData(
+            score: 0,
+            team: .us,
+            index: index,
+            timestamp: game.startedAt
+        )
+        let initialThemScore = MatchHistoryGameScoreData(
+            score: 0,
+            team: .them,
+            index: index,
+            timestamp: game.startedAt
+        )
+        
+        var scores: [MatchHistoryGameScoreData] = []
+        
+        if showTop == .us {
+            scores.append(initialThemScore)
+            scores.append(initialUsScore)
+        } else {
+            scores.append(initialUsScore)
+            scores.append(initialThemScore)
+        }
         
         for score in game.scores {
             index += 1
             scoreUs += score.us
             scoreThem += score.them
             
-            scores.append(
-                MatchHistoryGameScoreData(
-                    score: scoreUs,
-                    team: "Us",
-                    index: index,
-                    timestamp: score.timestamp
-                )
+            let usScore = MatchHistoryGameScoreData(
+                score: scoreUs,
+                team: .us,
+                index: index,
+                timestamp: score.timestamp,
+                hasChange: score.teamWithLegacy == .us
             )
-            scores.append(
-                MatchHistoryGameScoreData(
-                    score: scoreThem,
-                    team: "Them",
-                    index: index,
-                    timestamp: score.timestamp
-                )
+            
+            let themScore = MatchHistoryGameScoreData(
+                score: scoreThem,
+                team: .them,
+                index: index,
+                timestamp: score.timestamp,
+                hasChange: score.teamWithLegacy == .them
             )
+            
+            let showUsFirst = order == .scoreOnTop ? score.teamWithLegacy == .us : showTop == .us
+            
+            if showUsFirst {
+                scores.append(themScore)
+                scores.append(usScore)
+            } else {
+                scores.append(usScore)
+                scores.append(themScore)
+            }
         }
         
         return scores
