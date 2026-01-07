@@ -1,0 +1,9 @@
+identifier_name:
+  excluded:
+    - us
+  allowed_symbols:
+    - "_"
+file_length:
+  enabled: false
+trailing_comma:
+  mandatory_comma: true
