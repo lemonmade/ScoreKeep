@@ -5,28 +5,28 @@
 //  Created by Chris Sauve on 2025-11-03.
 //
 
-import SwiftUI
 import ScoreKeepCore
 import ScoreKeepUI
+import SwiftUI
 
 struct MatchHistoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     var match: Match
-    
+
     private let web = ScoreKeepWeb()
-    
+
     @State private var shareURL: URL?
     @State private var isPresentingShare = false
     @State private var shareError: Error?
-    
+
     var body: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
                     VStack(alignment: .leading, spacing: 2) {
                         MatchHistoryDetailDateView(match: match)
-                        
+
                         MatchHistoryDetailDurationView(match: match)
                     }
 
@@ -36,7 +36,7 @@ struct MatchHistoryDetailView: View {
                 .listRowInsets(.none)
                 .listRowBackground(Color.clear)
             }
-            
+
             ForEach(match.sets) { set in
                 Section {
                     ForEach(set.games) { game in
@@ -100,7 +100,7 @@ struct MatchHistoryDetailView: View {
 struct MatchHistoryDetailGameView: View {
     var match: Match
     var game: MatchGame
-    
+
     var body: some View {
         DisclosureGroup {
             VStack {
@@ -112,23 +112,22 @@ struct MatchHistoryDetailGameView: View {
         } label: {
             HStack(spacing: 12) {
                 MatchTotalScoreSummaryView(game: game)
-                
+
                 VStack(alignment: .leading) {
                     Text("Game \(game.number)")
                         .font(.headline)
                         .foregroundStyle(.primary)
-                    
+
                     if let endedAt = game.endedAt {
                         Text(game.startedAt...endedAt)
                             .foregroundStyle(.secondary)
                     }
                 }
-                
+
                 Spacer()
-                
+
                 MatchGameChartSparklineView(game: game)
             }
         }
     }
 }
-

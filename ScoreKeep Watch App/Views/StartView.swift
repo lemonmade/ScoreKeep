@@ -6,9 +6,9 @@
 //
 
 import HealthKit
+import ScoreKeepCore
 import SwiftData
 import SwiftUI
-import ScoreKeepCore
 
 struct StartView: View {
     private let navigation = NavigationManager()
@@ -54,7 +54,7 @@ struct StartView: View {
         ),
         warmup: .open
     )
-    
+
     private let ultimate = MatchTemplate(
         .ultimate,
         name: "Ultimate frisbee",
@@ -71,7 +71,7 @@ struct StartView: View {
         ),
         warmup: .open
     )
-    
+
     private let squash = MatchTemplate(
         .squash,
         name: "Squash",
@@ -88,7 +88,7 @@ struct StartView: View {
         ),
         warmup: .open
     )
-    
+
     private let pickleball = MatchTemplate(
         .pickleball,
         name: "Pickleball",
@@ -107,9 +107,7 @@ struct StartView: View {
         ),
         warmup: .open
     )
-                
-                    
-    
+
     private var unusedBuiltinTemplates: [MatchTemplate] {
         return [indoorVolleyball, tennis, ultimate, squash, pickleball].filter {
             !templates.contains($0)
@@ -124,7 +122,7 @@ struct StartView: View {
                 ForEach(templates) { template in
                     StartMatchNavigationLinkView(template: template)
                 }
-                
+
                 ForEach(unusedBuiltinTemplates) { template in
                     StartMatchNavigationLinkView(template: template)
                 }
@@ -153,8 +151,8 @@ struct StartView: View {
             .navigationDestination(for: NavigationLocation.MatchHistoryDetail.self) { destination in
                 MatchHistoryDetailView(match: destination.match)
             }
-            .navigationDestination(for: NavigationLocation.TemplateCreate.self)
-            { createMatchTemplateDestination in
+            .navigationDestination(for: NavigationLocation.TemplateCreate.self) {
+                createMatchTemplateDestination in
                 MatchTemplateCreateView(template: createMatchTemplateDestination.template)
                     .environment(navigation)
             }
@@ -169,7 +167,7 @@ struct StartView: View {
 struct StartMatchNavigationLinkView: View {
     var template: MatchTemplate
     var markAsUsed: Bool = true
-    
+
     @Environment(NavigationManager.self) private var navigation
 
     var body: some View {
@@ -219,7 +217,7 @@ struct StartMatchNavigationLinkView: View {
                                 .fill(template.color.color.opacity(0.2))
                         )
                 }
-                .offset(y: 12)    
+                .offset(y: 12)
             }
             .buttonStyle(.plain)
         }
@@ -236,7 +234,7 @@ struct MatchHistoryNavigationLinkView: View {
 
 struct CreateMatchTemplateButtonView: View {
     @Environment(NavigationManager.self) private var navigation
-    
+
     var body: some View {
         Button {
             navigation.navigate(to: NavigationLocation.TemplateCreate())
@@ -246,7 +244,7 @@ struct CreateMatchTemplateButtonView: View {
         .buttonStyle(BorderedButtonStyle(tint: .gray))
         .foregroundStyle(.primary)
 
-//        .backgroundStyle(.regularMaterial)
+        //        .backgroundStyle(.regularMaterial)
         .listRowBackground(EmptyView())
     }
 }
