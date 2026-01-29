@@ -12,7 +12,7 @@ import SwiftUI
 struct MatchHistoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
-    var match: Match
+    var match: ScoreKeepMatch
 
     private let web = ScoreKeepWeb()
 
@@ -98,13 +98,13 @@ struct MatchHistoryDetailView: View {
 }
 
 struct MatchHistoryDetailGameView: View {
-    var match: Match
-    var game: MatchGame
+    var match: ScoreKeepMatch
+    var game: ScoreKeepGame
 
     var body: some View {
         DisclosureGroup {
             VStack {
-                MatchGameChartView(game: game)
+                ScoreKeepGameChartView(game: game)
                     .padding(16)
                     .background(.secondary.opacity(0.05))
                     .cornerRadius(8)
@@ -126,7 +126,7 @@ struct MatchHistoryDetailGameView: View {
 
                 Spacer()
 
-                MatchGameChartSparklineView(game: game)
+                ScoreKeepGameChartSparklineView(game: game)
             }
         }
     }

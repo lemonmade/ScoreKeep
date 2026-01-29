@@ -5,10 +5,10 @@ import ScoreKeepUI
 
 struct MatchHistoryListView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Match.endedAt, order: .reverse) private var matches: [Match]
-    
+    @Query(sort: \ScoreKeepMatch.endedAt, order: .reverse) private var matches: [ScoreKeepMatch]
+
     private let web = ScoreKeepWeb()
-    
+
     @State private var shareURL: URL?
     @State private var isPresentingShare = false
     @State private var shareError: Error?
@@ -29,7 +29,7 @@ struct MatchHistoryListView: View {
                                     let response = try await web.share(match: match)
                                     shareURL = response.url
                                     isPresentingShare = true
-//                                    print("Share response: \(response.url.absoluteString)")
+                                    //                                    print("Share response: \(response.url.absoluteString)")
                                 } catch {
                                     shareError = error
                                     print("Share error: \(shareError?.localizedDescription ?? "")")
@@ -82,5 +82,5 @@ struct ActivityView: UIViewControllerRepresentable {
 
 #Preview {
     MatchHistoryListView()
-        .modelContainer(MatchModelContainer().testModelContainer())
+        .modelContainer(ScoreKeepModelContainer().testModelContainer())
 }

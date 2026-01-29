@@ -7,7 +7,7 @@ let package = Package(
     name: "ScoreKeepUI",
     platforms: [
         .iOS(.v26),
-        .watchOS(.v26)
+        .watchOS(.v26),
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -17,7 +17,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(name: "ScoreKeepCore", path: "../ScoreKeepCore/"),
+        .package(name: "ScoreKeepCore", path: "../ScoreKeepCore/")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.

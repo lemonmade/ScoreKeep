@@ -12,21 +12,21 @@ import SwiftUI
 public struct MatchTotalScoreSummaryView: View {
     var us: String
     var them: String
-    var winner: MatchTeam?
+    var winner: ScoreKeepTeam?
 
-    public init(us: Int, them: Int, winner: MatchTeam? = nil) {
+    public init(us: Int, them: Int, winner: ScoreKeepTeam? = nil) {
         self.us = String(us)
         self.them = String(them)
         self.winner = winner
     }
 
-    public init(us: String, them: String, winner: MatchTeam? = nil) {
+    public init(us: String, them: String, winner: ScoreKeepTeam? = nil) {
         self.us = us
         self.them = them
         self.winner = winner
     }
 
-    public init(match: Match) {
+    public init(match: ScoreKeepMatch) {
         if match.isMultiSet {
             self.us = String(match.setsUs)
             self.them = String(match.setsThem)
@@ -47,11 +47,11 @@ public struct MatchTotalScoreSummaryView: View {
         self.winner = match.winner
     }
 
-    public init(game: MatchGame) {
+    public init(game: ScoreKeepGame) {
         self.us =
-            game.set?.match?.sport.normalizedScoreLabelFor(.us, game: game) ?? String(game.scoreUs)
+            game.match?.sport.normalizedScoreLabelFor(.us, game: game) ?? String(game.scoreUs)
         self.them =
-            game.set?.match?.sport.normalizedScoreLabelFor(.them, game: game)
+            game.match?.sport.normalizedScoreLabelFor(.them, game: game)
             ?? String(game.scoreThem)
         self.winner = game.winner
     }
@@ -133,10 +133,10 @@ public enum ScoreLayout {
 }
 
 public struct MatchSummaryScoreTableView: View {
-    var match: Match
+    var match: ScoreKeepMatch
     var layout: ScoreLayout = .selfFirst
 
-    public init(match: Match, layout: ScoreLayout = .selfFirst) {
+    public init(match: ScoreKeepMatch, layout: ScoreLayout = .selfFirst) {
         self.match = match
         self.layout = layout
     }
@@ -176,18 +176,18 @@ public struct MatchSummaryScoreTableView: View {
 }
 
 public struct MatchSummaryScoreTableRowView: View {
-    @Bindable var match: Match
-    var team: MatchTeam
+    @Bindable var match: ScoreKeepMatch
+    var team: ScoreKeepTeam
 
-    @State private var latestGame: MatchGame?
+    @State private var latestGame: ScoreKeepGame?
 
-    public init(match: Match, team: MatchTeam) {
+    public init(match: ScoreKeepMatch, team: ScoreKeepTeam) {
         self.match = match
         self.team = team
         self.latestGame = match.latestGame
     }
 
-    private var latestSet: MatchSet? {
+    private var latestSet: ScoreKeepSet? {
         latestGame?.set
     }
 
@@ -224,7 +224,7 @@ public struct MatchSummaryScoreTableRowView: View {
             Spacer()
 
             if !match.isMultiSet, let set = latestSet,
-                let maximumGameCount = match.scoring.setScoring.maximumGameCount,
+               let maximumGameCount = set.rules?.maximumGameCount,
                 maximumGameCount <= 3
             {
                 let filteredGames = hasWinner ? set.games : set.games.filter { $0 != latestGame }
@@ -479,76 +479,23 @@ public struct MatchSummaryScoreTableBackgroundView: View {
 
 #Preview {
     MatchSummaryScoreTableView(
-        //        match: Match(
-        //            .volleyball,
-        //            scoring: MatchScoringRules(
-        //                winAt: 1,
-        //                setScoring: MatchSetScoringRules(
-        //                    winAt: 2,
-        //                    gameScoring: MatchGameScoringRules(
-        //                        winAt: 10
-        //                    )
-        //                )
-        //            ),
-        //            sets: [
-        //                MatchSet(
-        //                    games: [
-        //                        MatchGame(us: 10, them: 5, endedAt: .now.advanced(by: -1000)),
-        //                        MatchGame(us: 10, them: 2, endedAt: .now),
-        //                    ],
-        //                    endedAt: .now
-        //                )
-        //            ],
-        //            startedAt: .now.advanced(by: -2000),
-        //            endedAt: .now
-        //        )
-        match: Match(
+        match: ScoreKeepMatch(
             .tennis,
-            scoring: MatchScoringRules(
-                winAt: 1,
-                setScoring: MatchSetScoringRules(
-                    winAt: 6,
-                    gameScoring: MatchGameScoringRules(
-                        winAt: 4
-                    )
-                )
-            ),
+            environment: .outdoor,
             sets: [
-                MatchSet(
+                ScoreKeepSet(
                     games: [
-                        MatchGame(number: 1, us: 6, them: 4, endedAt: .now.advanced(by: -1000)),
-                        MatchGame(number: 2, us: 4, them: 2, endedAt: .now),
-                        MatchGame(number: 3, us: 1, them: 4, endedAt: .now),
-                        MatchGame(number: 4, us: 6, them: 4, endedAt: .now),
+                        ScoreKeepGame(us: 6, them: 4, endedAt: .now.advanced(by: -1000)),
+                        ScoreKeepGame(us: 4, them: 2, endedAt: .now),
+                        ScoreKeepGame(us: 1, them: 4, endedAt: .now),
+                        ScoreKeepGame(us: 6, them: 4, endedAt: .now),
                     ],
                     endedAt: .now
-                )
+                ),
             ],
             startedAt: .now.advanced(by: -2000),
             endedAt: .now
         )
-        //        match: Match(
-        //            .volleyball,
-        //            scoring: MatchScoringRules(
-        //                setsWinAt: 1,
-        //                setScoring: MatchSetScoringRules(
-        //                    gamesWinAt: 2,
-        //                    gameScoring: MatchGameScoringRules(
-        //                        winScore: 10
-        //                    )
-        //                )
-        //            ),
-        //            sets: [
-        //                MatchSet(
-        //                    games: [
-        //                        MatchGame(us: 10, them: 2, endedAt: .now.advanced(by: -1000)),
-        //                        MatchGame(us: 10, them: 2, endedAt: .now),
-        //                    ],
-        //                    endedAt: .now
-        //                )
-        //            ],
-        //            startedAt: .now.advanced(by: -2000)
-        //        )
     )
     .safeAreaPadding(.all, 10)
 }

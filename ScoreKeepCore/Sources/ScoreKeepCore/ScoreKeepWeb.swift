@@ -58,11 +58,11 @@ public struct ScoreKeepWeb {
 
     /// Shares a match with the ScoreKeep web service by posting a simplified JSON payload.
     /// The payload conforms to the provided zod schema.
-    /// - Parameter match: Your app's `Match` model instance.
+    /// - Parameter match: Your app's `ScoreKeepMatch` model instance.
     /// - Returns: Raw `Data` from the server response, which you can decode as needed.
     /// - Throws: `WebError` or underlying `URLError`.
     @discardableResult
-    public func share(match: Match) async throws -> ShareResponse {
+    public func share(match: ScoreKeepMatch) async throws -> ShareResponse {
         guard let url = URL(string: "https://scorekeep.watch/.internal/share-match") else {
             throw WebError.badURL
         }
@@ -107,7 +107,7 @@ public struct ScoreKeepWeb {
     
     // MARK: - Mapping helpers
 
-    private func makeShareableMatch(from match: Match) -> ShareableMatch {
+    private func makeShareableMatch(from match: ScoreKeepMatch) -> ShareableMatch {
         let sportRaw = match.sport.rawValue // matches zod enum
         let sets = match.sets.map { set in
             ShareableSet(

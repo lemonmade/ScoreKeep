@@ -5,17 +5,17 @@
 //  Created by Chris Sauve on 2025-11-03.
 //
 
-import SwiftUI
-import SwiftData
 import ScoreKeepCore
+import SwiftData
+import SwiftUI
 
 public struct MatchHistorySummaryView: View {
-    var match: Match
-    
-    public init(match: Match) {
+    var match: ScoreKeepMatch
+
+    public init(match: ScoreKeepMatch) {
         self.match = match
     }
-    
+
     public var body: some View {
         HStack(alignment: .top, spacing: 8) {
             MatchTotalScoreSummaryView(match: match)
@@ -26,13 +26,13 @@ public struct MatchHistorySummaryView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 18, height: 18)
-                    
+
                     Text(match.label).font(.headline)
                 }
                 .foregroundStyle(.primary)
-                    
+
                 MatchHistoryDetailDateView(match: match)
-                
+
                 MatchHistoryDetailDurationView(match: match)
             }
         }
@@ -40,17 +40,17 @@ public struct MatchHistorySummaryView: View {
 }
 
 public struct MatchHistoryDetailDateView: View {
-    public var match: Match
-    
-    public init(match: Match) {
+    public var match: ScoreKeepMatch
+
+    public init(match: ScoreKeepMatch) {
         self.match = match
     }
-    
+
     private let dateFormatter = Date.FormatStyle(
         date: .abbreviated,
         time: .none
     )
-    
+
     public var body: some View {
         Text(
             (match.endedAt ?? match.startedAt).formatted(dateFormatter)
@@ -59,15 +59,15 @@ public struct MatchHistoryDetailDateView: View {
 }
 
 public struct MatchHistoryDetailDurationView: View {
-    var match: Match
-    
-    public init(match: Match) {
+    var match: ScoreKeepMatch
+
+    public init(match: ScoreKeepMatch) {
         self.match = match
     }
-    
+
     private var startedAt: Date { match.startedAt }
     private var endedAt: Date { match.endedAt ?? match.startedAt }
-    
+
     public var body: some View {
         Text(startedAt...endedAt)
             .foregroundStyle(.secondary)
@@ -75,12 +75,12 @@ public struct MatchHistoryDetailDurationView: View {
 }
 
 public struct MatchHistoryDetailDetailView: View {
-    var match: Match
-    
-    public init(match: Match) {
+    var match: ScoreKeepMatch
+
+    public init(match: ScoreKeepMatch) {
         self.match = match
     }
-    
+
     public var body: some View {
         if match.isMultiSet || (match.latestSet?.isMultiGame ?? true) {
             if let scoreSummaryString = match.scoreSummaryString {
@@ -94,22 +94,15 @@ public struct MatchHistoryDetailDetailView: View {
 
 #Preview {
     MatchHistorySummaryView(
-        match: Match(
+        match: ScoreKeepMatch(
             .volleyball,
-            scoring: MatchScoringRules(
-                winAt: 5,
-                setScoring: MatchSetScoringRules(
-                    winAt: 6,
-                    gameScoring: MatchGameScoringRules(
-                        winAt: 25,
-                        winBy: 2
-                    )
-                )
-            ),
+            environment: .indoor,
             sets: [
-                MatchSet(number: 1, games: [
-                    MatchGame(number: 1, us: 25, them: 20)
-                ])
+                ScoreKeepSet(
+                    games: [
+                        ScoreKeepGame(us: 25, them: 20),
+                    ]
+                ),
             ]
         )
     )

@@ -114,8 +114,20 @@ public enum ScoreKeepSport: String, Codable {
         return game.leading == team ? "Ad" : "\(normalizedScore)"
     }
 
-    public func defaultRules() -> ScoreKeepMatchRules {
+    public func defaultRules(environment: ScoreKeepActivityEnvironment = .outdoor) -> ScoreKeepMatchRules {
         switch self {
+        case .volleyball:
+            return ScoreKeepMatchRules(
+                winAt: 1,
+                setRules: ScoreKeepSetRules(
+                    winAt: 2,
+                    gameRules: ScoreKeepGameRules(
+                        winAt: 25,
+                        winBy: 2,
+                        maximum: 27
+                    )
+                )
+            )
         case .tennis:
             return ScoreKeepMatchRules(
                 winAt: 1,
@@ -144,7 +156,27 @@ public enum ScoreKeepSport: String, Codable {
                     )
                 )
             )
-        default: return ScoreKeepMatchRules()
+        case .squash:
+            return ScoreKeepMatchRules(
+                winAt: 1,
+                setRules: ScoreKeepSetRules(
+                    winAt: 3,
+                    gameRules: ScoreKeepGameRules(
+                        winAt: 11,
+                        winBy: 2
+                    )
+                )
+            )
+        case .ultimate:
+            return ScoreKeepMatchRules(
+                winAt: 1,
+                setRules: ScoreKeepSetRules(
+                    winAt: 1,
+                    gameRules: ScoreKeepGameRules(
+                        winAt: 15
+                    )
+                )
+            )
         }
     }
 }
@@ -213,10 +245,10 @@ public class ScoreKeepMatch {
         _rules ?? ScoreKeepMatchRules()
     }
 
-    @Relationship
+    @Relationship(deleteRule: .noAction, inverse: \ScoreKeepMatchTemplate._matches)
     public var template: ScoreKeepMatchTemplate?
 
-    @Relationship
+    @Relationship(deleteRule: .cascade, inverse: \ScoreKeepWarmup.match)
     public var warmup: ScoreKeepWarmup?
     public var hasWarmup: Bool { warmup != nil }
 
@@ -619,11 +651,12 @@ public class ScoreKeepGame {
         scores.append(score)
         _scores = scores
 
-        guard let match = match, let set = set else { return }
-        if match.rules.setRules.gameRules.hasWinner(self) {
+        guard let rules else { return }
+        
+        if rules.hasWinner(self) {
             self.endedAt = Date.now
 
-            if !match.rules.setRules.canPlayAnotherGame(set) {
+            if let set = set, let setRules = set.rules, !setRules.canPlayAnotherGame(set) {
                 set.endedAt = endedAt
             }
         }
@@ -729,7 +762,6 @@ private func defaultAdjustmentForTeam(
 
 @Model
 public class ScoreKeepWarmup {
-    @Relationship(inverse: \ScoreKeepMatch.warmup)
     public var match: ScoreKeepMatch?
 
     public var createdAt: Date = Date.now
@@ -776,23 +808,22 @@ public enum ScoreKeepMatchColor: String, Codable {
 
 @Model
 public class ScoreKeepMatchTemplate {
-    @Relationship(inverse: \Match.template)
-    public var _matches: [Match]?
+    public var _matches: [ScoreKeepMatch]?
 
-    public var sport: ScoreKeepSport
+    public var sport: ScoreKeepSport = ScoreKeepSport.volleyball
     public var name: String = "Volleyball"
-    public var color: ScoreKeepMatchColor
-    public var environment: ScoreKeepActivityEnvironment
+    public var color: ScoreKeepMatchColor = ScoreKeepMatchColor.green
+    public var environment: ScoreKeepActivityEnvironment = ScoreKeepActivityEnvironment.indoor
     public var _rules: ScoreKeepMatchRules?
     public var rules: ScoreKeepMatchRules {
         get { _rules ?? ScoreKeepMatchRules() }
         set { _rules = newValue }
     }
 
-    public var createdAt: Date
+    public var createdAt: Date = Date.now
     public var lastUsedAt: Date?
-    public var warmup: ScoreKeepWarmupRule
-    public var startWorkout: Bool
+    public var warmup: ScoreKeepWarmupRule = ScoreKeepWarmupRule.open
+    public var startWorkout: Bool = false
 
     public init(
         _ sport: ScoreKeepSport,
@@ -807,7 +838,7 @@ public class ScoreKeepMatchTemplate {
         self.name = name
         self.color = color
         self.environment = environment
-        self._rules = rules ?? sport.defaultRules()
+        self._rules = rules ?? sport.defaultRules(environment: environment)
         self.createdAt = Date()
         self.warmup = warmup
         self.startWorkout = startWorkout
@@ -864,13 +895,14 @@ public struct ScoreKeepMatchTemplateTeam {
 
 }
 
-public enum ScoreKeepWarmupRule: Codable, Equatable {
+public enum ScoreKeepWarmupRule: String, Codable {
     case none
     case open
 }
 
 public enum ScoreKeepWinBehaviorRule: String, Codable {
-    case end, keepPlaying
+    case end
+    case keepPlaying
 }
 
 public struct ScoreKeepMatchRules: Codable, Equatable {
@@ -881,10 +913,15 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
     public var setRules: ScoreKeepSetRules
     public var lastSetRules: ScoreKeepSetRules?
 
+    enum CodingKeys: String, CodingKey {
+        case winAt, winBy, maximum, winBehavior, setRules, lastSetRules
+    }
+
     public init(
         winAt: Int? = 1, winBy: Int? = nil, maximum: Int? = nil,
         winBehavior: ScoreKeepWinBehaviorRule = .end,
-        setRules: ScoreKeepSetRules = ScoreKeepSetRules(), lastSetRules: ScoreKeepSetRules? = nil
+        setRules: ScoreKeepSetRules = ScoreKeepSetRules(),
+        lastSetRules: ScoreKeepSetRules? = nil
     ) {
         self.winAt = winAt
         self.winBy = winBy
@@ -892,6 +929,26 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
         self.winBehavior = winBehavior
         self.setRules = setRules
         self.lastSetRules = lastSetRules
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        winAt = try container.decodeIfPresent(Int.self, forKey: .winAt)
+        winBy = try container.decodeIfPresent(Int.self, forKey: .winBy)
+        maximum = try container.decodeIfPresent(Int.self, forKey: .maximum)
+        winBehavior = try container.decodeIfPresent(ScoreKeepWinBehaviorRule.self, forKey: .winBehavior) ?? .end
+        setRules = try container.decode(ScoreKeepSetRules.self, forKey: .setRules)
+        lastSetRules = try container.decodeIfPresent(ScoreKeepSetRules.self, forKey: .lastSetRules)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(winAt, forKey: .winAt)
+        try container.encodeIfPresent(winBy, forKey: .winBy)
+        try container.encodeIfPresent(maximum, forKey: .maximum)
+        try container.encode(winBehavior, forKey: .winBehavior)
+        try container.encode(setRules, forKey: .setRules)
+        try container.encodeIfPresent(lastSetRules, forKey: .lastSetRules)
     }
 
     public var isMultiSet: Bool {
@@ -977,6 +1034,10 @@ public struct ScoreKeepSetRules: Codable, Equatable {
     public var gameRules: ScoreKeepGameRules
     public var lastGameRules: ScoreKeepGameRules?
 
+    enum CodingKeys: String, CodingKey {
+        case winAt, winBy, maximum, winBehavior, gameRules, lastGameRules
+    }
+
     public init(
         winAt: Int? = nil, winBy: Int? = nil, maximum: Int? = nil,
         winBehavior: ScoreKeepWinBehaviorRule = .end,
@@ -989,6 +1050,26 @@ public struct ScoreKeepSetRules: Codable, Equatable {
         self.winBehavior = winBehavior
         self.gameRules = gameRules
         self.lastGameRules = lastGameRules
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.winAt = try container.decodeIfPresent(Int.self, forKey: .winAt)
+        self.winBy = try container.decodeIfPresent(Int.self, forKey: .winBy)
+        self.maximum = try container.decodeIfPresent(Int.self, forKey: .maximum)
+        self.winBehavior = try container.decodeIfPresent(ScoreKeepWinBehaviorRule.self, forKey: .winBehavior) ?? .end
+        self.gameRules = try container.decode(ScoreKeepGameRules.self, forKey: .gameRules)
+        self.lastGameRules = try container.decodeIfPresent(ScoreKeepGameRules.self, forKey: .lastGameRules)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(winAt, forKey: .winAt)
+        try container.encodeIfPresent(winBy, forKey: .winBy)
+        try container.encodeIfPresent(maximum, forKey: .maximum)
+        try container.encode(winBehavior, forKey: .winBehavior)
+        try container.encode(gameRules, forKey: .gameRules)
+        try container.encodeIfPresent(lastGameRules, forKey: .lastGameRules)
     }
 
     public var isMultiGame: Bool {
@@ -1057,10 +1138,9 @@ public struct ScoreKeepSetRules: Codable, Equatable {
         print("ScoreKeepSetScoringRules.canPlayAnotherGame()")
         print("match: \(set.match?.scoreSummaryString ?? "<no match>")")
         print(
-            "winAt: \(winAt ?? -1), " +
-            "hasWinner: \(hasWinner(set)), " +
-            "playItOut: \(winBehavior == .keepPlaying), " +
-            "impliedMaximumGameNumber: \(maximumGameCount ?? -1)"
+            "winAt: \(winAt ?? -1), " + "hasWinner: \(hasWinner(set)), "
+                + "playItOut: \(winBehavior == .keepPlaying), "
+                + "impliedMaximumGameNumber: \(maximumGameCount ?? -1)"
         )
 
         if hasWinner(set) && winBehavior == .end { return false }

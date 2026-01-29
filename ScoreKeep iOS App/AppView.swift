@@ -5,9 +5,9 @@
 //  Created by Chris Sauve on 2025-03-23.
 //
 
-import SwiftUI
-import SwiftData
 import ScoreKeepCore
+import SwiftData
+import SwiftUI
 
 enum AppTab {
     case start
@@ -31,11 +31,11 @@ struct AppView: View {
                 .tabItem {
                     Label("Start", systemImage: "play.square.stack.fill")
                 }
-            MatchHistoryListView()
-                .tag(AppTab.history)
-                .tabItem {
-                    Label("History", systemImage: "calendar")
-                }
+            // MatchHistoryListView()
+            //     .tag(AppTab.history)
+            //     .tabItem {
+            //         Label("History", systemImage: "calendar")
+            //     }
             SettingsView()
                 .tag(AppTab.settings)
                 .tabItem {
@@ -48,5 +48,5 @@ struct AppView: View {
 
 #Preview {
     AppView()
-        .modelContainer(MatchModelContainer().testModelContainer())
+        .modelContainer(ScoreKeepModelContainer().testModelContainer())
 }

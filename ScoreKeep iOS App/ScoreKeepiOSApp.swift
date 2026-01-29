@@ -11,12 +11,12 @@ import ScoreKeepCore
 
 @main
 struct ScoreKeepiOSApp: App {
-    private let sharedModelContainer = MatchModelContainer().sharedModelContainer()
+    private let modelContainer = ScoreKeepModelContainer().sharedModelContainer()
 
     var body: some Scene {
         WindowGroup {
             AppView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(modelContainer)
     }
 }

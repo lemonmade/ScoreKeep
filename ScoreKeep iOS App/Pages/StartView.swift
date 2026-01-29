@@ -13,8 +13,9 @@ import SwiftUI
 struct StartView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \ScoreKeepMatchTemplate.lastUsedAt, order: .reverse) private var templates: [ScoreKeepMatchTemplate]
-    // TODO: update to use ScoreKeepMatch
-    @Query(sort: \Match.endedAt, order: .reverse) private var matches: [Match]
+    @Query(sort: \ScoreKeepMatch.endedAt, order: .reverse) private var matches: [ScoreKeepMatch]
+
+    @State private var activeMatch: ScoreKeepMatch?
 
     private let defaultTemplates: [ScoreKeepMatchTemplate] = createDefaultTemplates()
 
@@ -25,12 +26,20 @@ struct StartView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section {
+                Section("Start new match") {
                     ForEach(defaultTemplates) { template in
-                        NavigationLink {
-                            Text(template.name)
+                        Button {
+                            startNewMatch(from: template)
                         } label: {
-                            Text(template.name)
+                            HStack {
+                                Image(systemName: template.sport.figureIcon)
+                                    .frame(width: 24)
+                                Text(template.name)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                            }
                         }
                     }
                 }
@@ -48,7 +57,26 @@ struct StartView: View {
                 }
             }
             .navigationTitle("Start")
+            .sheet(item: $activeMatch) { match in
+                ActiveMatchView()
+                    .environment(match)
+                    .interactiveDismissDisabled()
+            }
         }
+    }
+
+    private func startNewMatch(from template: ScoreKeepMatchTemplate) {
+        let match = template.createMatch()
+        context.insert(match)
+
+        // Start the first game
+        match.startGame()
+
+        // Save context
+        try? context.save()
+
+        // Navigate to active match view
+        activeMatch = match
     }
 }
 
@@ -116,6 +144,6 @@ struct RecentMatchHeaderView: View {
 
 #Preview {
     StartView()
-        .modelContainer(MatchModelContainer().testModelContainer())
+        .modelContainer(ScoreKeepModelContainer().testModelContainer())
         .environment(AppNavigation())
 }
