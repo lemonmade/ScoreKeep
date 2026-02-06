@@ -12,10 +12,13 @@ import SwiftUI
 
 struct StartView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \ScoreKeepMatchTemplate.lastUsedAt, order: .reverse) private var templates: [ScoreKeepMatchTemplate]
+    @Query(sort: \ScoreKeepMatchTemplate.lastUsedAt, order: .reverse) private var templates:
+        [ScoreKeepMatchTemplate]
     @Query(sort: \ScoreKeepMatch.endedAt, order: .reverse) private var matches: [ScoreKeepMatch]
 
     @State private var activeMatch: ScoreKeepMatch?
+    @State private var showingTemplateCreator = false
+    @State private var templateToEdit: ScoreKeepMatchTemplate?
 
     private let defaultTemplates: [ScoreKeepMatchTemplate] = createDefaultTemplates()
 
@@ -23,11 +26,31 @@ struct StartView: View {
         return min(5, matches.count)
     }
 
+    private var unusedDefaultTemplates: [ScoreKeepMatchTemplate] {
+        return defaultTemplates.filter { defaultTemplate in
+            !templates.contains { $0.name == defaultTemplate.name }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
+                // User-created and used templates
+                if !templates.isEmpty {
+                    Section("My Templates") {
+                        ForEach(templates) { template in
+                            TemplateRowView(
+                                template: template,
+                                onStart: { startNewMatch(from: template) },
+                                onEdit: { templateToEdit = template }
+                            )
+                        }
+                    }
+                }
+
+                // Default templates that haven't been used
                 Section("Start new match") {
-                    ForEach(defaultTemplates) { template in
+                    ForEach(unusedDefaultTemplates) { template in
                         Button {
                             startNewMatch(from: template)
                         } label: {
@@ -42,7 +65,14 @@ struct StartView: View {
                             }
                         }
                     }
+
+                    Button {
+                        showingTemplateCreator = true
+                    } label: {
+                        Label("Create Custom Template", systemImage: "plus.circle")
+                    }
                 }
+
                 Section(
                     header: RecentMatchHeaderView(
                         moreLinkVisibility: matches.count > maxRecentMatches ? .visible : .hidden)
@@ -62,6 +92,12 @@ struct StartView: View {
                     .environment(match)
                     .interactiveDismissDisabled()
             }
+            .sheet(isPresented: $showingTemplateCreator) {
+                MatchTemplateCreateView()
+            }
+            .sheet(item: $templateToEdit) { template in
+                MatchTemplateCreateView(template: template)
+            }
         }
     }
 
@@ -77,6 +113,47 @@ struct StartView: View {
 
         // Navigate to active match view
         activeMatch = match
+    }
+}
+
+struct TemplateRowView: View {
+    var template: ScoreKeepMatchTemplate
+    var onStart: () -> Void
+    var onEdit: () -> Void
+
+    var body: some View {
+        Button {
+            onStart()
+        } label: {
+            HStack {
+                Image(systemName: template.sport.figureIcon)
+                    .frame(width: 24)
+                    .foregroundStyle(template.color.color)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(template.name)
+                        .foregroundStyle(.primary)
+
+                    HStack(spacing: 8) {
+                        Text(template.sport.label)
+                        Text("•")
+                        Text(template.environment == .indoor ? "Indoor" : "Outdoor")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Button {
+                    onEdit()
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+        }
     }
 }
 

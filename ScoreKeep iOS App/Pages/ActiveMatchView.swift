@@ -9,82 +9,72 @@ import ScoreKeepCore
 import SwiftUI
 
 struct ActiveMatchView: View {
-    @Environment(ScoreKeepMatch.self) private var match
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        if match.latestGame != nil {
-            ActiveMatchScoringView(match: match, onDismiss: {
-                dismiss()
-            })
-        } else {
-            ContentUnavailableView(
-                "No active game",
-                systemImage: "sportscourt",
-                description: Text("Start a game to begin scoring")
-            )
-        }
+  @Environment(ScoreKeepMatch.self) private var match
+  @Environment(\.dismiss) private var dismiss
+
+  var body: some View {
+    if match.latestGame != nil {
+      ActiveMatchScoringView(
+        match: match,
+        onDismiss: {
+          dismiss()
+        })
+    } else {
+      ContentUnavailableView(
+        "No active game",
+        systemImage: "sportscourt",
+        description: Text("Start a game to begin scoring")
+      )
     }
+  }
 }
 
 struct ActiveMatchScoringView: View {
-    var match: ScoreKeepMatch
-    var onDismiss: () -> Void
-    
-    var body: some View {
-        NavigationStack {
-            GeometryReader { geometry in
-                VStack(spacing: 0) {
-                    // Top half: Match summary
-                    ActiveMatchSummarySection(match: match)
-                        .frame(height: geometry.size.height * 0.4)
-                        .background(Color(.systemBackground))
-                    
-                    // Bottom half: Scoring buttons
-                    ActiveMatchScoringButtonsSection(match: match)
-                        .frame(height: geometry.size.height * 0.6)
-                }
-            }
-            .navigationTitle(match.label)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        match.end()
-                        onDismiss()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "xmark")
-                            Text("End Match")
-                        }
-                    }
-                }
-                
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        match.startGame()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text("Next Game")
-                            Image(systemName: "arrow.right")
-                        }
-                    }
-                    .disabled(!canStartNextGame)
-                }
-            }
+  var match: ScoreKeepMatch
+  var onDismiss: () -> Void
+
+  var body: some View {
+    NavigationStack {
+      GeometryReader { geometry in
+        VStack(spacing: 0) {
+          // Top half: Match summary
+          ActiveMatchSummarySection(match: match)
+            .frame(height: geometry.size.height * 0.4)
+            .background(Color(.systemBackground))
+
+          // Bottom half: Scoring buttons
+          ActiveMatchScoringButtonsSection(match: match)
+            .frame(height: geometry.size.height * 0.6)
         }
+      }
+      .navigationTitle(match.label)
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button {
+            match.end()
+            onDismiss()
+          } label: {
+            HStack(spacing: 4) {
+              Image(systemName: "xmark")
+              Text("End Match")
+            }
+          }
+        }
+      }
     }
-    
-    private var canStartNextGame: Bool {
-        guard let latestGame = match.latestGame else { return false }
-        return latestGame.hasEnded && !match.hasWinner
-    }
+  }
 }
 
 // MARK: - Summary Section
 
 struct ActiveMatchSummarySection: View {
   var match: ScoreKeepMatch
+
+  private var canStartNextGame: Bool {
+    guard let latestGame = match.latestGame else { return false }
+    return latestGame.hasEnded && !match.hasWinner
+  }
 
   var body: some View {
     ScrollView {
@@ -123,6 +113,25 @@ struct ActiveMatchSummarySection: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal)
+
+        // Next game button
+        if canStartNextGame {
+          Button {
+            match.startGame()
+          } label: {
+            HStack {
+              Text("Start Next Game")
+              Image(systemName: "arrow.right")
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.accentColor.opacity(0.2))
+            .foregroundStyle(Color.accentColor)
+            .cornerRadius(12)
+          }
+          .padding(.horizontal)
+          .padding(.top, 8)
+        }
       }
       .padding(.vertical)
     }
