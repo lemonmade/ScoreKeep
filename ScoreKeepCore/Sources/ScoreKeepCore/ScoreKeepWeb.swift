@@ -56,31 +56,100 @@ public struct ScoreKeepWeb {
     
     public init() {}
 
-    /// Shares a match with the ScoreKeep web service by posting a simplified JSON payload.
-    /// The payload conforms to the provided zod schema.
+    /// Shares a match with the ScoreKeep web service by posting a GraphQL mutation.
+    /// The mutation is named `createMatch` and accepts various parameters for the match.
     /// - Parameter match: Your app's `ScoreKeepMatch` model instance.
-    /// - Returns: Raw `Data` from the server response, which you can decode as needed.
+    /// - Returns: A `ShareResponse` containing the URL constructed from the returned match ID.
     /// - Throws: `WebError` or underlying `URLError`.
     @discardableResult
     public func share(match: ScoreKeepMatch) async throws -> ShareResponse {
-        guard let url = URL(string: "https://scorekeep.watch/.internal/share-match") else {
+        guard let url = URL(string: "https://scorekeep.watch/graphql") else {
             throw WebError.badURL
         }
 
-        // Build payload per schema: { match: { ... } }
-        let shareable = makeShareableMatch(from: match)
-        let requestBody = ShareableRequest(match: shareable)
+        let iso8601 = ISO8601DateFormatter()
+        iso8601.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        guard let body = try? encoder.encode(requestBody) else {
+        // Prepare variables conforming to the mutation input signature
+        let sport = match.sport.rawValue
+        let startedAt = iso8601.string(from: match.startedAt)
+        let endedAt = match.endedAt.map { iso8601.string(from: $0) }
+        let winner = match.winner?.rawValue
+
+        let sets: [[String: Any]] = match.sets.map { set in
+            let setStartedAt = iso8601.string(from: set.startedAt)
+            let setEndedAt = set.endedAt.map { iso8601.string(from: $0) }
+            let setWinner = set.winner?.rawValue
+
+            let games: [[String: Any]] = set.games.map { game in
+                var gameDict: [String: Any] = [
+                    "startedAt": iso8601.string(from: game.startedAt),
+                    "scoreUs": game.scoreUs,
+                    "scoreThem": game.scoreThem
+                ]
+                if let endedAt = game.endedAt {
+                    gameDict["endedAt"] = iso8601.string(from: endedAt)
+                }
+                if let winner = game.winner?.rawValue {
+                    gameDict["winner"] = winner
+                }
+                return gameDict
+            }
+
+            var setDict: [String: Any] = [
+                "startedAt": setStartedAt,
+                "games": games
+            ]
+            if let endedAt = setEndedAt {
+                setDict["endedAt"] = endedAt
+            }
+            if let winner = setWinner {
+                setDict["winner"] = winner
+            }
+            return setDict
+        }
+
+        let variables: [String: Any?] = [
+            "sport": sport,
+            "startedAt": startedAt,
+            "endedAt": endedAt as Any,
+            "winner": winner as Any,
+            "sets": sets,
+            "userId": nil
+        ]
+
+        let query = """
+        mutation CreateMatch($sport: MatchSport!, $startedAt: String!, $endedAt: String, $winner: MatchTeam, $sets: [MatchSetInput!]!, $userId: ID) {
+          createMatch(sport: $sport, startedAt: $startedAt, endedAt: $endedAt, winner: $winner, sets: $sets, userId: $userId) {
+            match {
+              id
+            }
+            errors {
+              message
+            }
+          }
+        }
+        """
+
+        // Remove nil values from variables dictionary
+        let cleanedVariables = variables.compactMapValues { $0 }
+
+        let requestBody: [String: Any] = [
+            "query": query,
+            "variables": cleanedVariables
+        ]
+
+        let bodyData: Data
+        do {
+            bodyData = try JSONSerialization.data(withJSONObject: requestBody, options: [])
+        } catch {
             throw WebError.encodingFailed
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = body
+        request.httpBody = bodyData
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -92,13 +161,41 @@ public struct ScoreKeepWeb {
             let bodyString = String(data: data, encoding: .utf8)
             throw WebError.serverError(statusCode: http.statusCode, body: bodyString)
         }
-        
-        let decoder = JSONDecoder()
-        // If server sends ISO8601 dates elsewhere in future, this keeps consistency.
-        decoder.dateDecodingStrategy = .iso8601
+
+        // Response expected:
+        // {
+        //   "data": {
+        //     "createMatch": {
+        //       "match": { "id": String },
+        //       "errors": [ { "message": String }, ... ]
+        //     }
+        //   }
+        // }
+
         do {
-            let response = try decoder.decode(ShareResponse.self, from: data)
-            return response
+            let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+            guard
+                let dict = jsonObject as? [String: Any],
+                let dataDict = dict["data"] as? [String: Any],
+                let createMatchDict = dataDict["createMatch"] as? [String: Any]
+            else {
+                throw WebError.decodingFailed
+            }
+
+            if let errors = createMatchDict["errors"] as? [[String: Any]], !errors.isEmpty {
+                let messages = errors.compactMap { $0["message"] as? String }.joined(separator: "; ")
+                throw WebError.serverError(statusCode: http.statusCode, body: messages)
+            }
+
+            guard
+                let matchDict = createMatchDict["match"] as? [String: Any],
+                let id = matchDict["id"] as? String,
+                let url = URL(string: "https://scorekeep.watch/match/\(id)")
+            else {
+                throw WebError.decodingFailed
+            }
+
+            return ShareResponse(url: url)
         } catch {
             throw WebError.decodingFailed
         }
@@ -133,6 +230,19 @@ public struct ScoreKeepWeb {
             sets: sets,
             winner: match.winner?.rawValue
         )
+    }
+
+    /// Converts a Codable ShareableMatch into a dictionary suitable for GraphQL variables.
+    /// Uses JSONEncoder -> JSONSerialization to produce [String: Any].
+    private func convertToDictionary(_ shareableMatch: ShareableMatch) throws -> [String: Any] {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        let data = try encoder.encode(shareableMatch)
+        let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+        guard let dict = jsonObject as? [String: Any] else {
+            throw WebError.encodingFailed
+        }
+        return dict
     }
 
 }

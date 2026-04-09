@@ -13,7 +13,13 @@ struct ActiveMatchView: View {
   @Environment(\.dismiss) private var dismiss
 
   var body: some View {
-    if match.latestGame != nil {
+    if let warmup = match.warmup, !warmup.hasEnded {
+      ActiveMatchWarmupView(
+        match: match,
+        onDismiss: {
+          dismiss()
+        })
+    } else if match.latestGame != nil {
       ActiveMatchScoringView(
         match: match,
         onDismiss: {
@@ -459,6 +465,74 @@ struct ActiveMatchEditSheet: View {
         ToolbarItem(placement: .cancellationAction) {
           Button("Done") {
             dismiss()
+          }
+        }
+      }
+    }
+  }
+}
+
+// MARK: - Warmup View
+
+struct ActiveMatchWarmupView: View {
+  var match: ScoreKeepMatch
+  var onDismiss: () -> Void
+
+  var body: some View {
+    NavigationStack {
+      VStack(spacing: 32) {
+        Spacer()
+
+        VStack(spacing: 16) {
+          Image(systemName: "figure.run")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 80, height: 80)
+            .foregroundStyle(.secondary)
+
+          Text("Warmup")
+            .font(.largeTitle)
+            .fontWeight(.bold)
+
+          if let warmup = match.warmup {
+            TimelineView(.periodic(from: warmup.startedAt, by: 0.1)) { context in
+              Text(
+                context.date,
+                format: .stopwatch(startingAt: warmup.startedAt, maxPrecision: .seconds(1))
+              )
+            }
+            .font(.system(.title, design: .rounded).monospacedDigit())
+            .foregroundStyle(.secondary)
+          }
+        }
+
+        Spacer()
+
+        Button {
+          match.startGame()
+        } label: {
+          Text("Start Match")
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.accentColor)
+            .foregroundStyle(.white)
+            .cornerRadius(16)
+        }
+        .padding(.horizontal)
+      }
+      .navigationTitle(match.label)
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .topBarLeading) {
+          Button {
+            match.end()
+            onDismiss()
+          } label: {
+            HStack(spacing: 4) {
+              Image(systemName: "xmark")
+              Text("End Match")
+            }
           }
         }
       }
