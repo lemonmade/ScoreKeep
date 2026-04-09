@@ -10,10 +10,10 @@ import WatchKit
 import ScoreKeepCore
 
 struct ActiveMatchView: View {
-    var template: MatchTemplate
+    var template: ScoreKeepMatchTemplate
     var markAsUsed: Bool = true
-    
-    @State private var match: Match? = nil
+
+    @State private var match: ScoreKeepMatch? = nil
 
     @Environment(\.modelContext) private var context
     @Environment(NavigationManager.self) private var navigation
@@ -26,22 +26,22 @@ struct ActiveMatchView: View {
             .environment(match)
             .onAppear {
                 navigation.activeMatchTab = .main
-                
+
                 let match = template.createMatch(markAsUsed: markAsUsed)
                 self.match = match
-                
-                // TODO: we currently start the first game, even if there is a warmup.
-                // we should only be creating the game after the warmup has ended
+
                 if (template.warmup != .none) {
                     match.startWarmup()
+                } else {
+                    match.startGame()
                 }
-                
+
                 if template.startWorkout {
                     Task {
                         await workoutManager.startWorkout(match: match)
                     }
                 }
-                
+
                 context.insert(match)
 
                 // TODO
@@ -51,8 +51,8 @@ struct ActiveMatchView: View {
 }
 
 struct ActiveMatchInternalView: View {
-    var match: Match?
-    
+    var match: ScoreKeepMatch?
+
     var body: some View {
         if let match {
             ActiveMatchTabView(match: match)
@@ -63,9 +63,9 @@ struct ActiveMatchInternalView: View {
 }
 
 struct ActiveMatchTabView: View {
-    @Bindable var match: Match
+    @Bindable var match: ScoreKeepMatch
     @Environment(NavigationManager.self) private var navigation
-    
+
     var body: some View {
         @Bindable var navigation = navigation
 
@@ -88,15 +88,15 @@ struct ActiveMatchTabView: View {
 
 #Preview {
     ActiveMatchView(
-        template: MatchTemplate(
+        template: ScoreKeepMatchTemplate(
             .volleyball,
             name: "Indoor volleyball",
             environment: .indoor,
-            scoring: MatchScoringRules(
+            rules: ScoreKeepMatchRules(
                 winAt: 3,
-                setScoring: MatchSetScoringRules(
+                setRules: ScoreKeepSetRules(
                     winAt: 6,
-                    gameScoring: MatchGameScoringRules(
+                    gameRules: ScoreKeepGameRules(
                         winAt: 25
                     )
                 )
@@ -105,5 +105,5 @@ struct ActiveMatchTabView: View {
     )
         .environment(NavigationManager())
         .environment(WorkoutManager())
-        .modelContainer(MatchModelContainer().testModelContainer())
+        .modelContainer(ScoreKeepModelContainer().testModelContainer())
 }

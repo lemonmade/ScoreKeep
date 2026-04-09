@@ -13,16 +13,16 @@ protocol NavigationLocationProtocol : Hashable {}
 
 struct NavigationLocation {
     struct TemplateCreate: NavigationLocationProtocol {
-        var template: MatchTemplate? = nil
+        var template: ScoreKeepMatchTemplate? = nil
     }
     
     struct MatchHistoryDetail: NavigationLocationProtocol {
-        var match: Match
+        var match: ScoreKeepMatch
     }
 
     struct MatchHistory: NavigationLocationProtocol {}
     struct ActiveMatch: NavigationLocationProtocol {
-        var template: MatchTemplate
+        var template: ScoreKeepMatchTemplate
         
         enum Tab {
             case main

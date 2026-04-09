@@ -9,7 +9,7 @@ import ScoreKeepCore
 import SwiftUI
 
 struct ActiveMatchActivityViewWithData: View {
-    @Environment(Match.self) var match
+    @Environment(ScoreKeepMatch.self) var match
     @Environment(WorkoutManager.self) var workoutManager
 
     var body: some View {

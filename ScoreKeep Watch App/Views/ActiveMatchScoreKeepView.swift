@@ -9,7 +9,7 @@ import SwiftUI
 import ScoreKeepCore
 
 struct ActiveMatchScoreKeepView: View {
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
 
     var body: some View {
         if match.latestGame != nil {
@@ -22,14 +22,14 @@ struct ActiveMatchScoreKeepView: View {
 }
 
 struct ActiveMatchScoreKeepGameView: View {
-    var match: Match
+    var match: ScoreKeepMatch
 
     private let spacing: CGFloat = 8
     private let outerPadding = EdgeInsets(
         top: 40, leading: 12, bottom: 21, trailing: 12)
-    
+
     @State private var showUndoSheet: Bool = false
-    
+
     private func toggleUndoSheet() {
         showUndoSheet = !showUndoSheet
     }
@@ -57,7 +57,7 @@ struct ActiveMatchScoreKeepGameView: View {
             ActiveMatchScoreKeepEditView(match: match)
         }
     }
-    
+
     private func geometryToButtonSize(_ geometry: GeometryProxy) -> CGSize {
         let size = CGSize(
             width: geometry.size.width
@@ -77,9 +77,9 @@ struct ActiveMatchScoreKeepGameView: View {
 
 struct ActiveMatchScoreKeepEditView: View {
     @Environment(\.dismiss) var dismiss
-    
-    var match: Match
-    
+
+    var match: ScoreKeepMatch
+
     var body: some View {
         VStack(spacing: 12) {
             Text("Actions")
@@ -98,26 +98,26 @@ struct ActiveMatchScoreKeepEditView: View {
 }
 
 struct GameScoreTeamButtonView: View {
-    var team: MatchTeam
-    var match: Match
+    var team: ScoreKeepTeam
+    var match: ScoreKeepMatch
     var size: CGSize
     var onLongPress: (() -> Void)? = nil
-    
+
     @State private var isPressing = false
     @State private var longPressTriggered = false
     @State private var pressWorkItem: DispatchWorkItem?
     @State private var startLocation: CGPoint?
-    
+
     var keyColor: Color {
         team == .us ? .blue : .red
     }
-    
-    var game: MatchGame {
+
+    var game: ScoreKeepGame {
         match.latestGame!
     }
 
     var body: some View {
-        
+
         Button(action: {
             if longPressTriggered { return }
             match.scorePoint(team)
@@ -126,64 +126,18 @@ struct GameScoreTeamButtonView: View {
                 .foregroundStyle(keyColor)
         }
         .buttonStyle(CustomButtonStyle(keyColor: keyColor))
-//        .simultaneousGesture(
-//            LongPressGesture(minimumDuration: 1)
-//                .onChanged { value in
-//                    if startLocation == nil { startLocation = value.startLocation }
-//                    let dx = value.location.x - (startLocation?.x ?? value.location.x)
-//                    let dy = value.location.y - (startLocation?.y ?? value.location.y)
-//
-//                    // If the user is swiping mostly horizontally, cancel our press
-//                    if abs(dx) > 12 && abs(dx) > abs(dy) {
-//                      isPressing = false
-//                      pressWorkItem?.cancel()
-//                      pressWorkItem = nil
-//                      return
-//                    }
-//                    
-//                    if !isPressing {
-//                        isPressing = true
-//                        longPressTriggered = false
-//                        let task = DispatchWorkItem {
-//                            if self.isPressing && !self.game.hasEnded {
-//                                self.longPressTriggered = true
-//                                self.onLongPress?()
-//                            }
-//                        }
-//                        pressWorkItem = task
-//                        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: task)
-//                    }
-//                }
-//                .onEnded { _ in
-//                    startLocation = nil
-//                    isPressing = false
-//                    pressWorkItem?.cancel()
-//                    pressWorkItem = nil
-//                    // Allow the button to animate back; reset longPressTriggered shortly after
-//                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-//                        longPressTriggered = false
-//                    }
-//                }
-//        )
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 1)
                 .onEnded { _ in
                     longPressTriggered = true
                     onLongPress?()
-                    
+
                     // Give the button a moment to animate back before allowing taps again
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                         longPressTriggered = false
                     }
                 }
         )
-//        .highPriorityGesture(
-//            LongPressGesture(minimumDuration: 1)
-//                .onEnded { _ in
-//                    if let onLongPress, !game.hasEnded { onLongPress() }
-//                }
-//        )
-//        .onLongPressGesture(minimumDuration: 2) { onLongPress?() }
         .disabled(game.hasEnded)
         .sensoryFeedback(.impact(weight: .medium), trigger: game.scoreFor(team)) { old, new in
             return old != new
@@ -201,13 +155,13 @@ struct CustomButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         CustomButtonStyleView(configuration: configuration, keyColor: keyColor)
     }
-    
+
     struct CustomButtonStyleView: View {
         let configuration: ButtonStyle.Configuration
         let keyColor: Color
 
         @Environment(\.isEnabled) private var isEnabled: Bool
-        
+
         var body: some View {
             configuration.label
                 .background(keyColor.opacity(0.2)) // Background with color opacity
@@ -225,23 +179,23 @@ struct CustomButtonStyle: ButtonStyle {
 }
 
 struct GameScoreTeamScoreView: View {
-    var match: Match
-    var team: MatchTeam
-    var game: MatchGame
+    var match: ScoreKeepMatch
+    var team: ScoreKeepTeam
+    var game: ScoreKeepGame
     var size: CGSize
-    
+
     var score: Int {
         game.scoreFor(team)
     }
-    
+
     var normalizedScore: Int {
         match.sport.normalizedScoreFor(team, game: game)
     }
-    
+
     var normalizedScoreLabel: String {
         match.sport.normalizedScoreLabelFor(team, game: game)
     }
-    
+
     var keyColor: Color {
         team == .us ? .blue : .red
     }
@@ -256,7 +210,7 @@ struct GameScoreTeamScoreView: View {
                 } else {
                     GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
                 }
-                
+
                 Text(team == .us ? "Us" : "Them")
                     .textCase(.uppercase)
                     .font(.caption2)
@@ -266,9 +220,9 @@ struct GameScoreTeamScoreView: View {
                     .background(keyColor)
                     .cornerRadius(8)
             }
-            
+
             Spacer()
-            
+
             HStack(spacing: 0) {
                 if score < 10 && match.sport != .tennis {
                     Text("0")
@@ -291,10 +245,10 @@ struct GameScoreTeamScoreView: View {
 }
 
 struct GameScoreTeamServeIndicatorView: View {
-    var team: MatchTeam
-    var match: Match
-    var game: MatchGame
-    
+    var team: ScoreKeepTeam
+    var match: ScoreKeepMatch
+    var game: ScoreKeepGame
+
     var body: some View {
         if team == game.servingTeam {
             HStack(alignment: .bottom, spacing: 2) {
@@ -302,8 +256,8 @@ struct GameScoreTeamServeIndicatorView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: 24, height: 24)
-                
-                // If we aren’t rotating on every point, “service streaks” are a little odd.
+
+                // If we aren't rotating on every point, "service streaks" are a little odd.
                 // I should probably just make this an explicit option
                 // instead, though.
                 if match.sport.gameServiceRotation == .lastWinner {
@@ -324,13 +278,13 @@ struct GameScoreTeamServeIndicatorView: View {
 #Preview {
     ActiveMatchScoreKeepView()
         .environment(
-            Match(
+            ScoreKeepMatch(
                 .volleyball,
-                scoring: MatchScoringRules(
+                rules: ScoreKeepMatchRules(
                     winAt: 5,
-                    setScoring: MatchSetScoringRules(
+                    setRules: ScoreKeepSetRules(
                         winAt: 5,
-                        gameScoring: MatchGameScoringRules(
+                        gameRules: ScoreKeepGameRules(
                             winAt: 25
                         )
                     )

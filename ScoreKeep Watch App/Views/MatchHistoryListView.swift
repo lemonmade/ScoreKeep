@@ -11,16 +11,16 @@ import ScoreKeepCore
 import ScoreKeepUI
 
 struct MatchHistoryListView: View {
-    @Query(sort: \Match.startedAt, order: .reverse) private var matches: [Match]
+    @Query(sort: \ScoreKeepMatch.startedAt, order: .reverse) private var matches: [ScoreKeepMatch]
     @Environment(\.modelContext) private var matchesContext
     @Environment(NavigationManager.self) private var navigation
-    
+
     var body: some View {
         if matches.isEmpty {
             VStack(spacing: 12) {
-                Text("You haven’t played a match yet.")
+                Text("You haven't played a match yet.")
                     .multilineTextAlignment(.center)
-                
+
                 Button {
                     navigation.navigate(to: NavigationLocation.TemplateCreate())
                 } label: {
@@ -67,10 +67,10 @@ struct MatchHistoryListView: View {
 let previewContainer: ModelContainer = {
     do {
         let container = try ModelContainer(
-            for: Match.self,
+            for: ScoreKeepMatch.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
-        
+
         return container
     } catch {
         fatalError("Could not load preview container: \(error)")

@@ -14,19 +14,19 @@ struct StartView: View {
     private let navigation = NavigationManager()
 
     @Environment(WorkoutManager.self) private var workoutManager
-    @Query(sort: \MatchTemplate.lastUsedAt, order: .reverse) private
-        var templates: [MatchTemplate]
+    @Query(sort: \ScoreKeepMatchTemplate.lastUsedAt, order: .reverse) private
+        var templates: [ScoreKeepMatchTemplate]
 
-    private let indoorVolleyball = MatchTemplate(
+    private let indoorVolleyball = ScoreKeepMatchTemplate(
         .volleyball,
         name: "Indoor volleyball",
         color: .green,
         environment: .indoor,
-        scoring: MatchScoringRules(
+        rules: ScoreKeepMatchRules(
             winAt: 3,
-            setScoring: MatchSetScoringRules(
+            setRules: ScoreKeepSetRules(
                 winAt: 6,
-                gameScoring: MatchGameScoringRules(
+                gameRules: ScoreKeepGameRules(
                     winAt: 25
                 )
             )
@@ -34,19 +34,19 @@ struct StartView: View {
         warmup: .open
     )
 
-    private let tennis = MatchTemplate(
+    private let tennis = ScoreKeepMatchTemplate(
         .tennis,
         name: "Tennis",
         color: .yellow,
         environment: .outdoor,
-        scoring: MatchScoringRules(
+        rules: ScoreKeepMatchRules(
             winAt: 1,
-            setScoring: MatchSetScoringRules(
+            setRules: ScoreKeepSetRules(
                 winAt: 6,
                 winBy: 2,
                 maximum: 7,
-                playItOut: false,
-                gameScoring: MatchGameScoringRules(
+                winBehavior: .end,
+                gameRules: ScoreKeepGameRules(
                     winAt: 4,
                     winBy: 2
                 )
@@ -55,16 +55,16 @@ struct StartView: View {
         warmup: .open
     )
 
-    private let ultimate = MatchTemplate(
+    private let ultimate = ScoreKeepMatchTemplate(
         .ultimate,
         name: "Ultimate frisbee",
         color: .purple,
         environment: .outdoor,
-        scoring: MatchScoringRules(
+        rules: ScoreKeepMatchRules(
             winAt: 1,
-            setScoring: MatchSetScoringRules(
+            setRules: ScoreKeepSetRules(
                 winAt: 1,
-                gameScoring: MatchGameScoringRules(
+                gameRules: ScoreKeepGameRules(
                     winAt: 15
                 )
             )
@@ -72,16 +72,16 @@ struct StartView: View {
         warmup: .open
     )
 
-    private let squash = MatchTemplate(
+    private let squash = ScoreKeepMatchTemplate(
         .squash,
         name: "Squash",
         color: .pink,
         environment: .outdoor,
-        scoring: MatchScoringRules(
+        rules: ScoreKeepMatchRules(
             winAt: 1,
-            setScoring: MatchSetScoringRules(
+            setRules: ScoreKeepSetRules(
                 winAt: 3,
-                gameScoring: MatchGameScoringRules(
+                gameRules: ScoreKeepGameRules(
                     winAt: 11
                 ),
             )
@@ -89,17 +89,17 @@ struct StartView: View {
         warmup: .open
     )
 
-    private let pickleball = MatchTemplate(
+    private let pickleball = ScoreKeepMatchTemplate(
         .pickleball,
         name: "Pickleball",
         color: .green,
         environment: .outdoor,
-        scoring: MatchScoringRules(
+        rules: ScoreKeepMatchRules(
             winAt: 1,
-            setScoring: MatchSetScoringRules(
+            setRules: ScoreKeepSetRules(
                 winAt: 2,
-                playItOut: false,
-                gameScoring: MatchGameScoringRules(
+                winBehavior: .end,
+                gameRules: ScoreKeepGameRules(
                     winAt: 11,
                     winBy: 2
                 )
@@ -108,7 +108,7 @@ struct StartView: View {
         warmup: .open
     )
 
-    private var unusedBuiltinTemplates: [MatchTemplate] {
+    private var unusedBuiltinTemplates: [ScoreKeepMatchTemplate] {
         return [indoorVolleyball, tennis, ultimate, squash, pickleball].filter {
             !templates.contains($0)
         }
@@ -165,7 +165,7 @@ struct StartView: View {
 }
 
 struct StartMatchNavigationLinkView: View {
-    var template: MatchTemplate
+    var template: ScoreKeepMatchTemplate
     var markAsUsed: Bool = true
 
     @Environment(NavigationManager.self) private var navigation
@@ -185,7 +185,7 @@ struct StartMatchNavigationLinkView: View {
                 MatchRulesDetailView(
                     name: template.name,
                     sport: template.sport,
-                    scoring: template.scoring
+                    rules: template.rules
                 )
             }
 

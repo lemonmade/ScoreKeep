@@ -7,7 +7,8 @@ let package = Package(
     name: "ScoreKeepCore",
     platforms: [
         .iOS(.v26),
-        .watchOS(.v26)
+        .watchOS(.v26),
+        .macOS(.v26)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.

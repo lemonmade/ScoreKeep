@@ -408,6 +408,7 @@ public class ScoreKeepMatch {
         }
 
         addSet(startedAt: now)
+        self.latestSet?.startGame(startedAt: now)
     }
 
     public func end() {
@@ -434,7 +435,7 @@ public class ScoreKeepMatch {
         let set = ScoreKeepSet(
             number: latestNumber + 1,
             startedAt: startedAt,
-            startingServe: latestStartingServe?.opposingTeam,
+            startingServe: latestStartingServe?.opposingTeam ?? self.startingServe,
         )
 
         var sets = self.sets
@@ -718,7 +719,7 @@ public class ScoreKeepGame {
     public func serveStreakFor(_ team: ScoreKeepTeam) -> Int {
         var streak = 0
 
-        for score in scores {
+        for score in scores.reversed() {
             if score.team != team || score.serve != team { break }
             streak += 1
         }

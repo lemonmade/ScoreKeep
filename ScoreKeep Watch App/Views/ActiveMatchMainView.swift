@@ -9,12 +9,12 @@ import SwiftUI
 import ScoreKeepCore
 
 struct ActiveMatchMainView: View {
-    @Environment(Match.self) var match: Match
-    
+    @Environment(ScoreKeepMatch.self) var match: ScoreKeepMatch
+
     private var isShowingWarmup: Bool {
         match.warmup?.hasEnded == false
     }
-    
+
     var body: some View {
         ZStack {
             if isShowingWarmup {
@@ -30,13 +30,13 @@ struct ActiveMatchMainView: View {
 #Preview {
     ActiveMatchMainView()
         .environment(
-            Match(
+            ScoreKeepMatch(
                 .volleyball,
-                scoring: MatchScoringRules(
+                rules: ScoreKeepMatchRules(
                     winAt: 5,
-                    setScoring: MatchSetScoringRules(
+                    setRules: ScoreKeepSetRules(
                         winAt: 6,
-                        gameScoring: MatchGameScoringRules(
+                        gameRules: ScoreKeepGameRules(
                             winAt: 25
                         )
                     )

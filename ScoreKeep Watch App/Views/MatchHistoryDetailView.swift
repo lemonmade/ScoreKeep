@@ -12,12 +12,12 @@ import ScoreKeepCore
 import ScoreKeepUI
 
 struct MatchHistoryDetailView: View {
-    var match: Match
+    var match: ScoreKeepMatch
 
     var body: some View {
         TabView {
             MatchHistorySummaryView(match: match)
-            
+
             ForEach(match.sets) { set in
                 ForEach(set.games) { game in
                     MatchHistoryDetailGameView(game: game)
@@ -29,32 +29,32 @@ struct MatchHistoryDetailView: View {
 }
 
 struct MatchHistoryDetailMatchView: View {
-    var match: Match
-    
+    var match: ScoreKeepMatch
+
     private let dateFormatter = Date.FormatStyle(
         date: .abbreviated,
         time: .none
     )
-    
+
     private let dateRangeFormatter: DateIntervalFormatter = {
         let formatter = DateIntervalFormatter()
         formatter.dateStyle = .none
         return formatter
     }()
-    
+
     private var endDate: Date {
         match.endedAt ?? match.startedAt
     }
-    
+
     private var dateRange: ClosedRange<Date> {
         match.startedAt...endDate
     }
-    
+
     private var summary: String {
         let dateRange = self.dateRange
         return "\(dateFormatter.format(endDate))\n\(dateRangeFormatter.string(from: dateRange.lowerBound, to: dateRange.upperBound))\n\(match.scoreSummaryString ?? "")"
     }
-    
+
     var body: some View {
         ScrollView {
             VStack {
@@ -63,10 +63,10 @@ struct MatchHistoryDetailMatchView: View {
 
                 Text(endDate, format: dateFormatter)
                     .font(.headline)
-                
+
                 Text(dateRange)
                     .foregroundStyle(.secondary)
-                
+
                 ShareLink(item: summary) {
                     Label("Summary", systemImage: "square.and.arrow.up")
                 }

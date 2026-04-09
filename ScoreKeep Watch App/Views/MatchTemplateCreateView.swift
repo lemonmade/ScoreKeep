@@ -9,56 +9,56 @@ import SwiftUI
 import ScoreKeepCore
 
 struct MatchTemplateCreateView: View {
-    var template: MatchTemplate? = nil
+    var template: ScoreKeepMatchTemplate? = nil
 
     @Environment(\.modelContext) private var context
     @Environment(NavigationManager.self) private var navigation
-    
+
     @State private var name: String
-    @State private var sport: MatchSport
-    @State private var environment: MatchEnvironment
-    @State private var color: MatchTemplateColor
-    
+    @State private var sport: ScoreKeepSport
+    @State private var environment: ScoreKeepActivityEnvironment
+    @State private var color: ScoreKeepMatchColor
+
     @State private var isMultiSet: Bool
-    
+
     @State private var setsWinAt: Int
     @State private var setsPlayItOut: Bool
 
     @State private var gamesWinAt: Int
     @State private var gamesPlayItOut: Bool
-    
+
     @State private var gameScoringWinScore: Int
     @State private var gameScoringMaximumScore: Int
     @State private var gameScoringWinBy: Int
-    
+
     @State private var hasWarmup: Bool
-    
+
     @State private var startWorkout: Bool
-    
+
     @State private var navigationTitle: String
-    
-    init(template: MatchTemplate? = nil) {
+
+    init(template: ScoreKeepMatchTemplate? = nil) {
         self.template = template
         let sport = template?.sport ?? .volleyball
         self.sport = sport
         self.name = template?.name ?? sport.label
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
-        
-        let setsWinAt = template?.scoring.winAt ?? 1
-        let gameScoringWinScore = template?.scoring.setScoring.gameScoring.winAt ?? 25
-        let gameScoringWinBy = template?.scoring.setScoring.gameScoring.winBy ?? 2
-        
+
+        let setsWinAt = template?.rules.winAt ?? 1
+        let gameScoringWinScore = template?.rules.setRules.gameRules.winAt ?? 25
+        let gameScoringWinBy = template?.rules.setRules.gameRules.winBy ?? 2
+
         self.setsWinAt = setsWinAt
         self.isMultiSet = setsWinAt > 1
-        self.setsPlayItOut = template?.scoring.playItOut ?? false
-        self.gamesWinAt = template?.scoring.setScoring.winAt ?? 3
-        self.gamesPlayItOut = template?.scoring.setScoring.playItOut ?? false
+        self.setsPlayItOut = template?.rules.winBehavior == .keepPlaying
+        self.gamesWinAt = template?.rules.setRules.winAt ?? 3
+        self.gamesPlayItOut = template?.rules.setRules.winBehavior == .keepPlaying
         self.gameScoringWinScore = gameScoringWinScore
         self.gameScoringWinBy = gameScoringWinBy
-        self.gameScoringMaximumScore = template?.scoring.setScoring.gameScoring.maximum ?? (gameScoringWinScore + gameScoringWinBy)
+        self.gameScoringMaximumScore = template?.rules.setRules.gameRules.maximum ?? (gameScoringWinScore + gameScoringWinBy)
         self.navigationTitle = template == nil ? "New match" : template!.name
-        
+
         let warmup = template?.warmup ?? .none
         self.hasWarmup = warmup != .none
 
@@ -66,40 +66,40 @@ struct MatchTemplateCreateView: View {
     }
 
     private let maximumBasicScore = 50
-    
+
     var body: some View {
         Form {
             Section {
                 TextField("Name", text: $name)
-                
+
                 Picker("Sport", selection: $sport) {
                     Label("Tennis", systemImage: "tennisball.fill")
-                        .tag(MatchSport.tennis)
-                    
+                        .tag(ScoreKeepSport.tennis)
+
                     Label("Squash", systemImage: "circle.fill")
-                        .tag(MatchSport.squash)
+                        .tag(ScoreKeepSport.squash)
 
                     Label("Ultimate", systemImage: "circle.circle.fill")
-                        .tag(MatchSport.ultimate)
+                        .tag(ScoreKeepSport.ultimate)
 
                     Label("Volleyball", systemImage: "volleyball.fill")
-                        .tag(MatchSport.volleyball)
+                        .tag(ScoreKeepSport.volleyball)
                 }
-                
+
                 MatchTemplateColorPickerView(selected: $color)
                     .listRowBackground(EmptyView())
-                
+
                 Picker("Environment", selection: $environment) {
-                    Text("Indoor").tag(MatchEnvironment.indoor)
-                    Text("Outdoor").tag(MatchEnvironment.outdoor)
+                    Text("Indoor").tag(ScoreKeepActivityEnvironment.indoor)
+                    Text("Outdoor").tag(ScoreKeepActivityEnvironment.outdoor)
                 }
                 .pickerStyle(.navigationLink)
             }
-            
+
             Section(header: Text("Points")) {
                 VStack {
                     Text("Win at")
-                    
+
                     Stepper(value: $gameScoringWinScore, in: 1...maximumBasicScore, step: 1) {
                         HStack(spacing: 0) {
                             Text("\(gameScoringWinScore)")
@@ -110,14 +110,14 @@ struct MatchTemplateCreateView: View {
                     }
                     .onChange(of: gameScoringWinScore) {
                         let impliedMaximum = gameScoringWinScore + gameScoringWinBy - 1
-                        
+
                         if impliedMaximum > gameScoringMaximumScore {
                             gameScoringMaximumScore = impliedMaximum
                         }
                     }
                 }
                 .padding([.top, .bottom], 8)
-                
+
                 VStack {
                     Text("Win by")
 
@@ -136,7 +136,7 @@ struct MatchTemplateCreateView: View {
                     }
                 }
                 .padding([.top, .bottom], 8)
-                
+
                 if gameScoringWinBy > 1 {
                     VStack {
                         Text("Max score")
@@ -160,7 +160,7 @@ struct MatchTemplateCreateView: View {
                     .padding([.top, .bottom], 8)
                 }
             }
-            
+
             Section(header: Text("Games")) {
                 VStack {
                     Text("First to")
@@ -174,14 +174,14 @@ struct MatchTemplateCreateView: View {
                     }
                 }
                 .padding([.top, .bottom], 8)
-                
+
                 Picker("After win", selection: $gamesPlayItOut) {
                     Text("End set").tag(false)
                     Text("Play it out").tag(true)
                 }
                 .pickerStyle(.navigationLink)
             }
-            
+
             Section(header: Text("Sets")) {
                 Toggle(isOn: $isMultiSet) {
                     Text("Multiple sets")
@@ -193,7 +193,7 @@ struct MatchTemplateCreateView: View {
                         if setsWinAt > 1 { setsWinAt = 1 }
                     }
                 }
-                
+
                 if setsWinAt > 1 {
                     VStack {
                         Text("First to")
@@ -207,7 +207,7 @@ struct MatchTemplateCreateView: View {
                         }
                     }
                     .padding([.top, .bottom], 8)
-                    
+
                     Picker("After win", selection: $setsPlayItOut) {
                         Text("End match").tag(false)
                         Text("Play it out").tag(true)
@@ -215,40 +215,40 @@ struct MatchTemplateCreateView: View {
                     .pickerStyle(.navigationLink)
                 }
             }
-            
+
             Section(header: Text("Warmup")) {
                 Toggle(isOn: $hasWarmup) {
                     Text("Warmup before match")
                 }
             }
-            
+
             Section(header: Text("Workout")) {
                 Toggle(isOn: $startWorkout) {
                     Text("Start workout")
                 }
             }
-            
+
             Section {
                 Button {
                     if let template {
                         save(template: template)
-                
+
                         navigation
                             .navigate(
                                 to: NavigationLocation
                                     .ActiveMatch(template: template)
                             )
                     } else {
-                        let template = MatchTemplate(
-                            .volleyball,
+                        let template = ScoreKeepMatchTemplate(
+                            sport,
                             name: name,
                             color: color,
                             environment: environment,
-                            scoring: asScoringRules(),
-                            warmup: asWarmupRules(),
+                            rules: asRules(),
+                            warmup: asWarmupRule(),
                             startWorkout: startWorkout
                         )
-                
+
                         context.insert(template)
                         // TODO
                         try? context.save()
@@ -264,7 +264,7 @@ struct MatchTemplateCreateView: View {
                 .buttonStyle(.bordered)
                 .listRowBackground(EmptyView())
                 .tint(.green)
-                
+
                 if let template {
                     Button {
                         save(template: template)
@@ -275,7 +275,7 @@ struct MatchTemplateCreateView: View {
                     .buttonStyle(.bordered)
                     .listRowBackground(EmptyView())
                 }
-                
+
                 if template?.lastUsedAt != nil {
                     Button {
                         context.delete(template!)
@@ -294,19 +294,19 @@ struct MatchTemplateCreateView: View {
 
         .navigationTitle(navigationTitle)
     }
-    
-    private func asScoringRules() -> MatchScoringRules {
-        return MatchScoringRules(
+
+    private func asRules() -> ScoreKeepMatchRules {
+        return ScoreKeepMatchRules(
             winAt: setsWinAt,
             winBy: 1,
             maximum: setsWinAt,
-            playItOut: setsPlayItOut,
-            setScoring: MatchSetScoringRules(
+            winBehavior: setsPlayItOut ? .keepPlaying : .end,
+            setRules: ScoreKeepSetRules(
                 winAt: gamesWinAt,
                 winBy: 1,
                 maximum: gamesWinAt,
-                playItOut: gamesPlayItOut,
-                gameScoring: MatchGameScoringRules(
+                winBehavior: gamesPlayItOut ? .keepPlaying : .end,
+                gameRules: ScoreKeepGameRules(
                     winAt: gameScoringWinScore,
                     winBy: gameScoringWinBy,
                     maximum: gameScoringMaximumScore
@@ -314,43 +314,43 @@ struct MatchTemplateCreateView: View {
             )
         )
     }
-    
-    private func asWarmupRules() -> MatchWarmupRules {
+
+    private func asWarmupRule() -> ScoreKeepWarmupRule {
         return hasWarmup ? .open : .none
     }
-    
-    private func save(template: MatchTemplate) {
-        let newScoringRules = asScoringRules()
-        
+
+    private func save(template: ScoreKeepMatchTemplate) {
+        let newRules = asRules()
+
         if template.name != name {
             template.name = name
         }
-        
+
         if template.sport != sport {
             template.sport = sport
         }
-        
+
         if template.color != color {
             template.color = color
         }
-        
-        if template.scoring != newScoringRules {
-            template.scoring = newScoringRules
+
+        if template.rules != newRules {
+            template.rules = newRules
         }
-        
+
         if template.startWorkout != startWorkout {
             template.startWorkout = startWorkout
         }
-        
-        let warmup = asWarmupRules()
+
+        let warmup = asWarmupRule()
         if template.warmup != warmup {
             template.warmup = warmup
         }
-        
+
         if template.id.storeIdentifier != nil {
             context.insert(template)
         }
-        
+
         // TODO
         if template.hasChanges {
             try? context.save()
@@ -359,18 +359,18 @@ struct MatchTemplateCreateView: View {
 }
 
 struct MatchTemplateColorPickerView: View {
-    var selected: Binding<MatchTemplateColor>
+    var selected: Binding<ScoreKeepMatchColor>
     @State private var showingSheet: Bool = false
-    @State private var showingColors: [MatchTemplateColor]
-    
-    init(selected: Binding<MatchTemplateColor>) {
+    @State private var showingColors: [ScoreKeepMatchColor]
+
+    init(selected: Binding<ScoreKeepMatchColor>) {
         self.selected = selected
-        
-        let firstThreeColors = MatchTemplateColor.allCases.prefix(3)
-        
+
+        let firstThreeColors = ScoreKeepMatchColor.allCases.prefix(3)
+
         self.showingColors = firstThreeColors.contains(selected.wrappedValue) ? Array(firstThreeColors) : [selected.wrappedValue] + firstThreeColors.prefix(2)
     }
-    
+
     var body: some View {
         Grid(horizontalSpacing: 8) {
             GridRow {
@@ -382,7 +382,7 @@ struct MatchTemplateColorPickerView: View {
                             Color(matchColor.color.opacity(0.6))
                                 .aspectRatio(1, contentMode: .fill)
                                 .clipShape(.circle)
-                            
+
                             if selected.wrappedValue == matchColor {
                                 Image(systemName: "checkmark")
                                     .fontWeight(.bold)
@@ -395,9 +395,9 @@ struct MatchTemplateColorPickerView: View {
                     .buttonStyle(.plain)
                     .padding(8)
                     .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0)
-                    
+
                 }
-                
+
                 Button {
                     showingSheet = true
                 } label: {
@@ -406,7 +406,7 @@ struct MatchTemplateColorPickerView: View {
                             .aspectRatio(1, contentMode: .fill)
                             .clipShape(.circle)
                             .opacity(0.5)
-                        
+
                         Image(systemName: "ellipsis")
                             .fontWeight(.bold)
                     }
@@ -421,19 +421,19 @@ struct MatchTemplateColorPickerView: View {
         }
         .onChange(of: selected.wrappedValue) {
             if showingColors.contains(selected.wrappedValue) { return }
-            
+
             self.showingColors = [selected.wrappedValue] + self.showingColors.prefix(2)
         }
     }
 }
 
 struct MatchTemplateColorPickerSheetView: View {
-    var selected: Binding<MatchTemplateColor>
-    
+    var selected: Binding<ScoreKeepMatchColor>
+
     var body: some View {
         ScrollView {
             LazyVGrid(columns: .init(repeating: GridItem(.flexible()), count: 4)) {
-                ForEach(MatchTemplateColor.allCases, id: \.self) { matchColor in
+                ForEach(ScoreKeepMatchColor.allCases, id: \.self) { matchColor in
                     Button {
                         selected.wrappedValue = matchColor
                     } label: {
@@ -441,7 +441,7 @@ struct MatchTemplateColorPickerSheetView: View {
                             Color(matchColor.color.opacity(0.6))
                                 .aspectRatio(1, contentMode: .fill)
                                 .clipShape(.circle)
-                            
+
                             if selected.wrappedValue == matchColor {
                                 Image(systemName: "checkmark")
                                     .frame(maxWidth: .infinity)
@@ -465,13 +465,13 @@ struct MatchTemplateColorPickerSheetView: View {
         MatchTemplateCreateView()
             .environment(NavigationManager())
             .environment(
-                Match(
+                ScoreKeepMatch(
                     .volleyball,
-                    scoring: MatchScoringRules(
+                    rules: ScoreKeepMatchRules(
                         winAt: 5,
-                        setScoring: MatchSetScoringRules(
+                        setRules: ScoreKeepSetRules(
                             winAt: 6,
-                            gameScoring: MatchGameScoringRules(
+                            gameRules: ScoreKeepGameRules(
                                 winAt: 25,
                                 winBy: 2
                             )

@@ -54,7 +54,7 @@ class WorkoutManager: NSObject {
     var session: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
 
-    func startWorkout(match: Match) async {
+    func startWorkout(match: ScoreKeepMatch) async {
         let configuration = HKWorkoutConfiguration()
 
         configuration.activityType =

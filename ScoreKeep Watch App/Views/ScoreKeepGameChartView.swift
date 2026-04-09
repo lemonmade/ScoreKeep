@@ -64,34 +64,6 @@ struct ScoreKeepGameChartView: View {
     }
 }
 
-struct ScoreKeepGameChartSparklineView: View {
-    var game: ScoreKeepGame
-
-    private var gameScores: [ScoreKeepHistoryGameScoreData] {
-        ScoreKeepHistoryGameData(game: game, order: .winnerOnTop).scores
-    }
-
-    var body: some View {
-        let gameScores = gameScores
-        let totalPoints = gameScores.last?.index ?? 0
-
-        Chart(gameScores) { score in
-            LineMark(
-                x: .value("Point", score.index),
-                y: .value("Score", score.score)
-            )
-            .foregroundStyle(by: .value("Team", score.teamName))
-        }
-        .chartXAxis(.hidden)
-        .chartYAxis(.hidden)
-        .chartLegend(.hidden)
-        .chartXScale(domain: [0, totalPoints])
-        .chartYScale(domain: [0, [game.scoreUs, game.scoreThem].max()!])
-        .chartForegroundStyleScale(["Us": .blue, "Them": .red])
-        .frame(width: 48, height: 20)
-    }
-}
-
 // Chart data
 
 private struct ScoreKeepHistoryAxisMark {

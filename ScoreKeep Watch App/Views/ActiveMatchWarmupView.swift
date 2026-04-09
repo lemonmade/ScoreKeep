@@ -9,7 +9,7 @@ import SwiftUI
 import ScoreKeepCore
 
 struct ActiveMatchWarmupView: View {
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
 
     var body: some View {
         if let warmup = match.warmup {
@@ -26,13 +26,13 @@ enum StartingServe {
 }
 
 struct ActiveMatchWarmupInternalView: View {
-    var match: Match
-    var warmup: MatchWarmup
+    var match: ScoreKeepMatch
+    var warmup: ScoreKeepWarmup
 
     private let spacing: CGFloat = 8
     private let outerPadding = EdgeInsets(
         top: 40, leading: 12, bottom: 21, trailing: 12)
-    
+
     @State private var startingServe: StartingServe = .random
 
     var body: some View {
@@ -40,24 +40,22 @@ struct ActiveMatchWarmupInternalView: View {
             Text("Warmup")
 
             Button {
-                let startingServe: MatchTeam = switch startingServe {
+                let startingServe: ScoreKeepTeam = switch startingServe {
                 case .us: .us
                 case .them: .them
-                case .random: [MatchTeam.us, MatchTeam.them].randomElement()!
+                case .random: [ScoreKeepTeam.us, ScoreKeepTeam.them].randomElement()!
                 }
-                
+
                 match.startingServe = startingServe
-                if let firstGame = match.latestSet?.latestGame {
-                    firstGame.startingServe = startingServe
-                }
-                
+
                 warmup.end()
+                match.startGame()
             } label: {
                 Text("Start match")
             }
             .buttonStyle(.glassProminent)
             .tint(.green)
-            
+
             Form {
                 Section(header: Text("Match settings")) {
                     Picker("Starting serve", selection: $startingServe) {
@@ -72,21 +70,21 @@ struct ActiveMatchWarmupInternalView: View {
 }
 
 #Preview {
-    let match = Match(
+    let match = ScoreKeepMatch(
         .volleyball,
-        scoring: MatchScoringRules(
+        rules: ScoreKeepMatchRules(
             winAt: 5,
-            setScoring: MatchSetScoringRules(
+            setRules: ScoreKeepSetRules(
                 winAt: 6,
-                gameScoring: MatchGameScoringRules(
+                gameRules: ScoreKeepGameRules(
                     winAt: 25
                 )
             )
         )
     )
-    
+
     match.startWarmup()
-    
+
     return ActiveMatchWarmupView()
         .environment(
             match

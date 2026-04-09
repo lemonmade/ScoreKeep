@@ -10,14 +10,14 @@ import ScoreKeepCore
 import ScoreKeepUI
 
 struct ActiveMatchControlsView: View {
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
     @Environment(WorkoutManager.self) private var workoutManager
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 ActiveMatchControlsSummaryView()
-                
+
                 if match.hasEnded || match.latestGame?.hasWinner == true {
                     if match.hasMoreGames {
                         StartNextGameForActiveMatchButtonView()
@@ -25,13 +25,13 @@ struct ActiveMatchControlsView: View {
                         EndActiveMatchButtonView()
                     }
                 }
-                
+
                 if workoutManager.workout != nil {
                     ActiveMatchWorkoutSectionView()
                 }
-                
+
                 ActiveMatchRulesSummaryButtonView()
-                
+
                 if match.hasMoreGames || match.latestGame?.hasWinner != true {
                     EndActiveMatchButtonView()
                 }
@@ -41,18 +41,18 @@ struct ActiveMatchControlsView: View {
 }
 
 struct ActiveMatchRulesSummaryButtonView: View {
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
 
     var body: some View {
         Button {
             print("TODO: edit settings")
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                // TODO: would be nice to have an interface shared between `Match` and `MatchTemplate` that simplified this element...
+                // TODO: would be nice to have an interface shared between `ScoreKeepMatch` and `ScoreKeepMatchTemplate` that simplified this element...
                 MatchRulesDetailView(
                     name: match.template?.name ?? match.sport.label,
                     sport: match.sport,
-                    scoring: match.scoring,
+                    rules: match.rules,
                     includeImage: true
                 )
             }
@@ -75,7 +75,7 @@ struct ActiveMatchRulesSummaryButtonView: View {
 
 struct ActiveMatchWorkoutSectionView: View {
     @Environment(WorkoutManager.self) private var workoutManager
-    
+
     private var isRunning: Bool {
         workoutManager.running
     }
@@ -83,7 +83,7 @@ struct ActiveMatchWorkoutSectionView: View {
     private var hasActiveWorkout: Bool {
         workoutManager.session != nil
     }
-    
+
     private var buttonIcon: String {
         return !hasActiveWorkout || isRunning ? "pause" : "arrow.clockwise"
     }
@@ -94,7 +94,7 @@ struct ActiveMatchWorkoutSectionView: View {
                 Text("Workout")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .font(.subheadline)
-                
+
                 HStack(spacing: 2) {
                     if let heartRate = workoutManager.workout?.heartRate {
                         Text(heartRate, format: .number.precision(.fractionLength(0)))
@@ -108,7 +108,7 @@ struct ActiveMatchWorkoutSectionView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             }
-            
+
             Button {
                 withAnimation(.none) {
                     if isRunning {
@@ -140,7 +140,7 @@ struct ActiveMatchWorkoutSectionView: View {
 }
 
 struct ActiveMatchControlsSummaryView: View {
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
     @Environment(WorkoutManager.self) private var workoutManager
 
     var body: some View {
@@ -165,9 +165,9 @@ struct ActiveMatchControlsSummaryView: View {
 }
 
 struct ActiveMatchControlsSummaryTeamScoreRowView: View {
-    var team: MatchTeam
+    var team: ScoreKeepTeam
 
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
 
     private let cornerRadius: CGFloat = 16
     private let innerPadding: CGFloat = 4
@@ -186,7 +186,7 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
     }
 
     private var scoreMinWidth: CGFloat {
-        let maximum = match.scoring.setScoring.gameScoring.maximum ?? 10
+        let maximum = match.rules.setRules.gameRules.maximum ?? 10
         return maximum >= 10 ? 38 : 0
     }
 
@@ -240,7 +240,7 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
 
 struct StartNextGameForActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
 
     private var isDisabled: Bool {
         return match.latestGame?.hasWinner == false || !match.hasMoreGames
@@ -249,7 +249,7 @@ struct StartNextGameForActiveMatchButtonView: View {
     private var systemName: String {
         return "\(nextGameNumber).circle"
     }
-    
+
     private var nextGameNumber: Int {
         return (match.latestGame?.number ?? 0) + 1
     }
@@ -259,7 +259,7 @@ struct StartNextGameForActiveMatchButtonView: View {
             withAnimation(.snappy) {
                 match.startGame()
             }
-            
+
             // Without this delay, the second animation causes an instant switch to the new view...
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 withAnimation(.snappy) {
@@ -277,7 +277,7 @@ struct StartNextGameForActiveMatchButtonView: View {
 
 struct EndActiveMatchButtonView: View {
     @Environment(NavigationManager.self) private var navigation
-    @Environment(Match.self) private var match
+    @Environment(ScoreKeepMatch.self) private var match
     @Environment(WorkoutManager.self) private var workoutManager
     @Environment(\.modelContext) private var context
 
@@ -289,7 +289,7 @@ struct EndActiveMatchButtonView: View {
         }
         .tint(match.hasEnded ? .green : .red)
     }
-    
+
     private func endMatch() {
         workoutManager.end()
         match.end()
@@ -304,24 +304,24 @@ struct EndActiveMatchButtonView: View {
         .environment(NavigationManager())
         .environment(WorkoutManager())
         .environment(
-            Match(
-                from: MatchTemplate(
+            ScoreKeepMatch(
+                from: ScoreKeepMatchTemplate(
                     .volleyball,
                     name: "Indoor volleyball",
-                    scoring: MatchScoringRules(
+                    rules: ScoreKeepMatchRules(
                         winAt: 5,
-                        setScoring: MatchSetScoringRules(
+                        setRules: ScoreKeepSetRules(
                             winAt: 6,
-                            gameScoring: MatchGameScoringRules(
+                            gameRules: ScoreKeepGameRules(
                                 winAt: 10
                             )
                         )
                     )
                 ),
                 sets: [
-                    MatchSet(
+                    ScoreKeepSet(
                         games: [
-                            MatchGame(us: 9, them: 2)
+                            ScoreKeepGame(us: 9, them: 2)
                         ]
                     )
                 ]
