@@ -50,7 +50,7 @@ struct MatchHistoryListView: View {
                 }
             }
             .listStyle(.carousel)
-            .navigationTitle("Match history")
+            .navigationTitle("History")
         }
     }
 }

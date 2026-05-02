@@ -18,6 +18,7 @@ struct StartView: View {
 
     @State private var activeMatch: ScoreKeepMatch?
     @State private var showingTemplateCreator = false
+    @State private var showingSettings = false
     @State private var templateToEdit: ScoreKeepMatchTemplate?
 
     private let defaultTemplates: [ScoreKeepMatchTemplate] = createDefaultTemplates()
@@ -108,6 +109,15 @@ struct StartView: View {
                 .padding(.vertical)
             }
             .navigationTitle("Start")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gear")
+                    }
+                }
+            }
             .sheet(item: $activeMatch) { match in
                 ActiveMatchView()
                     .environment(match)
@@ -115,6 +125,9 @@ struct StartView: View {
             }
             .sheet(isPresented: $showingTemplateCreator) {
                 MatchTemplateCreateView()
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .sheet(item: $templateToEdit) { template in
                 MatchTemplateCreateView(template: template)

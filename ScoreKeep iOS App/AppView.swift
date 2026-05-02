@@ -12,7 +12,6 @@ import SwiftUI
 enum AppTab {
     case start
     case history
-    case settings
 }
 
 @Observable
@@ -34,13 +33,8 @@ struct AppView: View {
             // MatchHistoryListView()
             //     .tag(AppTab.history)
             //     .tabItem {
-            //         Label("History", systemImage: "calendar")
+            //         Label("History", systemImage: "clock.arrow.circlepath")
             //     }
-            SettingsView()
-                .tag(AppTab.settings)
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
         }
         .environment(navigation)
     }

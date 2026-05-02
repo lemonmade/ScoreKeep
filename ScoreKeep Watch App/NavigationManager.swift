@@ -21,6 +21,7 @@ struct NavigationLocation {
     }
 
     struct MatchHistory: NavigationLocationProtocol {}
+    struct Settings: NavigationLocationProtocol {}
     struct ActiveMatch: NavigationLocationProtocol {
         var template: ScoreKeepMatchTemplate
         

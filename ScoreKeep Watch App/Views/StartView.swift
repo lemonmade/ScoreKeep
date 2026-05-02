@@ -131,6 +131,11 @@ struct StartView: View {
             }
             .navigationBarTitle("ScoreKeep")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink(value: NavigationLocation.Settings()) {
+                        Label("Settings", systemImage: "gear")
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     MatchHistoryNavigationLinkView()
                 }
@@ -147,6 +152,9 @@ struct StartView: View {
                 _ in
                 MatchHistoryListView()
                     .environment(navigation)
+            }
+            .navigationDestination(for: NavigationLocation.Settings.self) { _ in
+                SettingsView()
             }
             .navigationDestination(for: NavigationLocation.MatchHistoryDetail.self) { destination in
                 MatchHistoryDetailView(match: destination.match)
@@ -227,7 +235,7 @@ struct StartMatchNavigationLinkView: View {
 struct MatchHistoryNavigationLinkView: View {
     var body: some View {
         NavigationLink(value: NavigationLocation.MatchHistory()) {
-            Label("Finished games", systemImage: "calendar")
+            Label("History", systemImage: "clock.arrow.circlepath")
         }
     }
 }
