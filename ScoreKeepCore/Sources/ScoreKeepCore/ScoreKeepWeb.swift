@@ -63,7 +63,7 @@ public struct ScoreKeepWeb {
     /// - Throws: `WebError` or underlying `URLError`.
     @discardableResult
     public func share(match: ScoreKeepMatch) async throws -> ShareResponse {
-        guard let url = URL(string: "https://scorekeep.watch/graphql") else {
+        guard let url = URL(string: "https://go.scorekeep.watch/api/graphql") else {
             throw WebError.badURL
         }
 
@@ -82,10 +82,15 @@ public struct ScoreKeepWeb {
             let setWinner = set.winner?.rawValue
 
             let games: [[String: Any]] = set.games.map { game in
+                let scores: [[String: Any]] = game.scores.map { score in
+                    ["us": score.us, "them": score.them]
+                }
+
                 var gameDict: [String: Any] = [
                     "startedAt": iso8601.string(from: game.startedAt),
                     "scoreUs": game.scoreUs,
-                    "scoreThem": game.scoreThem
+                    "scoreThem": game.scoreThem,
+                    "scores": scores,
                 ]
                 if let endedAt = game.endedAt {
                     gameDict["endedAt"] = iso8601.string(from: endedAt)
@@ -115,14 +120,16 @@ public struct ScoreKeepWeb {
             "endedAt": endedAt as Any,
             "winner": winner as Any,
             "sets": sets,
-            "userId": nil
         ]
 
         let query = """
-        mutation CreateMatch($sport: MatchSport!, $startedAt: String!, $endedAt: String, $winner: MatchTeam, $sets: [MatchSetInput!]!, $userId: ID) {
-          createMatch(sport: $sport, startedAt: $startedAt, endedAt: $endedAt, winner: $winner, sets: $sets, userId: $userId) {
+        mutation CreateMatch($sport: ActivityType!, $startedAt: DateTime!, $endedAt: DateTime, $winner: MatchTeam, $sets: [MatchSetInput!]!) {
+          createMatch(sport: $sport, startedAt: $startedAt, endedAt: $endedAt, winner: $winner, sets: $sets) {
             match {
               id
+              url {
+                web
+              }
             }
             errors {
               message
@@ -146,6 +153,13 @@ public struct ScoreKeepWeb {
             throw WebError.encodingFailed
         }
 
+        print("[ScoreKeepWeb] Sharing match: sport=\(sport), sets=\(sets.count)")
+        print("[ScoreKeepWeb] POST \(url.absoluteString)")
+        if let prettyData = try? JSONSerialization.data(withJSONObject: requestBody, options: [.prettyPrinted, .sortedKeys]),
+           let prettyString = String(data: prettyData, encoding: .utf8) {
+            print("[ScoreKeepWeb] Request body:\n\(prettyString)")
+        }
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -154,49 +168,56 @@ public struct ScoreKeepWeb {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let http = response as? HTTPURLResponse else {
+            print("[ScoreKeepWeb] Invalid response (not HTTP)")
             throw WebError.invalidResponse
         }
 
+        print("[ScoreKeepWeb] Response status: \(http.statusCode)")
+
         guard (200..<300).contains(http.statusCode) else {
             let bodyString = String(data: data, encoding: .utf8)
+            print("[ScoreKeepWeb] Server error: \(http.statusCode) — \(bodyString ?? "no body")")
             throw WebError.serverError(statusCode: http.statusCode, body: bodyString)
         }
 
-        // Response expected:
-        // {
-        //   "data": {
-        //     "createMatch": {
-        //       "match": { "id": String },
-        //       "errors": [ { "message": String }, ... ]
-        //     }
-        //   }
-        // }
-
         do {
             let jsonObject = try JSONSerialization.jsonObject(with: data, options: [])
+
+            if let rawJSON = String(data: data, encoding: .utf8) {
+                print("[ScoreKeepWeb] Response body: \(rawJSON)")
+            }
+
             guard
                 let dict = jsonObject as? [String: Any],
                 let dataDict = dict["data"] as? [String: Any],
                 let createMatchDict = dataDict["createMatch"] as? [String: Any]
             else {
+                print("[ScoreKeepWeb] Failed to decode response structure")
                 throw WebError.decodingFailed
             }
 
             if let errors = createMatchDict["errors"] as? [[String: Any]], !errors.isEmpty {
                 let messages = errors.compactMap { $0["message"] as? String }.joined(separator: "; ")
+                print("[ScoreKeepWeb] GraphQL errors: \(messages)")
                 throw WebError.serverError(statusCode: http.statusCode, body: messages)
             }
 
             guard
                 let matchDict = createMatchDict["match"] as? [String: Any],
-                let id = matchDict["id"] as? String,
-                let url = URL(string: "https://scorekeep.watch/match/\(id)")
+                let urlDict = matchDict["url"] as? [String: Any],
+                let webURLString = urlDict["web"] as? String,
+                let shareURL = URL(string: webURLString)
             else {
+                print("[ScoreKeepWeb] Failed to extract match URL from response")
                 throw WebError.decodingFailed
             }
 
-            return ShareResponse(url: url)
+            print("[ScoreKeepWeb] Share URL: \(shareURL.absoluteString)")
+            return ShareResponse(url: shareURL)
+        } catch let error as WebError {
+            throw error
         } catch {
+            print("[ScoreKeepWeb] Decoding error: \(error)")
             throw WebError.decodingFailed
         }
     }
