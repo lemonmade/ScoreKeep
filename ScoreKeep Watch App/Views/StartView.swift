@@ -20,7 +20,7 @@ struct StartView: View {
     private let indoorVolleyball = ScoreKeepMatchTemplate(
         .volleyball,
         name: "Indoor volleyball",
-        color: .green,
+        color: .neutral,
         environment: .indoor,
         rules: ScoreKeepMatchRules(
             winAt: 3,
@@ -37,7 +37,7 @@ struct StartView: View {
     private let tennis = ScoreKeepMatchTemplate(
         .tennis,
         name: "Tennis",
-        color: .yellow,
+        color: .neutral,
         environment: .outdoor,
         rules: ScoreKeepMatchRules(
             winAt: 1,
@@ -58,7 +58,7 @@ struct StartView: View {
     private let ultimate = ScoreKeepMatchTemplate(
         .ultimate,
         name: "Ultimate frisbee",
-        color: .purple,
+        color: .neutral,
         environment: .outdoor,
         rules: ScoreKeepMatchRules(
             winAt: 1,
@@ -75,7 +75,7 @@ struct StartView: View {
     private let squash = ScoreKeepMatchTemplate(
         .squash,
         name: "Squash",
-        color: .pink,
+        color: .neutral,
         environment: .outdoor,
         rules: ScoreKeepMatchRules(
             winAt: 1,
@@ -92,7 +92,7 @@ struct StartView: View {
     private let pickleball = ScoreKeepMatchTemplate(
         .pickleball,
         name: "Pickleball",
-        color: .green,
+        color: .neutral,
         environment: .outdoor,
         rules: ScoreKeepMatchRules(
             winAt: 1,

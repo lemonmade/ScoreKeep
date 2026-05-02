@@ -812,10 +812,11 @@ public class ScoreKeepWarmup {
 }
 
 public enum ScoreKeepMatchColor: String, Codable {
-    case green, yellow, indigo, purple, teal, blue, orange, pink
+    case neutral, green, yellow, indigo, purple, teal, blue, orange, pink
 
     public var color: Color {
         switch self {
+        case .neutral: return Color.gray
         case .green: return Color.green
         case .yellow: return Color.yellow
         case .indigo: return Color.indigo
@@ -828,7 +829,7 @@ public enum ScoreKeepMatchColor: String, Codable {
     }
 
     public static var allCases: [ScoreKeepMatchColor] {
-        [.green, .yellow, .indigo, .purple, .teal, .blue, .orange, .pink]
+        [.neutral, .green, .yellow, .indigo, .purple, .teal, .blue, .orange, .pink]
     }
 }
 
@@ -838,7 +839,7 @@ public class ScoreKeepMatchTemplate {
 
     public var sport: ScoreKeepSport = ScoreKeepSport.volleyball
     public var name: String = "Volleyball"
-    public var color: ScoreKeepMatchColor = ScoreKeepMatchColor.green
+    public var color: ScoreKeepMatchColor = ScoreKeepMatchColor.neutral
     public var environment: ScoreKeepActivityEnvironment = ScoreKeepActivityEnvironment.indoor
     public var _rules: ScoreKeepMatchRules?
     public var rules: ScoreKeepMatchRules {
@@ -854,7 +855,7 @@ public class ScoreKeepMatchTemplate {
     public init(
         _ sport: ScoreKeepSport,
         name: String,
-        color: ScoreKeepMatchColor = .green,
+        color: ScoreKeepMatchColor = .neutral,
         environment: ScoreKeepActivityEnvironment = .indoor,
         rules: ScoreKeepMatchRules? = nil,
         warmup: ScoreKeepWarmupRule = .open,
