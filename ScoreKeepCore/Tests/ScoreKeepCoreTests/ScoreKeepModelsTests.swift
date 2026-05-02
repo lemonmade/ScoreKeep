@@ -642,3 +642,60 @@ struct ScoreKeepMatchTemplateTests {
         #expect(template.lastUsedAt == nil)
     }
 }
+
+// MARK: - ScoreKeepMatchParticipant Tests
+
+@Suite("ScoreKeepMatchParticipant.deriveShortLabel")
+struct ScoreKeepMatchParticipantDeriveShortLabelTests {
+    @Test("Single word takes first 3 letters, uppercased")
+    func singleWordPrefix() {
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "Lakers") == "LAK")
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "Opponent") == "OPP")
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "You") == "YOU")
+    }
+
+    @Test("Single word shorter than 3 letters returns the word uppercased")
+    func singleShortWord() {
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "Us") == "US")
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "I") == "I")
+    }
+
+    @Test("Multi-word names use initials, uppercased")
+    func multiWordInitials() {
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "Chris Sauve") == "CS")
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "Los Angeles Lakers") == "LAL")
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "John F Kennedy") == "JFK")
+    }
+
+    @Test("Initials cap at 4 characters")
+    func initialsCap() {
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "a b c d e f") == "ABCD")
+    }
+
+    @Test("Whitespace is normalized")
+    func extraWhitespace() {
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "  Mary  Anne  ") == "MA")
+    }
+
+    @Test("Hyphenated names are treated as a single word")
+    func hyphenatedSingleWord() {
+        #expect(ScoreKeepMatchParticipant.deriveShortLabel(from: "Mary-Anne") == "MAR")
+    }
+
+    @Test("resolvedShortLabel falls back to derivation when no override")
+    func resolvedShortLabelDerivation() {
+        let withName = ScoreKeepMatchParticipant(team: .us, name: "Chris Sauve")
+        #expect(withName.resolvedShortLabel == "CS")
+
+        let withoutName = ScoreKeepMatchParticipant(team: .them)
+        #expect(withoutName.resolvedShortLabel == "OPP")
+    }
+
+    @Test("resolvedShortLabel honours an explicit override")
+    func resolvedShortLabelOverride() {
+        let participant = ScoreKeepMatchParticipant(
+            team: .us, name: "Chris Sauve", shortLabel: "CMS"
+        )
+        #expect(participant.resolvedShortLabel == "CMS")
+    }
+}

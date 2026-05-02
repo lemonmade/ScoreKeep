@@ -15,7 +15,8 @@ struct MatchHistoryDetailGameView: View {
     private var backgroundColor: Color? {
         guard let winner = game.winner else { return nil }
 
-        return winner == .us ? .blue.opacity(0.5) : .red.opacity(0.5)
+        let pair = ScoreKeepParticipantPair(match: game.match)
+        return pair.color(for: winner).opacity(0.5)
     }
 
     var body: some View {

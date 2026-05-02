@@ -253,6 +253,16 @@ public class ScoreKeepMatch {
         _rules ?? ScoreKeepMatchRules()
     }
 
+    public var _participants: [ScoreKeepMatchParticipant]?
+    public var participants: [ScoreKeepMatchParticipant] {
+        get { _participants ?? ScoreKeepMatchTemplate.defaultParticipants }
+        set { _participants = newValue }
+    }
+
+    public func participant(for team: ScoreKeepTeam) -> ScoreKeepMatchParticipant {
+        participants.first { $0.team == team } ?? ScoreKeepMatchParticipant(team: team)
+    }
+
     @Relationship(deleteRule: .noAction, inverse: \ScoreKeepMatchTemplate._matches)
     public var template: ScoreKeepMatchTemplate?
 
@@ -319,6 +329,7 @@ public class ScoreKeepMatch {
         self.sport = template.sport
         self.environment = template.environment
         self._rules = template.rules
+        self._participants = template.participants
         self._sets = sets
         self.startedAt = startedAt
         self.endedAt = endedAt
@@ -828,6 +839,20 @@ public enum ScoreKeepMatchColor: String, Codable {
         }
     }
 
+    public var backgroundFillStyle: AnyShapeStyle {
+        switch self {
+        case .neutral: return AnyShapeStyle(.quaternary)
+        default: return AnyShapeStyle(color.opacity(0.2))
+        }
+    }
+
+    public var iconForegroundStyle: AnyShapeStyle {
+        switch self {
+        case .neutral: return AnyShapeStyle(Color.white)
+        default: return AnyShapeStyle(color)
+        }
+    }
+
     public static var allCases: [ScoreKeepMatchColor] {
         [.neutral, .green, .yellow, .indigo, .purple, .teal, .blue, .orange, .pink]
     }
@@ -852,6 +877,20 @@ public class ScoreKeepMatchTemplate {
     public var warmup: ScoreKeepWarmupRule = ScoreKeepWarmupRule.open
     public var startWorkout: Bool = false
 
+    public var _participants: [ScoreKeepMatchParticipant]?
+    public var participants: [ScoreKeepMatchParticipant] {
+        get { _participants ?? Self.defaultParticipants }
+        set { _participants = newValue }
+    }
+
+    public func participant(for team: ScoreKeepTeam) -> ScoreKeepMatchParticipant {
+        participants.first { $0.team == team } ?? ScoreKeepMatchParticipant(team: team)
+    }
+
+    public static var defaultParticipants: [ScoreKeepMatchParticipant] {
+        [.init(team: .us), .init(team: .them)]
+    }
+
     public init(
         _ sport: ScoreKeepSport,
         name: String,
@@ -859,7 +898,8 @@ public class ScoreKeepMatchTemplate {
         environment: ScoreKeepActivityEnvironment = .indoor,
         rules: ScoreKeepMatchRules? = nil,
         warmup: ScoreKeepWarmupRule = .open,
-        startWorkout: Bool = false
+        startWorkout: Bool = false,
+        participants: [ScoreKeepMatchParticipant]? = nil
     ) {
         self.sport = sport
         self.name = name
@@ -869,6 +909,7 @@ public class ScoreKeepMatchTemplate {
         self.createdAt = Date()
         self.warmup = warmup
         self.startWorkout = startWorkout
+        self._participants = participants
     }
 
     public func createMatch(markAsUsed: Bool = true) -> ScoreKeepMatch {
@@ -902,24 +943,93 @@ public enum ScoreKeepTeamColor: String, Codable {
     }
 }
 
-public struct ScoreKeepMatchTemplateTeam {
-    public let team: ScoreKeepTeam
-    public let label: String
-    public let shortLabel: String
-    public let color: ScoreKeepTeamColor
-    public let size: Int?
+/// Lightweight read-only view of a match's participants for views that don't otherwise need the
+/// match. Useful for chart subviews and other helpers that want to look up team color/label
+/// without taking a SwiftData model dependency.
+public struct ScoreKeepParticipantPair {
+    public let us: ScoreKeepMatchParticipant
+    public let them: ScoreKeepMatchParticipant
+
+    public init(us: ScoreKeepMatchParticipant, them: ScoreKeepMatchParticipant) {
+        self.us = us
+        self.them = them
+    }
+
+    public init(match: ScoreKeepMatch?) {
+        self.us = match?.participant(for: .us) ?? ScoreKeepMatchParticipant(team: .us)
+        self.them = match?.participant(for: .them) ?? ScoreKeepMatchParticipant(team: .them)
+    }
+
+    public func participant(for team: ScoreKeepTeam) -> ScoreKeepMatchParticipant {
+        team == .us ? us : them
+    }
+
+    public func color(for team: ScoreKeepTeam) -> Color {
+        participant(for: team).resolvedColor.color
+    }
+
+    public func name(for team: ScoreKeepTeam) -> String {
+        participant(for: team).resolvedName
+    }
+
+    public func shortLabel(for team: ScoreKeepTeam) -> String {
+        participant(for: team).resolvedShortLabel
+    }
+
+    /// Keyed by short label, suitable for `chartForegroundStyleScale`.
+    public var styleScale: KeyValuePairs<String, Color> {
+        [us.resolvedShortLabel: us.resolvedColor.color,
+         them.resolvedShortLabel: them.resolvedColor.color]
+    }
+}
+
+public struct ScoreKeepMatchParticipant: Codable, Equatable, Hashable, Identifiable {
+    public var team: ScoreKeepTeam
+    public var name: String?
+    public var shortLabel: String?
+    public var color: ScoreKeepTeamColor?
+    public var size: Int?
+
+    public var id: ScoreKeepTeam { team }
+
+    public var resolvedName: String { name ?? team.defaultLabel(size: size) }
+    public var resolvedShortLabel: String {
+        if let shortLabel, !shortLabel.isEmpty { return shortLabel }
+        return Self.deriveShortLabel(from: resolvedName)
+    }
+    public var resolvedColor: ScoreKeepTeamColor { color ?? team.defaultColor }
+
+    /// Builds a short label (max 4 chars) from a name:
+    /// - one word → first 3 characters, uppercased ("Lakers" → "LAK", "Us" → "US")
+    /// - multiple words → first letter of each word, up to 4, uppercased ("Chris Sauve" → "CS")
+    public static func deriveShortLabel(from source: String) -> String {
+        let words = source
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+            .filter { !$0.isEmpty }
+
+        guard !words.isEmpty else { return source.uppercased() }
+
+        if words.count == 1 {
+            return String(words[0].prefix(3)).uppercased()
+        }
+
+        return words.prefix(4)
+            .compactMap { $0.first.map(String.init) }
+            .joined()
+            .uppercased()
+    }
 
     public init(
-        team: ScoreKeepTeam, label: String? = nil, shortLabel: String? = nil,
+        team: ScoreKeepTeam, name: String? = nil, shortLabel: String? = nil,
         color: ScoreKeepTeamColor? = nil, size: Int? = nil
     ) {
         self.team = team
-        self.label = label ?? team.defaultLabel(size: size)
-        self.shortLabel = shortLabel ?? team.defaultShortLabel(size: size)
-        self.color = color ?? team.defaultColor
+        self.name = name
+        self.shortLabel = shortLabel
+        self.color = color
         self.size = size
     }
-
 }
 
 public enum ScoreKeepWarmupRule: String, Codable {

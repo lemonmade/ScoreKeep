@@ -180,7 +180,7 @@ struct StartMatchNavigationLinkView: View {
                     .scaledToFit()
                     .frame(width: 42, height: 42)
                     .fontWeight(.bold)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(template.color.iconForegroundStyle)
 
                 MatchRulesDetailView(
                     name: template.name,
@@ -197,7 +197,7 @@ struct StartMatchNavigationLinkView: View {
         .tint(template.color.color)
         .listRowBackground(
             RoundedRectangle(cornerRadius: 20)
-                .fill(template.color.color.opacity(0.2))
+                .fill(template.color.backgroundFillStyle)
         )
         .overlay(alignment: .topTrailing) {
             Button {
@@ -214,7 +214,7 @@ struct StartMatchNavigationLinkView: View {
                         .background(
                             Circle()
                                 .inset(by: 3)
-                                .fill(template.color.color.opacity(0.2))
+                                .fill(template.color.backgroundFillStyle)
                         )
                 }
                 .offset(y: 12)

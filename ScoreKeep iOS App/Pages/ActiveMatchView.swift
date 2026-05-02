@@ -186,7 +186,7 @@ struct ScoreKeepTeamScoringButton: View {
   @State private var longPressTriggered = false
 
   var keyColor: Color {
-    team == .us ? .blue : .red
+    match.participant(for: team).resolvedColor.color
   }
 
   var game: ScoreKeepGame {
@@ -273,7 +273,7 @@ struct ScoreKeepTeamScoreView: View {
   }
 
   var keyColor: Color {
-    team == .us ? .blue : .red
+    match.participant(for: team).resolvedColor.color
   }
 
   var body: some View {
@@ -287,7 +287,7 @@ struct ScoreKeepTeamScoreView: View {
           ScoreKeepTeamServeIndicatorView(team: team, match: match, game: game)
         }
 
-        Text(team == .us ? "Us" : "Them")
+        Text(match.participant(for: team).resolvedShortLabel)
           .textCase(.uppercase)
           .font(.caption)
           .fontWeight(.bold)
@@ -382,8 +382,9 @@ struct ScoreKeepMatchSummaryScoreTableRowView: View {
   }
 
   var body: some View {
-    let color = team == .us ? Color.blue : Color.red
-    let label = team == .us ? "Us" : "Them"
+    let participant = match.participant(for: team)
+    let color = participant.resolvedColor.color
+    let label = participant.resolvedName
     let hasWinner = match.hasWinner
 
     HStack(spacing: 0) {

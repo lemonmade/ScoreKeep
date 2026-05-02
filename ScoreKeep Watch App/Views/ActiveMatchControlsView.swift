@@ -61,7 +61,7 @@ struct ActiveMatchRulesSummaryButtonView: View {
             .background {
                 if let template = match.template {
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(template.color.color.opacity(0.2))
+                        .fill(template.color.backgroundFillStyle)
                 } else {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(.quaternary)
@@ -174,7 +174,7 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
     private let outerPadding: CGFloat = 8
 
     private var backgroundColor: Color {
-        team == .us ? .blue : .red
+        match.participant(for: team).resolvedColor.color
     }
 
     private var backgroundColorBodyColumn: Color {
@@ -192,7 +192,7 @@ struct ActiveMatchControlsSummaryTeamScoreRowView: View {
 
     var body: some View {
         GridRow {
-            Text(team == .us ? "Us" : "Them")
+            Text(match.participant(for: team).resolvedShortLabel)
                 .textCase(.uppercase)
                 .font(.headline)
                 .foregroundColor(.black)

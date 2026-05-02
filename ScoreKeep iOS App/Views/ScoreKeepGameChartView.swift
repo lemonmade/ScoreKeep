@@ -13,11 +13,16 @@ struct ScoreKeepGameChartView: View {
     var game: ScoreKeepGame
 
     private var gameData: ScoreKeepHistoryGameData {
-        ScoreKeepHistoryGameData(game: game)
+        ScoreKeepHistoryGameData(game: game, participants: participants)
+    }
+
+    private var participants: ScoreKeepParticipantPair {
+        ScoreKeepParticipantPair(match: game.match)
     }
 
     var body: some View {
         let data = gameData
+        let pair = participants
         let gameScores = data.scores
         let scoreSize: CGFloat = (gameScores.count / 2) > 10 ? 4 : 8
         let totalPoints = data.totalPoints
@@ -38,7 +43,7 @@ struct ScoreKeepGameChartView: View {
                 .symbol {
                     Circle()
                         .frame(width: scoreSize, height: scoreSize)
-                        .foregroundStyle(score.team == .us ? .blue : .red)
+                        .foregroundStyle(pair.color(for: score.team))
                 }
             }
         }
@@ -60,18 +65,23 @@ struct ScoreKeepGameChartView: View {
         .chartLegend(.hidden)
         .chartXScale(domain: [0, totalPoints])
         .chartYScale(domain: [0, [game.scoreUs, game.scoreThem].max()!])
-        .chartForegroundStyleScale(["Us": .blue, "Them": .red])
+        .chartForegroundStyleScale(pair.styleScale)
     }
 }
 
 struct ScoreKeepGameChartSparklineView: View {
     var game: ScoreKeepGame
 
+    private var participants: ScoreKeepParticipantPair {
+        ScoreKeepParticipantPair(match: game.match)
+    }
+
     private var gameScores: [ScoreKeepHistoryGameScoreData] {
-        ScoreKeepHistoryGameData(game: game, order: .winnerOnTop).scores
+        ScoreKeepHistoryGameData(game: game, participants: participants, order: .winnerOnTop).scores
     }
 
     var body: some View {
+        let pair = participants
         let gameScores = gameScores
         let totalPoints = gameScores.last?.index ?? 0
 
@@ -87,7 +97,7 @@ struct ScoreKeepGameChartSparklineView: View {
         .chartLegend(.hidden)
         .chartXScale(domain: [0, totalPoints])
         .chartYScale(domain: [0, [game.scoreUs, game.scoreThem].max()!])
-        .chartForegroundStyleScale(["Us": .blue, "Them": .red])
+        .chartForegroundStyleScale(pair.styleScale)
         .frame(width: 48, height: 20)
     }
 }
@@ -105,9 +115,7 @@ private struct ScoreKeepHistoryGameScoreData: Identifiable {
 
     var score: Int
     var team: ScoreKeepTeam
-    var teamName: String {
-        team == .us ? "Us" : "Them"
-    }
+    var teamName: String
     var index: Int
     var timestamp: Date
     var hasChange: Bool = false
@@ -115,6 +123,7 @@ private struct ScoreKeepHistoryGameScoreData: Identifiable {
 
 private struct ScoreKeepHistoryGameData {
     var game: ScoreKeepGame
+    var participants: ScoreKeepParticipantPair
     var order: Order = .scoreOnTop
 
     enum Order {
@@ -165,12 +174,14 @@ private struct ScoreKeepHistoryGameData {
         let initialUsScore = ScoreKeepHistoryGameScoreData(
             score: 0,
             team: .us,
+            teamName: participants.shortLabel(for: .us),
             index: index,
             timestamp: game.startedAt
         )
         let initialThemScore = ScoreKeepHistoryGameScoreData(
             score: 0,
             team: .them,
+            teamName: participants.shortLabel(for: .them),
             index: index,
             timestamp: game.startedAt
         )
@@ -193,6 +204,7 @@ private struct ScoreKeepHistoryGameData {
             let usScore = ScoreKeepHistoryGameScoreData(
                 score: scoreUs,
                 team: .us,
+                teamName: participants.shortLabel(for: .us),
                 index: index,
                 timestamp: score.timestamp,
                 hasChange: score.team == .us
@@ -201,6 +213,7 @@ private struct ScoreKeepHistoryGameData {
             let themScore = ScoreKeepHistoryGameScoreData(
                 score: scoreThem,
                 team: .them,
+                teamName: participants.shortLabel(for: .them),
                 index: index,
                 timestamp: score.timestamp,
                 hasChange: score.team == .them

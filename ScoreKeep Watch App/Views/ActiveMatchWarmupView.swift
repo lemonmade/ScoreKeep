@@ -59,8 +59,8 @@ struct ActiveMatchWarmupInternalView: View {
             Form {
                 Section(header: Text("Match settings")) {
                     Picker("Starting serve", selection: $startingServe) {
-                        Text("Us").tag(StartingServe.us)
-                        Text("Them").tag(StartingServe.them)
+                        Text(match.participant(for: .us).resolvedShortLabel).tag(StartingServe.us)
+                        Text(match.participant(for: .them).resolvedShortLabel).tag(StartingServe.them)
                         Text("Random").tag(StartingServe.random)
                     }
                 }

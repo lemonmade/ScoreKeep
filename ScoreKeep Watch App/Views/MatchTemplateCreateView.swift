@@ -35,6 +35,9 @@ struct MatchTemplateCreateView: View {
 
     @State private var startWorkout: Bool
 
+    @State private var participants: [ScoreKeepMatchParticipant]
+    @State private var editingParticipant: ScoreKeepMatchParticipant?
+
     @State private var navigationTitle: String
 
     init(template: ScoreKeepMatchTemplate? = nil) {
@@ -44,6 +47,7 @@ struct MatchTemplateCreateView: View {
         self.name = template?.name ?? sport.label
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
+        self.participants = template?.participants ?? ScoreKeepMatchTemplate.defaultParticipants
 
         let setsWinAt = template?.rules.winAt ?? 1
         let gameScoringWinScore = template?.rules.setRules.gameRules.winAt ?? 25
@@ -94,6 +98,17 @@ struct MatchTemplateCreateView: View {
                     Text("Outdoor").tag(ScoreKeepActivityEnvironment.outdoor)
                 }
                 .pickerStyle(.navigationLink)
+            }
+
+            Section(header: Text("Participants")) {
+                ForEach(participants) { participant in
+                    Button {
+                        editingParticipant = participant
+                    } label: {
+                        ParticipantRowView(participant: participant)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             Section(header: Text("Points")) {
@@ -246,7 +261,8 @@ struct MatchTemplateCreateView: View {
                             environment: environment,
                             rules: asRules(),
                             warmup: asWarmupRule(),
-                            startWorkout: startWorkout
+                            startWorkout: startWorkout,
+                            participants: participants
                         )
 
                         context.insert(template)
@@ -291,8 +307,14 @@ struct MatchTemplateCreateView: View {
                 }
             }
         }
-
         .navigationTitle(navigationTitle)
+        .sheet(item: $editingParticipant) { participant in
+            MatchTemplateParticipantEditView(participant: participant) { updated in
+                if let index = participants.firstIndex(where: { $0.team == updated.team }) {
+                    participants[index] = updated
+                }
+            }
+        }
     }
 
     private func asRules() -> ScoreKeepMatchRules {
@@ -347,6 +369,10 @@ struct MatchTemplateCreateView: View {
             template.warmup = warmup
         }
 
+        if template.participants != participants {
+            template.participants = participants
+        }
+
         if template.id.storeIdentifier != nil {
             context.insert(template)
         }
@@ -354,6 +380,197 @@ struct MatchTemplateCreateView: View {
         // TODO
         if template.hasChanges {
             try? context.save()
+        }
+    }
+}
+
+struct ParticipantRowView: View {
+    let participant: ScoreKeepMatchParticipant
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(participant.resolvedColor.color)
+                .frame(width: 18, height: 18)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(participant.resolvedName)
+                Text(participant.resolvedShortLabel)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct MatchTemplateParticipantEditView: View {
+    let initial: ScoreKeepMatchParticipant
+    let onSave: (ScoreKeepMatchParticipant) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String
+    @State private var shortLabel: String
+    @State private var color: ScoreKeepTeamColor
+
+    init(
+        participant: ScoreKeepMatchParticipant,
+        onSave: @escaping (ScoreKeepMatchParticipant) -> Void
+    ) {
+        self.initial = participant
+        self.onSave = onSave
+        _name = State(initialValue: participant.name ?? "")
+        _shortLabel = State(initialValue: participant.shortLabel ?? "")
+        _color = State(initialValue: participant.resolvedColor)
+    }
+
+    private var derivedShortPlaceholder: String {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        let source = trimmed.isEmpty ? initial.team.defaultLabel(size: initial.size) : trimmed
+        return ScoreKeepMatchParticipant.deriveShortLabel(from: source)
+    }
+
+    var body: some View {
+        Form {
+            Section {
+                TextField(initial.team.defaultLabel(size: initial.size), text: $name)
+                TextField(derivedShortPlaceholder, text: $shortLabel)
+                    .onChange(of: shortLabel) {
+                        if shortLabel.count > 4 {
+                            shortLabel = String(shortLabel.prefix(4))
+                        }
+                    }
+            }
+
+            Section(header: Text("Color")) {
+                ParticipantColorPickerView(selected: $color)
+                    .listRowBackground(EmptyView())
+            }
+
+            Section {
+                Button {
+                    var updated = initial
+                    let trimmedName = name.trimmingCharacters(in: .whitespaces)
+                    let trimmedShort = shortLabel.trimmingCharacters(in: .whitespaces)
+                    updated.name = trimmedName.isEmpty ? nil : trimmedName
+                    updated.shortLabel = trimmedShort.isEmpty ? nil : trimmedShort
+                    updated.color = color
+                    onSave(updated)
+                    dismiss()
+                } label: {
+                    Text("Done")
+                }
+                .buttonStyle(.bordered)
+                .listRowBackground(EmptyView())
+                .tint(.green)
+            }
+        }
+    }
+}
+
+struct ParticipantColorPickerView: View {
+    @Binding var selected: ScoreKeepTeamColor
+    @State private var showingSheet: Bool = false
+    @State private var showingColors: [ScoreKeepTeamColor]
+
+    init(selected: Binding<ScoreKeepTeamColor>) {
+        self._selected = selected
+
+        let firstThree = ScoreKeepTeamColor.allCases.prefix(3)
+        self.showingColors = firstThree.contains(selected.wrappedValue)
+            ? Array(firstThree)
+            : [selected.wrappedValue] + firstThree.prefix(2)
+    }
+
+    var body: some View {
+        Grid(horizontalSpacing: 8) {
+            GridRow {
+                ForEach(showingColors, id: \.self) { teamColor in
+                    Button {
+                        selected = teamColor
+                    } label: {
+                        ZStack {
+                            Color(teamColor.color.opacity(0.6))
+                                .aspectRatio(1, contentMode: .fill)
+                                .clipShape(.circle)
+
+                            if selected == teamColor {
+                                Image(systemName: "checkmark")
+                                    .fontWeight(.bold)
+                                Circle()
+                                    .inset(by: -3)
+                                    .stroke(teamColor.color, lineWidth: 3)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(8)
+                    .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0)
+                }
+
+                Button {
+                    showingSheet = true
+                } label: {
+                    ZStack {
+                        Color(.darkGray)
+                            .aspectRatio(1, contentMode: .fill)
+                            .clipShape(.circle)
+                            .opacity(0.5)
+
+                        Image(systemName: "ellipsis")
+                            .fontWeight(.bold)
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(8)
+                .sheet(isPresented: $showingSheet) {
+                    ParticipantColorPickerSheetView(selected: $selected)
+                }
+                .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0)
+            }
+        }
+        .onChange(of: selected) {
+            if showingColors.contains(selected) { return }
+            self.showingColors = [selected] + self.showingColors.prefix(2)
+        }
+    }
+}
+
+struct ParticipantColorPickerSheetView: View {
+    @Binding var selected: ScoreKeepTeamColor
+
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: .init(repeating: GridItem(.flexible()), count: 4)) {
+                ForEach(ScoreKeepTeamColor.allCases, id: \.self) { teamColor in
+                    Button {
+                        selected = teamColor
+                    } label: {
+                        ZStack {
+                            Color(teamColor.color.opacity(0.6))
+                                .aspectRatio(1, contentMode: .fill)
+                                .clipShape(.circle)
+
+                            if selected == teamColor {
+                                Image(systemName: "checkmark")
+                                    .frame(maxWidth: .infinity)
+                                    .fontWeight(.bold)
+                                Circle()
+                                    .inset(by: -3)
+                                    .stroke(teamColor.color, lineWidth: 3)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .padding(3)
+                }
+            }
         }
     }
 }

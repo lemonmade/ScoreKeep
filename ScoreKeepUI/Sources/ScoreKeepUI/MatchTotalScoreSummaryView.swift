@@ -13,17 +13,29 @@ public struct MatchTotalScoreSummaryView: View {
     var us: String
     var them: String
     var winner: ScoreKeepTeam?
+    var usColor: Color
+    var themColor: Color
 
-    public init(us: Int, them: Int, winner: ScoreKeepTeam? = nil) {
+    public init(
+        us: Int, them: Int, winner: ScoreKeepTeam? = nil,
+        usColor: Color = .blue, themColor: Color = .red
+    ) {
         self.us = String(us)
         self.them = String(them)
         self.winner = winner
+        self.usColor = usColor
+        self.themColor = themColor
     }
 
-    public init(us: String, them: String, winner: ScoreKeepTeam? = nil) {
+    public init(
+        us: String, them: String, winner: ScoreKeepTeam? = nil,
+        usColor: Color = .blue, themColor: Color = .red
+    ) {
         self.us = us
         self.them = them
         self.winner = winner
+        self.usColor = usColor
+        self.themColor = themColor
     }
 
     public init(match: ScoreKeepMatch) {
@@ -45,6 +57,9 @@ public struct MatchTotalScoreSummaryView: View {
         }
 
         self.winner = match.winner
+        let pair = ScoreKeepParticipantPair(match: match)
+        self.usColor = pair.color(for: .us)
+        self.themColor = pair.color(for: .them)
     }
 
     public init(game: ScoreKeepGame) {
@@ -54,6 +69,9 @@ public struct MatchTotalScoreSummaryView: View {
             game.match?.sport.normalizedScoreLabelFor(.them, game: game)
             ?? String(game.scoreThem)
         self.winner = game.winner
+        let pair = ScoreKeepParticipantPair(match: game.match)
+        self.usColor = pair.color(for: .us)
+        self.themColor = pair.color(for: .them)
     }
 
     private let cornerRadiusOutside: CGFloat = 8
@@ -67,7 +85,7 @@ public struct MatchTotalScoreSummaryView: View {
             GridRow {
                 Text(us)
                     .fontWeight(winner == .us ? .bold : .regular)
-                    .foregroundColor(.blue)
+                    .foregroundColor(usColor)
                     .padding(
                         EdgeInsets(
                             top: innerPadding,
@@ -86,9 +104,9 @@ public struct MatchTotalScoreSummaryView: View {
                         topTrailing: cornerRadiusOutside
                     )
                 )
-                .fill(.blue.opacity(backgroundOpacity))
+                .fill(usColor.opacity(backgroundOpacity))
                 .stroke(
-                    .blue,
+                    usColor,
                     style: StrokeStyle(lineWidth: winner == .us ? 2 : 0)
                 )
             }
@@ -96,7 +114,7 @@ public struct MatchTotalScoreSummaryView: View {
             GridRow {
                 Text(them)
                     .fontWeight(winner == .them ? .bold : .regular)
-                    .foregroundColor(.red)
+                    .foregroundColor(themColor)
                     .padding(
                         EdgeInsets(
                             top: innerPadding,
@@ -116,9 +134,9 @@ public struct MatchTotalScoreSummaryView: View {
                         topTrailing: winner == .them ? cornerRadiusInside : 0
                     )
                 )
-                .fill(.red.opacity(backgroundOpacity))
+                .fill(themColor.opacity(backgroundOpacity))
                 .stroke(
-                    .red,
+                    themColor,
                     style: StrokeStyle(lineWidth: winner == .them ? 2 : 0)
                 )
             }
@@ -206,8 +224,9 @@ public struct MatchSummaryScoreTableRowView: View {
     }
 
     public var body: some View {
-        let color = team == .us ? Color.blue : Color.red
-        let label = team == .us ? "Us" : "Them"
+        let participant = match.participant(for: team)
+        let color = participant.resolvedColor.color
+        let label = participant.resolvedName
         let hasWinner = match.hasWinner
         let showLatestGame = !hasWinner && latestGame != nil
 

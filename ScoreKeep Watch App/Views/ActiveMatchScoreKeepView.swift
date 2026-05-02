@@ -109,7 +109,7 @@ struct GameScoreTeamButtonView: View {
     @State private var startLocation: CGPoint?
 
     var keyColor: Color {
-        team == .us ? .blue : .red
+        match.participant(for: team).resolvedColor.color
     }
 
     var game: ScoreKeepGame {
@@ -197,7 +197,7 @@ struct GameScoreTeamScoreView: View {
     }
 
     var keyColor: Color {
-        team == .us ? .blue : .red
+        match.participant(for: team).resolvedColor.color
     }
 
     var body: some View {
@@ -211,7 +211,7 @@ struct GameScoreTeamScoreView: View {
                     GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
                 }
 
-                Text(team == .us ? "Us" : "Them")
+                Text(match.participant(for: team).resolvedShortLabel)
                     .textCase(.uppercase)
                     .font(.caption2)
                     .fontWeight(.bold)

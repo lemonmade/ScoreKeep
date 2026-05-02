@@ -32,8 +32,11 @@ struct MatchTemplateCreateView: View {
     @State private var gameScoringWinBy: Int
     
     @State private var hasWarmup: Bool
-    
+
     @State private var startWorkout: Bool
+
+    @State private var participants: [ScoreKeepMatchParticipant]
+    @State private var editingParticipant: ScoreKeepMatchParticipant?
 
     init(template: ScoreKeepMatchTemplate? = nil) {
         self.template = template
@@ -42,6 +45,7 @@ struct MatchTemplateCreateView: View {
         self.name = template?.name ?? sport.label
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
+        self.participants = template?.participants ?? ScoreKeepMatchTemplate.defaultParticipants
         
         let setsWinAt = template?.rules.winAt ?? 1
         let gameScoringWinScore = template?.rules.setRules.gameRules.winAt ?? 25
@@ -86,7 +90,18 @@ struct MatchTemplateCreateView: View {
 
                     MatchTemplateColorPickerView(selected: $color)
                 }
-                
+
+                Section("Participants") {
+                    ForEach(participants) { participant in
+                        Button {
+                            editingParticipant = participant
+                        } label: {
+                            ParticipantRowView(participant: participant)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
                 Section(header: Text("Points")) {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Win at")
@@ -258,6 +273,13 @@ struct MatchTemplateCreateView: View {
                     }
                 }
             }
+            .sheet(item: $editingParticipant) { participant in
+                MatchTemplateParticipantEditView(participant: participant) { updated in
+                    if let index = participants.firstIndex(where: { $0.team == updated.team }) {
+                        participants[index] = updated
+                    }
+                }
+            }
         }
     }
 
@@ -295,6 +317,7 @@ struct MatchTemplateCreateView: View {
             template.rules = asScoringRules()
             template.warmup = asWarmupRule()
             template.startWorkout = startWorkout
+            template.participants = participants
 
             if template.hasChanges {
                 try? context.save()
@@ -308,7 +331,8 @@ struct MatchTemplateCreateView: View {
                 environment: environment,
                 rules: asScoringRules(),
                 warmup: asWarmupRule(),
-                startWorkout: startWorkout
+                startWorkout: startWorkout,
+                participants: participants
             )
             context.insert(newTemplate)
             try? context.save()
@@ -316,10 +340,10 @@ struct MatchTemplateCreateView: View {
 
         dismiss()
     }
-    
+
     private func saveAndStart() {
         let templateToUse: ScoreKeepMatchTemplate
-        
+
         if let template {
             // Update existing template
             template.name = name
@@ -329,8 +353,9 @@ struct MatchTemplateCreateView: View {
             template.rules = asScoringRules()
             template.warmup = asWarmupRule()
             template.startWorkout = startWorkout
+            template.participants = participants
             templateToUse = template
-            
+
             if template.id.storeIdentifier == nil {
                 context.insert(template)
             }
@@ -343,7 +368,8 @@ struct MatchTemplateCreateView: View {
                 environment: environment,
                 rules: asScoringRules(),
                 warmup: asWarmupRule(),
-                startWorkout: startWorkout
+                startWorkout: startWorkout,
+                participants: participants
             )
             context.insert(newTemplate)
             templateToUse = newTemplate
@@ -367,6 +393,139 @@ struct MatchTemplateCreateView: View {
         // TODO: Navigate to ActiveMatchView with this match
         // For now, just dismiss
         dismiss()
+    }
+}
+
+struct ParticipantRowView: View {
+    let participant: ScoreKeepMatchParticipant
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(participant.resolvedColor.color)
+                .frame(width: 24, height: 24)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(participant.resolvedName)
+                    .foregroundStyle(.primary)
+                Text(participant.resolvedShortLabel)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundStyle(.tertiary)
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+struct MatchTemplateParticipantEditView: View {
+    let initial: ScoreKeepMatchParticipant
+    let onSave: (ScoreKeepMatchParticipant) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var name: String
+    @State private var shortLabel: String
+    @State private var color: ScoreKeepTeamColor
+
+    init(
+        participant: ScoreKeepMatchParticipant,
+        onSave: @escaping (ScoreKeepMatchParticipant) -> Void
+    ) {
+        self.initial = participant
+        self.onSave = onSave
+        _name = State(initialValue: participant.name ?? "")
+        _shortLabel = State(initialValue: participant.shortLabel ?? "")
+        _color = State(initialValue: participant.resolvedColor)
+    }
+
+    private var derivedShortPlaceholder: String {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        let source = trimmed.isEmpty ? initial.team.defaultLabel(size: initial.size) : trimmed
+        return ScoreKeepMatchParticipant.deriveShortLabel(from: source)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Name") {
+                    TextField(initial.team.defaultLabel(size: initial.size), text: $name)
+                    TextField(
+                        "Short label (max 4)",
+                        text: $shortLabel,
+                        prompt: Text(derivedShortPlaceholder)
+                    )
+                    .onChange(of: shortLabel) {
+                        if shortLabel.count > 4 {
+                            shortLabel = String(shortLabel.prefix(4))
+                        }
+                    }
+                    .textInputAutocapitalization(.characters)
+                }
+
+                Section("Color") {
+                    ParticipantColorPickerView(selected: $color)
+                }
+            }
+            .navigationTitle("Edit Participant")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        var updated = initial
+                        let trimmedName = name.trimmingCharacters(in: .whitespaces)
+                        let trimmedShort = shortLabel.trimmingCharacters(in: .whitespaces)
+                        updated.name = trimmedName.isEmpty ? nil : trimmedName
+                        updated.shortLabel = trimmedShort.isEmpty ? nil : trimmedShort
+                        updated.color = color
+                        onSave(updated)
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ParticipantColorPickerView: View {
+    @Binding var selected: ScoreKeepTeamColor
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(ScoreKeepTeamColor.allCases, id: \.self) { teamColor in
+                    Button {
+                        selected = teamColor
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(teamColor.color.opacity(0.6))
+                                .frame(width: 44, height: 44)
+
+                            if selected == teamColor {
+                                Image(systemName: "checkmark")
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white)
+                                Circle()
+                                    .strokeBorder(teamColor.color, lineWidth: 3)
+                                    .frame(width: 44, height: 44)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 8)
+        }
     }
 }
 
