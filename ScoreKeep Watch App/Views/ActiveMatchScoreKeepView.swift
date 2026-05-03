@@ -24,54 +24,365 @@ struct ActiveMatchScoreKeepView: View {
 struct ActiveMatchScoreKeepGameView: View {
     var match: ScoreKeepMatch
 
-    private let spacing: CGFloat = 8
+    private let spacing: CGFloat = 3
     private let outerPadding = EdgeInsets(
         top: 40, leading: 12, bottom: 21, trailing: 12)
+    private let compactCenterHeight: CGFloat = 30
+    private let expandedCenterHeight: CGFloat = 42
+    private let pushAwayDistance: CGFloat = 7
+    private let concaveAngle: CGFloat = 18
 
     @State private var showUndoSheet: Bool = false
 
-    private func toggleUndoSheet() {
-        showUndoSheet = !showUndoSheet
+    private var isExpanded: Bool {
+        match.latestGame?.hasWinner == true || match.hasEnded
+    }
+
+    private var centerHeight: CGFloat {
+        isExpanded ? expandedCenterHeight : compactCenterHeight
     }
 
     var body: some View {
-        GeometryReader { geometry in
-            VStack(spacing: spacing) {
-                GameScoreTeamButtonView(
-                    team: .them, match: match,
-                    size: geometryToButtonSize(geometry),
-                    onLongPress: toggleUndoSheet
+        VStack(spacing: spacing) {
+            GameScoreTeamButtonView(team: .them, match: match)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .offset(y: isExpanded ? -pushAwayDistance : 0)
+                .rotation3DEffect(
+                    .degrees(isExpanded ? concaveAngle : 0),
+                    axis: (x: 1, y: 0, z: 0),
+                    anchor: .top,
+                    perspective: 0.6
                 )
 
-                GameScoreTeamButtonView(
-                    team: .us, match: match,
-                    size: geometryToButtonSize(geometry),
-                    onLongPress: toggleUndoSheet
+            ActiveMatchScoreKeepCenterControlsView(
+                match: match,
+                isExpanded: isExpanded,
+                showUndoSheet: $showUndoSheet
+            )
+            .frame(height: centerHeight)
+            .zIndex(1)
+
+            GameScoreTeamButtonView(team: .us, match: match)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .offset(y: isExpanded ? pushAwayDistance : 0)
+                .rotation3DEffect(
+                    .degrees(isExpanded ? -concaveAngle : 0),
+                    axis: (x: 1, y: 0, z: 0),
+                    anchor: .bottom,
+                    perspective: 0.6
                 )
-            }
-            .padding(outerPadding)
         }
+        .padding(outerPadding)
         .edgesIgnoringSafeArea(.all)
-        .contentShape(Rectangle())
+        .animation(.spring(response: 0.5, dampingFraction: 0.78), value: isExpanded)
         .sheet(isPresented: $showUndoSheet) {
             ActiveMatchScoreKeepEditView(match: match)
         }
     }
+}
 
-    private func geometryToButtonSize(_ geometry: GeometryProxy) -> CGSize {
-        let size = CGSize(
-            width: geometry.size.width
-                - (outerPadding.leading + outerPadding.trailing),
-            height: (geometry.size.height - spacing
-                - (outerPadding.top + outerPadding.bottom)) / 2
-        )
+struct ActiveMatchScoreKeepCenterControlsView: View {
+    var match: ScoreKeepMatch
+    var isExpanded: Bool
+    @Binding var showUndoSheet: Bool
 
-        return size
+    @Environment(NavigationManager.self) private var navigation
+    @Environment(WorkoutManager.self) private var workoutManager
+    @Environment(\.modelContext) private var context
+
+    private var nextAction: ActiveMatchNextAction? {
+        ActiveMatchNextAction(match: match)
     }
 
-    private func paddingFromGeometry(geometry: GeometryProxy) -> EdgeInsets {
-        print(geometry.safeAreaInsets)
-        return geometry.safeAreaInsets
+    var body: some View {
+        HStack(spacing: 4) {
+            ActiveMatchScoreKeepGameLabelView(match: match, isExpanded: isExpanded)
+                .padding(.leading, isExpanded ? 0 : 6)
+
+            Spacer(minLength: 0)
+
+            ActiveMatchScoreKeepUndoButton(
+                match: match,
+                onLongPress: { showUndoSheet = true }
+            )
+
+            if isExpanded, let nextAction {
+                ActiveMatchScoreKeepNextActionButton(
+                    action: nextAction,
+                    onTrigger: handleNextAction
+                )
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .padding(.horizontal, isExpanded ? 0 : 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.thinMaterial)
+                .opacity(isExpanded ? 0 : 0.4)
+                .animation(.easeInOut(duration: 0.22), value: isExpanded)
+        }
+    }
+
+    private func handleNextAction(_ action: ActiveMatchNextAction) {
+        switch action {
+        case .nextGame:
+            match.startGame()
+        case .endMatch:
+            endActiveMatch(
+                match: match,
+                workoutManager: workoutManager,
+                context: context,
+                navigation: navigation
+            )
+        }
+    }
+}
+
+struct ActiveMatchScoreKeepGameLabelView: View {
+    var match: ScoreKeepMatch
+    var isExpanded: Bool
+
+    @State private var extrasVisible: Bool = true
+    @State private var pulsingTeam: ScoreKeepTeam? = nil
+    @State private var pulseTask: Task<Void, Never>? = nil
+
+    private let extrasOutAnimation: Animation = .easeInOut(duration: 0.16)
+    private let chipPromoteAnimation: Animation = .spring(response: 0.42, dampingFraction: 0.7).delay(0.16)
+    private let collapseAnimation: Animation = .snappy(duration: 0.22)
+    private let pulseInAnimation: Animation = .spring(response: 0.24, dampingFraction: 0.38)
+    private let pulseOutAnimation: Animation = .spring(response: 0.4, dampingFraction: 0.72)
+
+    private var label: String {
+        let gameNumber = match.latestGame?.number ?? 1
+        if match.isMultiSet, let setNumber = match.latestSet?.number {
+            return "Set \(setNumber) · Game \(gameNumber)"
+        }
+        return "Game \(gameNumber)"
+    }
+
+    private var shouldShowSetOverview: Bool {
+        (match.latestSet?.games.count ?? 0) > 1
+            || match.latestGame?.hasWinner == true
+    }
+
+    private var themColor: Color {
+        match.participant(for: .them).resolvedColor.color
+    }
+
+    private var usColor: Color {
+        match.participant(for: .us).resolvedColor.color
+    }
+
+    var body: some View {
+        let timerStart = match.latestGame?.startedAt ?? match.startedAt
+
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 6) {
+                if extrasVisible {
+                    Text(label)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .transition(.opacity)
+                }
+
+                if shouldShowSetOverview, let set = match.latestSet {
+                    setOverviewChip(set: set)
+                        .scaleEffect(isExpanded ? 1.35 : 1.0)
+                        .animation(
+                            isExpanded ? chipPromoteAnimation : collapseAnimation,
+                            value: isExpanded
+                        )
+                }
+            }
+
+            if extrasVisible {
+                TimelineView(.periodic(from: timerStart, by: 1)) { context in
+                    Text(
+                        context.date,
+                        format: .stopwatch(
+                            startingAt: timerStart,
+                            maxPrecision: .seconds(1)
+                        )
+                    )
+                }
+                .font(.system(size: 9, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+                .frame(minHeight: 11)
+                .transition(.opacity)
+            }
+        }
+        .onAppear {
+            extrasVisible = !isExpanded
+        }
+        .onChange(of: isExpanded) { _, newValue in
+            if newValue {
+                withAnimation(extrasOutAnimation) {
+                    extrasVisible = false
+                }
+                triggerPulse()
+            } else {
+                withAnimation(collapseAnimation) {
+                    extrasVisible = true
+                }
+                cancelPulse()
+            }
+        }
+    }
+
+    private func triggerPulse() {
+        guard let winner = match.latestGame?.winner else { return }
+        pulseTask?.cancel()
+        pulseTask = Task {
+            try? await Task.sleep(for: .milliseconds(160))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(pulseInAnimation) {
+                    pulsingTeam = winner
+                }
+            }
+            try? await Task.sleep(for: .milliseconds(110))
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(pulseOutAnimation) {
+                    pulsingTeam = nil
+                }
+            }
+        }
+    }
+
+    private func cancelPulse() {
+        pulseTask?.cancel()
+        if pulsingTeam != nil {
+            withAnimation(.snappy(duration: 0.2)) {
+                pulsingTeam = nil
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func setOverviewChip(set: ScoreKeepSet) -> some View {
+        let themGames = set.gamesFor(.them)
+        let usGames = set.gamesFor(.us)
+        let themPulsing = pulsingTeam == .them
+        let usPulsing = pulsingTeam == .us
+        let winner = match.latestGame?.winner
+        let highlighted = pulsingTeam != nil
+        let highlightColor: Color = winner == .us ? usColor : themColor
+
+        HStack(spacing: 0) {
+            glowDot(color: themColor, pulsing: themPulsing)
+            Text("\(themGames)")
+                .contentTransition(.numericText(value: Double(themGames)))
+                .padding(.leading, 2)
+            Text("\(usGames)")
+                .contentTransition(.numericText(value: Double(usGames)))
+                .padding(.leading, 6)
+            glowDot(color: usColor, pulsing: usPulsing)
+                .padding(.leading, 2)
+        }
+        .font(.system(size: 10, weight: .semibold, design: .rounded))
+        .monospacedDigit()
+        .foregroundStyle(.primary.opacity(isExpanded ? 1.0 : 0.7))
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(.primary.opacity(0.12))
+                .shadow(
+                    color: highlightColor.opacity(highlighted ? 0.5 : 0),
+                    radius: highlighted ? 8 : 0
+                )
+                .opacity(isExpanded ? 0 : 1)
+                .animation(.easeInOut(duration: 0.22), value: isExpanded)
+        )
+    }
+
+    @ViewBuilder
+    private func glowDot(color: Color, pulsing: Bool) -> some View {
+        Circle()
+            .fill(color)
+            .frame(width: 5, height: 5)
+            .brightness(pulsing ? 0.35 : 0)
+            .saturation(pulsing ? 1.4 : 1.0)
+            .scaleEffect(pulsing ? 1.35 : 1.0)
+            .shadow(color: color.opacity(pulsing ? 1.0 : 0), radius: pulsing ? 2 : 0)
+            .shadow(color: color.opacity(pulsing ? 0.6 : 0), radius: pulsing ? 5 : 0)
+            .shadow(color: color.opacity(pulsing ? 0.3 : 0), radius: pulsing ? 9 : 0)
+    }
+}
+
+struct ActiveMatchScoreKeepUndoButton: View {
+    var match: ScoreKeepMatch
+    var onLongPress: () -> Void
+
+    @State private var longPressTriggered = false
+
+    var body: some View {
+        Button {
+            if longPressTriggered { return }
+            withAnimation { match.undo() }
+        } label: {
+            Image(systemName: "arrow.uturn.backward")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.primary)
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(.primary.opacity(0.15)))
+        }
+        .buttonStyle(.plain)
+        .disabled(!match.canUndo)
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.6)
+                .onEnded { _ in
+                    longPressTriggered = true
+                    onLongPress()
+
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                        longPressTriggered = false
+                    }
+                }
+        )
+        .sensoryFeedback(.selection, trigger: longPressTriggered)
+    }
+}
+
+struct ActiveMatchScoreKeepNextActionButton: View {
+    var action: ActiveMatchNextAction
+    var onTrigger: (ActiveMatchNextAction) -> Void
+
+    private var icon: String {
+        switch action {
+        case .nextGame: "play.fill"
+        case .endMatch: "flag.checkered"
+        }
+    }
+
+    private var label: String {
+        switch action {
+        case .nextGame: "Next"
+        case .endMatch: "End"
+        }
+    }
+
+    var body: some View {
+        Button {
+            onTrigger(action)
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: icon)
+                    .font(.system(size: 9, weight: .bold))
+                Text(label)
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(.black)
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .background(Capsule().fill(Color.green))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -85,13 +396,21 @@ struct ActiveMatchScoreKeepEditView: View {
             Text("Actions")
                 .font(.headline)
 
-            Button() {
-                match.undo()
+            Button {
+                withAnimation { match.undo() }
                 dismiss()
             } label: {
-                Label("Undo last score", systemImage: "arrow.uturn.backward")
+                Label("Undo last point", systemImage: "arrow.uturn.backward")
             }
             .disabled(!match.canUndo)
+
+            Button {
+                withAnimation { match.redo() }
+                dismiss()
+            } label: {
+                Label("Redo last point", systemImage: "arrow.uturn.forward")
+            }
+            .disabled(!match.canRedo)
         }
         .padding()
     }
@@ -100,13 +419,6 @@ struct ActiveMatchScoreKeepEditView: View {
 struct GameScoreTeamButtonView: View {
     var team: ScoreKeepTeam
     var match: ScoreKeepMatch
-    var size: CGSize
-    var onLongPress: (() -> Void)? = nil
-
-    @State private var isPressing = false
-    @State private var longPressTriggered = false
-    @State private var pressWorkItem: DispatchWorkItem?
-    @State private var startLocation: CGPoint?
 
     var keyColor: Color {
         match.participant(for: team).resolvedColor.color
@@ -117,34 +429,16 @@ struct GameScoreTeamButtonView: View {
     }
 
     var body: some View {
-
         Button(action: {
-            if longPressTriggered { return }
-            match.scorePoint(team)
+            withAnimation { match.scorePoint(team) }
         }) {
-            GameScoreTeamScoreView(match: match, team: team, game: game, size: size)
+            GameScoreTeamScoreView(match: match, team: team, game: game)
                 .foregroundStyle(keyColor)
         }
         .buttonStyle(CustomButtonStyle(keyColor: keyColor))
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 1)
-                .onEnded { _ in
-                    longPressTriggered = true
-                    onLongPress?()
-
-                    // Give the button a moment to animate back before allowing taps again
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                        longPressTriggered = false
-                    }
-                }
-        )
         .disabled(game.hasEnded)
         .sensoryFeedback(.impact(weight: .medium), trigger: game.scoreFor(team)) { old, new in
             return old != new
-        }
-        .sensoryFeedback(.selection, trigger: longPressTriggered)
-        .onChange(of: game.number) {
-            print("GameScoreTeamButtonView, number: \(game.number), hasEnded: \(game.hasEnded), match: \(game.set?.match?.scoreSummaryString ?? "<no match>")")
         }
     }
 }
@@ -182,7 +476,6 @@ struct GameScoreTeamScoreView: View {
     var match: ScoreKeepMatch
     var team: ScoreKeepTeam
     var game: ScoreKeepGame
-    var size: CGSize
 
     var score: Int {
         game.scoreFor(team)
@@ -196,17 +489,28 @@ struct GameScoreTeamScoreView: View {
         match.sport.normalizedScoreLabelFor(team, game: game)
     }
 
+    /// Value driving `.contentTransition(.numericText)`. We bump the leading
+    /// team's value when it shows "Ad" so the transition between Ad and 40
+    /// (deuce) animates in both directions — without this, the underlying
+    /// normalized score stays 40 across that transition and the digits don't move.
+    var transitionValue: Double {
+        if normalizedScoreLabel == "Ad" {
+            return Double(normalizedScore) + 5
+        }
+        return Double(normalizedScore)
+    }
+
     var keyColor: Color {
         match.participant(for: team).resolvedColor.color
     }
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 if game.winner == team {
                     Image(systemName: "checkmark.circle.fill")
                         .resizable()
-                        .frame(width: 24, height: 24)
+                        .frame(width: 20, height: 20)
                 } else {
                     GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
                 }
@@ -226,21 +530,24 @@ struct GameScoreTeamScoreView: View {
             HStack(spacing: 0) {
                 if score < 10 && match.sport != .tennis {
                     Text("0")
-                        .font(.system(size: 70, weight: .bold))
+                        .font(.system(size: 60, weight: .bold))
                         .opacity(0.5)
                 }
                 Text(normalizedScoreLabel)
-                    .font(.system(size: 70, weight: .bold))
-                    .contentTransition(.numericText(value: Double(normalizedScore)))
+                    .font(.system(size: 60, weight: .bold))
+                    .contentTransition(.numericText(value: transitionValue))
             }
             .fontDesign(.rounded)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
         }
-        .padding(8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .monospacedDigit()
         // Allows the whole button to be pressable
         .contentShape(.rect)
         // Fill the container
-        .frame(width: size.width, height: size.height, alignment: .trailing)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
     }
 }
 
@@ -255,7 +562,7 @@ struct GameScoreTeamServeIndicatorView: View {
                 Image(systemName: match.sport.ballIcon)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 24, height: 24)
+                    .frame(width: 20, height: 20)
 
                 // If we aren't rotating on every point, "service streaks" are a little odd.
                 // I should probably just make this an explicit option
@@ -264,19 +571,21 @@ struct GameScoreTeamServeIndicatorView: View {
                     let streak = game.serveStreakFor(team)
                     if streak > 0 {
                         Text("\(streak)")
-                            .font(.system(size: 14,  weight: .semibold, design: .rounded))
-                            .frame(height: 14)
+                            .font(.system(size: 12,  weight: .semibold, design: .rounded))
+                            .frame(height: 12)
                     }
                 }
             }
         } else {
-            Spacer().frame(height: 24)
+            Spacer().frame(height: 20)
         }
     }
 }
 
 #Preview {
     ActiveMatchScoreKeepView()
+        .environment(NavigationManager())
+        .environment(WorkoutManager())
         .environment(
             ScoreKeepMatch(
                 .volleyball,

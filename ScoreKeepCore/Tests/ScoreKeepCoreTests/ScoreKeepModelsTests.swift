@@ -355,6 +355,165 @@ struct ScoreKeepGameTests {
         #expect(game.serveStreakFor(.us) == 2)
         #expect(game.serveStreakFor(.them) == 0)
     }
+
+    @Test("redo replays the last undone score")
+    @MainActor
+    func redoReplaysUndoneScore() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let match = ScoreKeepMatch(
+            .volleyball,
+            rules: ScoreKeepMatchRules(
+                setRules: ScoreKeepSetRules(
+                    gameRules: ScoreKeepGameRules(winAt: 25)
+                )
+            )
+        )
+        context.insert(match)
+        match.startGame()
+
+        guard let game = match.latestGame else {
+            Issue.record("No game created")
+            return
+        }
+
+        game.scorePoint(.us)
+        game.scorePoint(.them)
+        game.scorePoint(.us)
+
+        #expect(game.canRedo == false)
+
+        game.undo()
+        #expect(game.scoreUs == 1)
+        #expect(game.canRedo == true)
+
+        game.redo()
+        #expect(game.scoreUs == 2)
+        #expect(game.scoreThem == 1)
+        #expect(game.canRedo == false)
+    }
+
+    @Test("scoring a new point clears the redo stack")
+    @MainActor
+    func scoringClearsRedoStack() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let match = ScoreKeepMatch(
+            .volleyball,
+            rules: ScoreKeepMatchRules(
+                setRules: ScoreKeepSetRules(
+                    gameRules: ScoreKeepGameRules(winAt: 25)
+                )
+            )
+        )
+        context.insert(match)
+        match.startGame()
+
+        guard let game = match.latestGame else {
+            Issue.record("No game created")
+            return
+        }
+
+        game.scorePoint(.us)
+        game.undo()
+        #expect(game.canRedo == true)
+
+        game.scorePoint(.them)
+        #expect(game.canRedo == false)
+    }
+
+    @Test("undo is allowed on a finished game and re-opens it")
+    @MainActor
+    func undoOnFinishedGameReopensIt() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let match = ScoreKeepMatch(
+            .volleyball,
+            rules: ScoreKeepMatchRules(
+                setRules: ScoreKeepSetRules(
+                    gameRules: ScoreKeepGameRules(winAt: 3)
+                )
+            )
+        )
+        context.insert(match)
+        match.startGame()
+
+        guard let game = match.latestGame else {
+            Issue.record("No game created")
+            return
+        }
+
+        game.scorePoint(.us)
+        game.scorePoint(.us)
+        game.scorePoint(.us)
+        #expect(game.hasEnded == true)
+        #expect(game.canUndo == true)
+
+        game.undo()
+        #expect(game.scoreUs == 2)
+        #expect(game.hasEnded == false)
+        #expect(game.canRedo == true)
+    }
+
+    @Test("canRedo is false on a finished game")
+    @MainActor
+    func canRedoFalseOnFinishedGame() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let match = ScoreKeepMatch(
+            .volleyball,
+            rules: ScoreKeepMatchRules(
+                setRules: ScoreKeepSetRules(
+                    gameRules: ScoreKeepGameRules(winAt: 3)
+                )
+            )
+        )
+        context.insert(match)
+        match.startGame()
+
+        guard let game = match.latestGame else {
+            Issue.record("No game created")
+            return
+        }
+
+        game.scorePoint(.us)
+        game.scorePoint(.us)
+        game.scorePoint(.us)
+        #expect(game.hasEnded == true)
+        #expect(game.canRedo == false)
+    }
+
+    @Test("ScoreKeepMatch.redo delegates to latest game")
+    @MainActor
+    func matchRedoDelegates() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+
+        let match = ScoreKeepMatch(
+            .volleyball,
+            rules: ScoreKeepMatchRules(
+                setRules: ScoreKeepSetRules(
+                    gameRules: ScoreKeepGameRules(winAt: 25)
+                )
+            )
+        )
+        context.insert(match)
+        match.startGame()
+
+        match.scorePoint(.us)
+        match.scorePoint(.them)
+        match.undo()
+        #expect(match.canRedo == true)
+
+        match.redo()
+        #expect(match.canRedo == false)
+        #expect(match.latestGame?.scoreUs == 1)
+        #expect(match.latestGame?.scoreThem == 1)
+    }
 }
 
 // MARK: - ScoreKeepMatch Tests (SwiftData)

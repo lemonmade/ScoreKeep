@@ -5,9 +5,25 @@
 //  Created by Chris Sauve on 2024-12-18.
 //
 
+import SwiftData
 import SwiftUI
 import ScoreKeepCore
 import ScoreKeepUI
+
+enum ActiveMatchNextAction {
+    case nextGame(number: Int)
+    case endMatch
+
+    init?(match: ScoreKeepMatch) {
+        guard match.hasEnded || match.latestGame?.hasWinner == true else { return nil }
+
+        if match.hasMoreGames {
+            self = .nextGame(number: (match.latestGame?.number ?? 0) + 1)
+        } else {
+            self = .endMatch
+        }
+    }
+}
 
 struct ActiveMatchControlsView: View {
     @Environment(ScoreKeepMatch.self) private var match
@@ -18,10 +34,11 @@ struct ActiveMatchControlsView: View {
             VStack(spacing: 16) {
                 ActiveMatchControlsSummaryView()
 
-                if match.hasEnded || match.latestGame?.hasWinner == true {
-                    if match.hasMoreGames {
+                if let nextAction = ActiveMatchNextAction(match: match) {
+                    switch nextAction {
+                    case .nextGame:
                         StartNextGameForActiveMatchButtonView()
-                    } else {
+                    case .endMatch:
                         EndActiveMatchButtonView()
                     }
                 }
@@ -283,20 +300,27 @@ struct EndActiveMatchButtonView: View {
 
     var body: some View {
         Button {
-            endMatch()
+            endActiveMatch(
+                match: match, workoutManager: workoutManager,
+                context: context, navigation: navigation)
         } label: {
             Text("End match")
         }
         .tint(match.hasEnded ? .green : .red)
     }
+}
 
-    private func endMatch() {
-        workoutManager.end()
-        match.end()
-        // TODO
-        try? context.save()
-        navigation.pop(count: navigation.path.count)
-    }
+func endActiveMatch(
+    match: ScoreKeepMatch,
+    workoutManager: WorkoutManager,
+    context: ModelContext,
+    navigation: NavigationManager
+) {
+    workoutManager.end()
+    match.end()
+    // TODO
+    try? context.save()
+    navigation.pop(count: navigation.path.count)
 }
 
 #Preview {

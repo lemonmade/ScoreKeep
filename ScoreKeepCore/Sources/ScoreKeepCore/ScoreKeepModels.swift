@@ -381,6 +381,16 @@ public class ScoreKeepMatch {
         game.undo()
     }
 
+    public var canRedo: Bool {
+        guard let game = latestGame else { return false }
+        return game.canRedo
+    }
+
+    public func redo() {
+        guard let game = latestGame else { return }
+        game.redo()
+    }
+
     public func startWarmup() {
         if warmup != nil { return }
 
@@ -587,6 +597,9 @@ public class ScoreKeepGame {
         return scores.sorted { $0.timestamp < $1.timestamp }
     }
 
+    @Transient
+    private var _redoStack: [ScoreKeepGameScore] = []
+
     public var scoreUs: Int { _scores?.reduce(0) { $0 + $1.us } ?? 0 }
     public var scoreThem: Int { _scores?.reduce(0) { $0 + $1.them } ?? 0 }
 
@@ -691,6 +704,7 @@ public class ScoreKeepGame {
 
         scores.append(score)
         _scores = scores
+        _redoStack = []
 
         guard let rules else { return }
 
@@ -700,27 +714,45 @@ public class ScoreKeepGame {
     }
 
     public var canUndo: Bool {
-        if hasEnded { return false }
-        // There must be at least one score whose source was a real point
+        // There must be at least one score whose source was a real point.
+        // We intentionally allow undo on a finished game so the user can roll
+        // back the point that ended it.
         guard let scores = _scores else { return false }
         return scores.contains { $0.source == .point }
     }
 
     public func undo() {
-        if hasEnded { return }
-
         var scores = self.scores
         if scores.isEmpty { return }
 
         guard let idx = scores.lastIndex(where: { $0.source == .point }) else { return }
 
-        scores.remove(at: idx)
+        let removed = scores.remove(at: idx)
         self._scores = scores
+        _redoStack.append(removed)
 
         self.endedAt = nil
         // TODO: what to do if this is in the middle of a set?
         if let set = set, set.endedAt != nil { set.endedAt = nil }
         if let match = match, match.endedAt != nil { match.endedAt = nil }
+    }
+
+    public var canRedo: Bool {
+        if hasEnded { return false }
+        return !_redoStack.isEmpty
+    }
+
+    public func redo() {
+        if hasEnded { return }
+        guard let score = _redoStack.popLast() else { return }
+
+        var scores = self._scores ?? []
+        scores.append(score)
+        _scores = scores
+
+        if let rules, rules.hasWinner(self) {
+            self.endedAt = .now
+        }
     }
 
     public func scoreFor(_ team: ScoreKeepTeam) -> Int {
