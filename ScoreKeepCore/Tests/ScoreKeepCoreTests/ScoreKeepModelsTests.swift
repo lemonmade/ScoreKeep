@@ -858,3 +858,213 @@ struct ScoreKeepMatchParticipantDeriveShortLabelTests {
         #expect(participant.resolvedShortLabel == "CMS")
     }
 }
+
+// MARK: - Tennis Tiebreak Tests
+
+@Suite("Tennis tiebreak")
+struct TennisTiebreakTests {
+    /// Build a tennis match whose set has played 12 alternating-winner games (6-6),
+    /// plus an empty 13th game ready to be played as the tiebreak. Models are
+    /// constructed without a SwiftData container — the rules logic doesn't need it,
+    /// and skipping the container avoids ModelContext lifecycle issues across tests.
+    @MainActor
+    private func makeMatchAtTiebreak(
+        rules: ScoreKeepMatchRules = ScoreKeepSport.tennis.defaultRules(),
+        startingServe: ScoreKeepTeam = .us
+    ) -> (ScoreKeepMatch, ScoreKeepGame) {
+        var games: [ScoreKeepGame] = []
+        for i in 1...12 {
+            let usWins = (i % 2 == 1)
+            games.append(
+                ScoreKeepGame(
+                    number: i,
+                    us: usWins ? 4 : 0,
+                    them: usWins ? 0 : 4,
+                    endedAt: .now
+                )
+            )
+        }
+        let tiebreak = ScoreKeepGame(number: 13, startingServe: startingServe)
+        games.append(tiebreak)
+
+        let set = ScoreKeepSet(number: 1, games: games, startingServe: startingServe)
+        let match = ScoreKeepMatch(.tennis, rules: rules, sets: [set], startingServe: startingServe)
+        set.match = match
+        return (match, tiebreak)
+    }
+
+    @Test("Tiebreak game is recognised as last-in-set and a tiebreak")
+    @MainActor
+    func tiebreakRecognised() {
+        let (_, tiebreak) = makeMatchAtTiebreak()
+
+        #expect(tiebreak.isLastInSet == true)
+        #expect(tiebreak.isTiebreak == true)
+        #expect(tiebreak.rules?.winAt == 7)
+        #expect(tiebreak.rules?.winBy == 2)
+    }
+
+    @Test("Tiebreak shows raw point counts, never 15-30-40 or Ad")
+    @MainActor
+    func tiebreakRendersRawScores() {
+        let (match, tiebreak) = makeMatchAtTiebreak()
+
+        // Score 5-4 in the tiebreak (us leads).
+        for _ in 0..<5 { tiebreak.scorePoint(.us) }
+        for _ in 0..<4 { tiebreak.scorePoint(.them) }
+
+        #expect(match.sport.normalizedScoreFor(.us, game: tiebreak) == 5)
+        #expect(match.sport.normalizedScoreFor(.them, game: tiebreak) == 4)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: tiebreak) == "5")
+        #expect(match.sport.normalizedScoreLabelFor(.them, game: tiebreak) == "4")
+    }
+
+    @Test("Tiebreak ends on win-by-2, no ceiling")
+    @MainActor
+    func tiebreakWinByTwo() {
+        let (_, tiebreak) = makeMatchAtTiebreak()
+
+        // Interleave to avoid hitting win-by-2 mid-loop.
+        for _ in 0..<6 {
+            tiebreak.scorePoint(.us)
+            tiebreak.scorePoint(.them)
+        }
+        // 6-6: no winner
+        #expect(tiebreak.hasEnded == false)
+
+        // 7-6: scoreUs >= winAt but lead is 1, not enough.
+        tiebreak.scorePoint(.us)
+        #expect(tiebreak.hasEnded == false)
+
+        // 8-6: lead of 2 wins.
+        tiebreak.scorePoint(.us)
+        #expect(tiebreak.hasEnded == true)
+        #expect(tiebreak.winner == .us)
+    }
+
+    @Test("Tiebreak service rotation: starter serves point 1, then alternates every 2")
+    @MainActor
+    func tiebreakServiceRotation() {
+        let (_, tiebreak) = makeMatchAtTiebreak(startingServe: .us)
+
+        // Expected serve sequence for the first 12 points starting with .us:
+        // point 1: us, points 2-3: them, points 4-5: us, points 6-7: them,
+        // points 8-9: us, points 10-11: them, point 12: us
+        let expected: [ScoreKeepTeam] = [
+            .us, .them, .them, .us, .us, .them, .them, .us, .us, .them, .them, .us,
+        ]
+
+        for (idx, expectedTeam) in expected.enumerated() {
+            #expect(
+                tiebreak.servingTeam == expectedTeam,
+                "Wrong server before point \(idx + 1)"
+            )
+            // Score doesn't matter for serve rotation, alternate to keep things tied-ish.
+            tiebreak.scorePoint(idx.isMultiple(of: 2) ? .us : .them)
+        }
+    }
+
+    @Test("ScoreKeepSet.tiebreakGame is nil before tiebreak starts")
+    @MainActor
+    func tiebreakGameAccessorEmpty() {
+        let (match, _) = makeMatchAtTiebreak()
+        let set = match.sets.first!
+        #expect(set.tiebreakGame == nil)
+    }
+
+    @Test("ScoreKeepSet.tiebreakGame returns the 13th game once a point is played")
+    @MainActor
+    func tiebreakGameAccessorPopulated() {
+        let (match, tiebreak) = makeMatchAtTiebreak()
+        tiebreak.scorePoint(.us)
+
+        let set = match.sets.first!
+        #expect(set.tiebreakGame === tiebreak)
+        #expect(set.tiebreakGame?.scoreFor(.us) == 1)
+    }
+}
+
+// MARK: - Tennis Score Label Tests
+
+@Suite("Tennis score labels")
+struct TennisScoreLabelTests {
+    @MainActor
+    private func makeTennisGame(
+        rules: ScoreKeepMatchRules = ScoreKeepSport.tennis.defaultRules()
+    ) -> (ScoreKeepMatch, ScoreKeepGame) {
+        let game = ScoreKeepGame(number: 1)
+        let set = ScoreKeepSet(number: 1, games: [game])
+        let match = ScoreKeepMatch(.tennis, rules: rules, sets: [set])
+        set.match = match
+        return (match, game)
+    }
+
+    @Test("Canonical tennis: 0/15/30/40 mapping applies")
+    @MainActor
+    func canonicalTennisMapping() {
+        let (match, game) = makeTennisGame()
+
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "0")
+        game.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "15")
+        game.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "30")
+        game.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "40")
+    }
+
+    @Test("Canonical tennis: leading team shows 'Ad' at deuce+1")
+    @MainActor
+    func canonicalAdvantageLabel() {
+        let (match, game) = makeTennisGame()
+
+        // 3-3 = deuce
+        for _ in 0..<3 { game.scorePoint(.us) }
+        for _ in 0..<3 { game.scorePoint(.them) }
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "40")
+        #expect(match.sport.normalizedScoreLabelFor(.them, game: game) == "40")
+
+        // 4-3: us has Ad
+        game.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "Ad")
+        #expect(match.sport.normalizedScoreLabelFor(.them, game: game) == "40")
+    }
+
+    @Test("No-ad tennis (winBy=1): no 15-30-40 mapping, no Ad")
+    @MainActor
+    func noAdSkipsTennisMapping() {
+        let noAdRules = ScoreKeepMatchRules(
+            winAt: 1, winBy: 1, maximum: 1,
+            setRules: ScoreKeepSetRules(
+                winAt: 6, winBy: 2, maximum: 7,
+                gameRules: ScoreKeepGameRules(winAt: 4, winBy: 1),
+                lastGameRules: ScoreKeepGameRules(winAt: 7, winBy: 2)
+            )
+        )
+        let (match, game) = makeTennisGame(rules: noAdRules)
+
+        for _ in 0..<3 { game.scorePoint(.us) }
+        for _ in 0..<3 { game.scorePoint(.them) }
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "3")
+        #expect(match.sport.normalizedScoreLabelFor(.them, game: game) == "3")
+    }
+
+    @Test("Games-to-five tennis (winAt=5): no 15-30-40 mapping")
+    @MainActor
+    func gamesToFiveSkipsTennisMapping() {
+        let customRules = ScoreKeepMatchRules(
+            winAt: 1, winBy: 1, maximum: 1,
+            setRules: ScoreKeepSetRules(
+                winAt: 5, winBy: 2, maximum: 6,
+                gameRules: ScoreKeepGameRules(winAt: 5, winBy: 2),
+                lastGameRules: ScoreKeepGameRules(winAt: 7, winBy: 2)
+            )
+        )
+        let (match, game) = makeTennisGame(rules: customRules)
+
+        game.scorePoint(.us)
+        game.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "2")
+    }
+}
+

@@ -33,6 +33,9 @@ struct ActiveMatchView: View {
                 if (template.warmup != .none) {
                     match.startWarmup()
                 } else {
+                    if match.startingServe == nil {
+                        match.startingServe = [ScoreKeepTeam.us, .them].randomElement()!
+                    }
                     match.startGame()
                 }
 

@@ -271,17 +271,20 @@ public struct MatchSummaryScoreTableRowView: View {
             } else {
                 ForEach(match.sets) { set in
                     let score = set.gamesFor(team)
+                    let tiebreakScore = set.tiebreakGame?.scoreFor(team)
                     let horizontalPosition: MatchSummaryScoreTableCellHorizontalPosition =
                         showLatestGame || !set.isLatestInMatch ? .inner : .trailing
 
                     MatchSummaryScoreTableNumberView(
-                        score, verticalPosition: .top, horizontalPosition: horizontalPosition
+                        score, superscript: tiebreakScore,
+                        verticalPosition: .top, horizontalPosition: horizontalPosition
                     )
                     .fontWeight(boldestFontWeight)
                     .opacity(0)
                     .overlay {
                         MatchSummaryScoreTableNumberView(
-                            score, verticalPosition: .top, horizontalPosition: horizontalPosition
+                            score, superscript: tiebreakScore,
+                            verticalPosition: .top, horizontalPosition: horizontalPosition
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                         .fontWeight(fontWeight)
@@ -335,6 +338,7 @@ public enum MatchSummaryScoreTableCellHorizontalPosition {
 
 public struct MatchSummaryScoreTableNumberView: View {
     private let number: Int
+    private let superscript: Int?
     private let pad: Bool
     private let verticalPosition: MatchSummaryScoreTableCellVerticalPosition
     private let horizontalPosition: MatchSummaryScoreTableCellHorizontalPosition
@@ -357,18 +361,27 @@ public struct MatchSummaryScoreTableNumberView: View {
     }
 
     init(
-        _ number: Int, pad: Bool = false,
+        _ number: Int, superscript: Int? = nil, pad: Bool = false,
         verticalPosition: MatchSummaryScoreTableCellVerticalPosition,
         horizontalPosition: MatchSummaryScoreTableCellHorizontalPosition
     ) {
         self.number = number
+        self.superscript = superscript
         self.pad = pad
         self.verticalPosition = verticalPosition
         self.horizontalPosition = horizontalPosition
     }
 
+    private var renderedText: Text {
+        let main = Text("\(pad && number < 10 ? "0" : "")\(number)")
+        guard let sup = self.superscript else { return main }
+        return main + Text("\(sup)")
+            .font(.caption2)
+            .baselineOffset(6)
+    }
+
     public var body: some View {
-        Text("\(pad && number < 10 ? "0" : "")\(number)")
+        renderedText
             .padding(
                 EdgeInsets(
                     top: verticalPadding, leading: leadingPadding, bottom: verticalPadding,

@@ -74,7 +74,10 @@ public enum ScoreKeepSport: String, Codable {
 
         switch self {
         case .tennis:
-            if let winAt = game.rules?.winAt, winAt != 4 {
+            // 15-30-40 mapping only for canonical tennis games (winAt 4, winBy 2).
+            // Tiebreaks (winAt 7), no-ad (winBy 1), and custom values (e.g. games to 5)
+            // all show raw point counts.
+            guard let rules = game.rules, rules.winAt == 4, rules.winBy == 2 else {
                 return score
             }
 
@@ -95,24 +98,16 @@ public enum ScoreKeepSport: String, Codable {
             return "\(normalizedScore)"
         }
 
-        guard let match = game.set?.match else {
+        // "Ad" only applies in canonical tennis games. Tiebreaks and no-ad games never show Ad.
+        guard let rules = game.rules, rules.winAt == 4, rules.winBy == 2 else {
             return "\(normalizedScore)"
         }
 
-        let gameScoring = match.rules.setRules.gameRules
+        let winAt = 4
+        let score = game.scoreFor(team)
 
-        if gameScoring.winBy != 2 {
+        if score < winAt || (game.scoreFor(team.opposingTeam) < (winAt - 1)) {
             return "\(normalizedScore)"
-        }
-
-        let winAt = gameScoring.winAt
-
-        if let winAt {
-            let score = game.scoreFor(team)
-
-            if score < winAt || (game.scoreFor(team.opposingTeam) < (winAt - 1)) {
-                return "\(normalizedScore)"
-            }
         }
 
         return game.leading == team ? "Ad" : "\(normalizedScore)"
@@ -518,6 +513,14 @@ public class ScoreKeepSet {
 
     public var isMultiGame: Bool { match?.rules.setRules.isMultiGame ?? true }
 
+    /// The tiebreak game in this set, if one was reached and has at least one point played.
+    public var tiebreakGame: ScoreKeepGame? {
+        guard let last = games.last, last.isTiebreak, !last.scores.isEmpty else {
+            return nil
+        }
+        return last
+    }
+
     public var startingServe: ScoreKeepTeam? { games.first?.startingServe }
 
     public var isLatestInMatch: Bool {
@@ -636,13 +639,27 @@ public class ScoreKeepGame {
         let sport = set?.match?.sport
         let serviceRotation = sport?.gameServiceRotation ?? .lastWinner
 
+        // Fall back to the set's first-game serve (alternated by parity) when this game's
+        // own startingServe wasn't recorded — happens for matches started before
+        // startingServe propagation, or any time SwiftData hydration loses it.
+        let resolvedStart: ScoreKeepTeam? = startingServe
+            ?? set?.startingServe.map { number.isMultiple(of: 2) ? $0.opposingTeam : $0 }
+
+        // Tennis tiebreak: server-of-record serves point 1, then players alternate every 2 points.
+        if sport == .tennis, isTiebreak, let starter = resolvedStart {
+            let pointsPlayed = scores.filter { $0.source == .point }.count
+            if pointsPlayed == 0 { return starter }
+            let blockIndex = (pointsPlayed + 1) / 2
+            return blockIndex.isMultiple(of: 2) ? starter : starter.opposingTeam
+        }
+
         if serviceRotation == .lastWinner {
             if let lastScore = scores.last(where: { $0.source == .point }) {
                 return lastScore.team
             }
         }
 
-        return startingServe
+        return resolvedStart
     }
 
     public var isLatestInSet: Bool {
@@ -655,6 +672,12 @@ public class ScoreKeepGame {
             return false
         }
         return maximumGames == number
+    }
+
+    /// True when this game is the final game of a set whose rules declare a separate
+    /// `lastGameRules` (i.e. a tiebreak game in tennis).
+    public var isTiebreak: Bool {
+        isLastInSet && (set?.rules?.lastGameRules != nil)
     }
 
     public init(
@@ -1083,7 +1106,7 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
     public var lastSetRules: ScoreKeepSetRules?
 
     enum CodingKeys: String, CodingKey {
-        case winAt, winBy, maximum, winBehavior, setRules, setRulesLast
+        case winAt, winBy, maximum, winBehavior, setRules, lastSetRules
     }
 
     public init(
@@ -1109,7 +1132,7 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
             try container.decodeIfPresent(ScoreKeepWinBehaviorRule.self, forKey: .winBehavior)
             ?? .end
         setRules = try container.decode(ScoreKeepSetRules.self, forKey: .setRules)
-        lastSetRules = try container.decodeIfPresent(ScoreKeepSetRules.self, forKey: .setRulesLast)
+        lastSetRules = try container.decodeIfPresent(ScoreKeepSetRules.self, forKey: .lastSetRules)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -1119,7 +1142,7 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
         try container.encodeIfPresent(maximum, forKey: .maximum)
         try container.encode(winBehavior, forKey: .winBehavior)
         try container.encode(setRules, forKey: .setRules)
-        try container.encodeIfPresent(lastSetRules, forKey: .setRulesLast)
+        try container.encodeIfPresent(lastSetRules, forKey: .lastSetRules)
     }
 
     public var isMultiSet: Bool {
@@ -1206,7 +1229,7 @@ public struct ScoreKeepSetRules: Codable, Equatable {
     public var lastGameRules: ScoreKeepGameRules?
 
     enum CodingKeys: String, CodingKey {
-        case winAt, winBy, maximum, winBehavior, gameRules, gameRulesLast
+        case winAt, winBy, maximum, winBehavior, gameRules, lastGameRules
     }
 
     public init(
@@ -1233,7 +1256,7 @@ public struct ScoreKeepSetRules: Codable, Equatable {
             ?? .end
         self.gameRules = try container.decode(ScoreKeepGameRules.self, forKey: .gameRules)
         self.lastGameRules = try container.decodeIfPresent(
-            ScoreKeepGameRules.self, forKey: .gameRulesLast)
+            ScoreKeepGameRules.self, forKey: .lastGameRules)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -1243,7 +1266,7 @@ public struct ScoreKeepSetRules: Codable, Equatable {
         try container.encodeIfPresent(maximum, forKey: .maximum)
         try container.encode(winBehavior, forKey: .winBehavior)
         try container.encode(gameRules, forKey: .gameRules)
-        try container.encodeIfPresent(lastGameRules, forKey: .gameRulesLast)
+        try container.encodeIfPresent(lastGameRules, forKey: .lastGameRules)
     }
 
     public var isMultiGame: Bool {

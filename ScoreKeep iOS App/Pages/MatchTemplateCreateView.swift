@@ -38,6 +38,8 @@ struct MatchTemplateCreateView: View {
     @State private var participants: [ScoreKeepMatchParticipant]
     @State private var editingParticipant: ScoreKeepMatchParticipant?
 
+    @State private var showAdvanced: Bool = false
+
     init(template: ScoreKeepMatchTemplate? = nil) {
         self.template = template
         let sport = template?.sport ?? .volleyball
@@ -46,21 +48,23 @@ struct MatchTemplateCreateView: View {
         self.environment = template?.environment ?? .indoor
         self.color = template?.color ?? .green
         self.participants = template?.participants ?? ScoreKeepMatchTemplate.defaultParticipants
-        
-        let setsWinAt = template?.rules.winAt ?? 1
-        let gameScoringWinScore = template?.rules.setRules.gameRules.winAt ?? 25
-        let gameScoringWinBy = template?.rules.setRules.gameRules.winBy ?? 2
-        
+
+        let rules = template?.rules ?? sport.defaultRules()
+
+        let setsWinAt = rules.winAt ?? 1
+        let gameScoringWinScore = rules.setRules.gameRules.winAt ?? 25
+        let gameScoringWinBy = rules.setRules.gameRules.winBy ?? 2
+
         self.setsWinAt = setsWinAt
         self.isMultiSet = setsWinAt > 1
-        self.setsPlayItOut = template?.rules.winBehavior == .keepPlaying
-        self.gamesWinAt = template?.rules.setRules.winAt ?? 3
-        self.gamesPlayItOut = template?.rules.setRules.winBehavior == .keepPlaying
+        self.setsPlayItOut = rules.winBehavior == .keepPlaying
+        self.gamesWinAt = rules.setRules.winAt ?? 3
+        self.gamesPlayItOut = rules.setRules.winBehavior == .keepPlaying
         self.gameScoringWinScore = gameScoringWinScore
         self.gameScoringWinBy = gameScoringWinBy
-        self.gameScoringMaximumScore = template?.rules.setRules.gameRules.maximum ?? (gameScoringWinScore + gameScoringWinBy)
-        
-        self.hasWarmup = template?.warmup != .none
+        self.gameScoringMaximumScore = rules.setRules.gameRules.maximum ?? (gameScoringWinScore + gameScoringWinBy)
+
+        self.hasWarmup = template?.warmup != ScoreKeepWarmupRule.none
         self.startWorkout = template?.startWorkout ?? true
     }
     
@@ -102,124 +106,22 @@ struct MatchTemplateCreateView: View {
                     }
                 }
 
-                Section(header: Text("Points")) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Win at")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        Stepper(value: $gameScoringWinScore, in: 1...maximumBasicScore, step: 1) {
-                            Text("\(gameScoringWinScore)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .monospacedDigit()
-                        }
-                        .onChange(of: gameScoringWinScore) {
-                            let impliedMaximum = gameScoringWinScore + gameScoringWinBy - 1
-                            
-                            if impliedMaximum > gameScoringMaximumScore {
-                                gameScoringMaximumScore = impliedMaximum
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Win by")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                if sport == .tennis {
+                    tennisSimpleSection
 
-                        Stepper(value: $gameScoringWinBy, in: 1...10, step: 1) {
-                            Text("\(gameScoringWinBy)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .monospacedDigit()
+                    Section {
+                        Toggle(isOn: $showAdvanced) {
+                            Text("Advanced rules")
                         }
-                        .onChange(of: gameScoringWinBy) {
-                            if gameScoringWinBy == 1, gameScoringWinScore != gameScoringMaximumScore {
-                                gameScoringMaximumScore = gameScoringWinScore
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    
-                    if gameScoringWinBy > 1 {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Max score")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            Stepper(value: $gameScoringMaximumScore, in: (gameScoringWinScore + gameScoringWinBy - 1)...(maximumBasicScore + gameScoringWinBy - 1), step: 1) {
-                                Text("\(gameScoringMaximumScore)")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .monospacedDigit()
-                            }
-                            .onChange(of: gameScoringMaximumScore) {
-                                let impliedWinScore = gameScoringMaximumScore - gameScoringWinBy + 1
-
-                                if impliedWinScore < gameScoringWinScore {
-                                    gameScoringWinScore = impliedWinScore
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
                     }
                 }
-                
-                Section(header: Text("Games")) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("First to")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        
-                        Stepper(value: $gamesWinAt, in: 1...50, step: 1) {
-                            Text("\(gamesWinAt)")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .monospacedDigit()
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    
-                    Picker("After win", selection: $gamesPlayItOut) {
-                        Text("End set").tag(false)
-                        Text("Play it out").tag(true)
-                    }
-                }
-                
-                Section(header: Text("Sets")) {
-                    Toggle(isOn: $isMultiSet) {
-                        Text("Multiple sets")
-                    }
-                    .onChange(of: isMultiSet) {
-                        if isMultiSet {
-                            if setsWinAt <= 1 { setsWinAt = 2 }
-                        } else {
-                            if setsWinAt > 1 { setsWinAt = 1 }
-                        }
-                    }
-                    
-                    if setsWinAt > 1 {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("First to")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            
-                            Stepper(value: $setsWinAt, in: 2...50, step: 1) {
-                                Text("\(setsWinAt)")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
-                                    .monospacedDigit()
-                            }
-                        }
-                        .padding(.vertical, 4)
-                        
-                        Picker("After win", selection: $setsPlayItOut) {
-                            Text("End match").tag(false)
-                            Text("Play it out").tag(true)
-                        }
-                    }
+
+                if sport != .tennis || showAdvanced {
+                    pointsSection
+
+                    gamesSection
+
+                    setsSection
                 }
                 
                 Section(header: Text("Warmup")) {
@@ -280,20 +182,235 @@ struct MatchTemplateCreateView: View {
                     }
                 }
             }
+            .onChange(of: sport) { oldValue, newValue in
+                applySportDefaults(newValue)
+            }
         }
     }
 
+    @ViewBuilder
+    private var tennisSimpleSection: some View {
+        Section(header: Text("Tennis")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Games per set")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Stepper(value: $gamesWinAt, in: 1...20, step: 1) {
+                    Text("\(gamesWinAt)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                }
+            }
+            .padding(.vertical, 4)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Sets")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Stepper(value: $setsWinAt, in: 1...11, step: 1) {
+                    Text("\(setsWinAt)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                }
+                .onChange(of: setsWinAt) {
+                    isMultiSet = setsWinAt > 1
+                }
+            }
+            .padding(.vertical, 4)
+
+            Toggle(isOn: Binding(
+                get: { gameScoringWinBy == 2 },
+                set: { newValue in gameScoringWinBy = newValue ? 2 : 1 }
+            )) {
+                Text("Ad scoring")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var pointsSection: some View {
+        Section(header: Text("Points")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Win at")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Stepper(value: $gameScoringWinScore, in: 1...maximumBasicScore, step: 1) {
+                    Text("\(gameScoringWinScore)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                }
+                .onChange(of: gameScoringWinScore) {
+                    let impliedMaximum = gameScoringWinScore + gameScoringWinBy - 1
+
+                    if impliedMaximum > gameScoringMaximumScore {
+                        gameScoringMaximumScore = impliedMaximum
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Win by")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Stepper(value: $gameScoringWinBy, in: 1...10, step: 1) {
+                    Text("\(gameScoringWinBy)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                }
+                .onChange(of: gameScoringWinBy) {
+                    if gameScoringWinBy == 1, gameScoringWinScore != gameScoringMaximumScore {
+                        gameScoringMaximumScore = gameScoringWinScore
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+
+            if gameScoringWinBy > 1 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Max score")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Stepper(value: $gameScoringMaximumScore, in: (gameScoringWinScore + gameScoringWinBy - 1)...(maximumBasicScore + gameScoringWinBy - 1), step: 1) {
+                        Text("\(gameScoringMaximumScore)")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .monospacedDigit()
+                    }
+                    .onChange(of: gameScoringMaximumScore) {
+                        let impliedWinScore = gameScoringMaximumScore - gameScoringWinBy + 1
+
+                        if impliedWinScore < gameScoringWinScore {
+                            gameScoringWinScore = impliedWinScore
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var gamesSection: some View {
+        Section(header: Text("Games")) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("First to")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Stepper(value: $gamesWinAt, in: 1...50, step: 1) {
+                    Text("\(gamesWinAt)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .monospacedDigit()
+                }
+            }
+            .padding(.vertical, 4)
+
+            Picker("After win", selection: $gamesPlayItOut) {
+                Text("End set").tag(false)
+                Text("Play it out").tag(true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var setsSection: some View {
+        Section(header: Text("Sets")) {
+            Toggle(isOn: $isMultiSet) {
+                Text("Multiple sets")
+            }
+            .onChange(of: isMultiSet) {
+                if isMultiSet {
+                    if setsWinAt <= 1 { setsWinAt = 2 }
+                } else {
+                    if setsWinAt > 1 { setsWinAt = 1 }
+                }
+            }
+
+            if setsWinAt > 1 {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("First to")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Stepper(value: $setsWinAt, in: 2...50, step: 1) {
+                        Text("\(setsWinAt)")
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .monospacedDigit()
+                    }
+                }
+                .padding(.vertical, 4)
+
+                Picker("After win", selection: $setsPlayItOut) {
+                    Text("End match").tag(false)
+                    Text("Play it out").tag(true)
+                }
+            }
+        }
+    }
+
+    private func applySportDefaults(_ sport: ScoreKeepSport) {
+        let rules = sport.defaultRules(environment: environment)
+
+        setsWinAt = rules.winAt ?? 1
+        isMultiSet = setsWinAt > 1
+        setsPlayItOut = rules.winBehavior == .keepPlaying
+        gamesWinAt = rules.setRules.winAt ?? 3
+        gamesPlayItOut = rules.setRules.winBehavior == .keepPlaying
+        gameScoringWinScore = rules.setRules.gameRules.winAt ?? 25
+        gameScoringWinBy = rules.setRules.gameRules.winBy ?? 2
+        gameScoringMaximumScore = rules.setRules.gameRules.maximum
+            ?? (gameScoringWinScore + gameScoringWinBy)
+    }
+
     private func asScoringRules() -> ScoreKeepMatchRules {
+        let setWinBehavior: ScoreKeepWinBehaviorRule = setsPlayItOut ? .keepPlaying : .end
+        let gameWinBehavior: ScoreKeepWinBehaviorRule = gamesPlayItOut ? .keepPlaying : .end
+
+        if sport == .tennis {
+            return ScoreKeepMatchRules(
+                winAt: setsWinAt,
+                winBy: 1,
+                maximum: setsWinAt,
+                winBehavior: setWinBehavior,
+                setRules: ScoreKeepSetRules(
+                    winAt: gamesWinAt,
+                    winBy: 2,
+                    maximum: gamesWinAt + 1,
+                    winBehavior: gameWinBehavior,
+                    gameRules: ScoreKeepGameRules(
+                        winAt: gameScoringWinScore,
+                        winBy: gameScoringWinBy
+                    ),
+                    lastGameRules: ScoreKeepGameRules(
+                        winAt: 7,
+                        winBy: 2
+                    )
+                )
+            )
+        }
+
         return ScoreKeepMatchRules(
             winAt: setsWinAt,
             winBy: 1,
             maximum: setsWinAt,
-            winBehavior: setsPlayItOut ? .keepPlaying : .end,
+            winBehavior: setWinBehavior,
             setRules: ScoreKeepSetRules(
                 winAt: gamesWinAt,
                 winBy: 1,
                 maximum: gamesWinAt,
-                winBehavior: gamesPlayItOut ? .keepPlaying : .end,
+                winBehavior: gameWinBehavior,
                 gameRules: ScoreKeepGameRules(
                     winAt: gameScoringWinScore,
                     winBy: gameScoringWinBy,
@@ -385,6 +502,9 @@ struct MatchTemplateCreateView: View {
         if hasWarmup {
             match.startWarmup()
         } else {
+            if match.startingServe == nil {
+                match.startingServe = [ScoreKeepTeam.us, .them].randomElement()!
+            }
             match.startGame()
         }
         

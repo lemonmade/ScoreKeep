@@ -155,9 +155,6 @@ struct ActiveMatchScoreKeepGameLabelView: View {
 
     private var label: String {
         let gameNumber = match.latestGame?.number ?? 1
-        if match.isMultiSet, let setNumber = match.latestSet?.number {
-            return "Set \(setNumber) · Game \(gameNumber)"
-        }
         return "Game \(gameNumber)"
     }
 
@@ -200,15 +197,30 @@ struct ActiveMatchScoreKeepGameLabelView: View {
 
             if extrasVisible {
                 TimelineView(.periodic(from: timerStart, by: 1)) { context in
-                    Text(
+                    let gameTime = Text(
                         context.date,
                         format: .stopwatch(
                             startingAt: timerStart,
                             maxPrecision: .seconds(1)
                         )
                     )
+
+                    if match.isMultiSet, let set = match.latestSet {
+                        gameTime
+                            + Text(" (Set \(set.number): ")
+                            + Text(
+                                context.date,
+                                format: .stopwatch(
+                                    startingAt: set.startedAt,
+                                    maxPrecision: .seconds(1)
+                                )
+                            )
+                            + Text(")")
+                    } else {
+                        gameTime
+                    }
                 }
-                .font(.system(size: 9, design: .rounded))
+                .font(.system(size: 9, weight: .medium, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
                 .frame(minHeight: 11)
