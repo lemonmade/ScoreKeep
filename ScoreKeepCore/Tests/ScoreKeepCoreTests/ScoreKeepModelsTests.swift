@@ -800,6 +800,106 @@ struct ScoreKeepMatchTemplateTests {
         _ = template.createMatch(markAsUsed: false)
         #expect(template.lastUsedAt == nil)
     }
+
+    /// Mirrors what `StartView.startNewMatch` does at runtime: build a match from a
+    /// template, insert into the context, and call `startGame()`. Then verify the
+    /// freshly-created game has live rules (so scoring + tennis 15-30-40 work).
+    @Test("Live match flow: tennis startGame yields a game with canonical rules")
+    @MainActor
+    func liveTennisFlowResolvesGameRules() throws {
+        let container = ScoreKeepModelContainer().testModelContainer()
+        let context = container.mainContext
+
+        let template = ScoreKeepMatchTemplate(
+            .tennis, name: "Tennis", environment: .outdoor
+        )
+        context.insert(template)
+
+        let match = template.createMatch()
+        context.insert(match)
+        match.startGame()
+
+        let game = try #require(match.latestGame)
+        #expect(game.set != nil, "game.set should be wired by the inverse relationship")
+        #expect(game.set?.match != nil, "set.match should be wired by the inverse relationship")
+
+        let rules = try #require(
+            game.rules,
+            "game.rules should resolve via set.rules.gameRulesFor(game:)"
+        )
+        #expect(rules.winAt == 4)
+        #expect(rules.winBy == 2)
+
+        // 15-30-40 mapping should fire for canonical tennis.
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "0")
+        match.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "15")
+        match.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "30")
+        match.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "40")
+        match.scorePoint(.us)
+        #expect(game.hasEnded, "game should end after 4-0 in canonical tennis")
+    }
+
+    /// Mirrors `StartView.swift` exactly: `defaultTemplates` is built in-memory
+    /// (NOT inserted into the context), then the user taps one to start a match.
+    /// Only the match is inserted; the template remains detached.
+    @Test("StartView flow: detached template still produces canonical game rules")
+    @MainActor
+    func startViewFlowDetachedTemplateResolvesGameRules() throws {
+        let container = ScoreKeepModelContainer().testModelContainer()
+        let context = container.mainContext
+
+        // Note: template is NOT inserted, exactly like StartView.defaultTemplates.
+        let template = ScoreKeepMatchTemplate(
+            .tennis, name: "Tennis", environment: .outdoor
+        )
+
+        let match = template.createMatch()
+        context.insert(match)
+        match.startGame()
+
+        let game = try #require(match.latestGame)
+        #expect(game.set != nil, "game.set inverse relationship should wire even if template is detached")
+        #expect(game.set?.match != nil, "set.match inverse relationship should wire even if template is detached")
+
+        let rules = try #require(game.rules, "rules should resolve")
+        #expect(rules.winAt == 4)
+
+        match.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "15")
+        match.scorePoint(.us)
+        match.scorePoint(.us)
+        match.scorePoint(.us)
+        #expect(game.hasEnded, "game should end at 4-0 even when template is detached")
+    }
+
+    /// Same as the StartView flow but with `context.save()` after `startGame()` —
+    /// matches the exact runtime ordering. Hypothesis: save is invalidating the
+    /// in-memory relationship graph, leaving game.rules nil.
+    @Test("StartView flow with save: tennis still resolves game rules after save")
+    @MainActor
+    func startViewFlowWithSaveResolvesGameRules() throws {
+        let container = ScoreKeepModelContainer().testModelContainer()
+        let context = container.mainContext
+
+        let template = ScoreKeepMatchTemplate(
+            .tennis, name: "Tennis", environment: .outdoor
+        )
+
+        let match = template.createMatch()
+        context.insert(match)
+        match.startGame()
+        try context.save()
+
+        let game = try #require(match.latestGame)
+        let rules = try #require(game.rules, "rules should resolve after save")
+        #expect(rules.winAt == 4)
+
+        match.scorePoint(.us)
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "15")
+    }
 }
 
 // MARK: - ScoreKeepMatchParticipant Tests

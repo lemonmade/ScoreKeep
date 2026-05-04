@@ -286,14 +286,14 @@ struct ActiveMatchScoreKeepGameLabelView: View {
         let highlightColor: Color = winner == .us ? usColor : themColor
 
         HStack(spacing: 0) {
-            glowDot(color: themColor, pulsing: themPulsing)
-            Text("\(themGames)")
-                .contentTransition(.numericText(value: Double(themGames)))
-                .padding(.leading, 2)
+            glowDot(color: usColor, pulsing: usPulsing)
             Text("\(usGames)")
                 .contentTransition(.numericText(value: Double(usGames)))
+                .padding(.leading, 2)
+            Text("\(themGames)")
+                .contentTransition(.numericText(value: Double(themGames)))
                 .padding(.leading, 6)
-            glowDot(color: usColor, pulsing: usPulsing)
+            glowDot(color: themColor, pulsing: themPulsing)
                 .padding(.leading, 2)
         }
         .font(.system(size: 10, weight: .semibold, design: .rounded))

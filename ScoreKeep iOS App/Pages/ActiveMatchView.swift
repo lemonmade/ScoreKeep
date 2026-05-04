@@ -16,15 +16,13 @@ struct ActiveMatchView: View {
     if let warmup = match.warmup, !warmup.hasEnded {
       ActiveMatchWarmupView(
         match: match,
-        onDismiss: {
-          dismiss()
-        })
+        onDismiss: { dismiss() }
+      )
     } else if match.latestGame != nil {
       ActiveMatchScoringView(
         match: match,
-        onDismiss: {
-          dismiss()
-        })
+        onDismiss: { dismiss() }
+      )
     } else {
       ContentUnavailableView(
         "No active game",
@@ -35,30 +33,64 @@ struct ActiveMatchView: View {
   }
 }
 
+// MARK: - Scoring screen
+
 struct ActiveMatchScoringView: View {
-  var match: ScoreKeepMatch
+  @Bindable var match: ScoreKeepMatch
   var onDismiss: () -> Void
+
+  @State private var showEditSheet: Bool = false
+
+  private var canStartNextGame: Bool {
+    guard let latestGame = match.latestGame else { return false }
+    return latestGame.hasEnded && !match.hasWinner && match.hasMoreGames
+  }
 
   var body: some View {
     NavigationStack {
-      GeometryReader { geometry in
-        VStack(spacing: 0) {
-          // Top half: Match summary
-          ActiveMatchSummarySection(match: match)
-            .frame(height: geometry.size.height * 0.4)
-            .background(Color(.systemBackground))
+      VStack(spacing: 20) {
+        ActiveMatchHeaderView(match: match)
+          .padding(.horizontal, 20)
+          .padding(.top, 8)
 
-          // Bottom half: Scoring buttons
-          ActiveMatchScoringButtonsSection(match: match)
-            .frame(height: geometry.size.height * 0.6)
+        ActiveMatchSetTableView(match: match)
+          .padding(.horizontal, 20)
+
+        if canStartNextGame {
+          Button {
+            withAnimation(.snappy) { match.startGame() }
+          } label: {
+            HStack(spacing: 8) {
+              Image(systemName: "play.fill")
+              Text("Start Next Game")
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(Color.accentColor.opacity(0.18), in: Capsule())
+            .foregroundStyle(Color.accentColor)
+          }
+          .padding(.horizontal, 20)
+          .transition(.scale.combined(with: .opacity))
         }
+
+        Spacer(minLength: 0)
+
+        ActiveMatchScoringButtonsRow(
+          match: match,
+          onLongPress: { showEditSheet = true }
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
       }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+      .background(Color(.systemGroupedBackground))
       .navigationTitle(match.label)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .topBarLeading) {
           Button {
-            match.end()
+            withAnimation { match.end() }
             onDismiss()
           } label: {
             HStack(spacing: 4) {
@@ -66,117 +98,356 @@ struct ActiveMatchScoringView: View {
               Text("End Match")
             }
           }
+          .tint(.red)
         }
-      }
-    }
-  }
-}
-
-// MARK: - Summary Section
-
-struct ActiveMatchSummarySection: View {
-  var match: ScoreKeepMatch
-
-  private var canStartNextGame: Bool {
-    guard let latestGame = match.latestGame else { return false }
-    return latestGame.hasEnded && !match.hasWinner
-  }
-
-  var body: some View {
-    ScrollView {
-      VStack(spacing: 16) {
-        // Score table
-        ScoreKeepMatchSummaryScoreTableView(match: match)
-          .padding(.horizontal)
-
-        // Time elapsed
-        HStack(spacing: 8) {
-          TimelineView(.periodic(from: match.startedAt, by: 0.1)) { context in
-            Text(
-              context.date,
-              format: .stopwatch(startingAt: match.startedAt, maxPrecision: .seconds(1))
-            )
-          }
-        }
-        .font(.system(.caption, design: .rounded).monospacedDigit())
-        .foregroundStyle(.secondary)
-
-        // Match info
-        VStack(alignment: .leading, spacing: 8) {
-          HStack {
-            Image(systemName: match.sport.figureIcon)
-              .font(.title3)
-            Text(match.label)
-              .font(.headline)
-          }
-
-          HStack(spacing: 12) {
-            Label(match.rules.primaryLabel, systemImage: "trophy")
-            Label(match.rules.secondaryLabel, systemImage: "chart.bar")
-          }
-          .font(.caption)
-          .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal)
-
-        // Next game button
-        if canStartNextGame {
+        ToolbarItem(placement: .topBarTrailing) {
           Button {
-            match.startGame()
+            showEditSheet = true
           } label: {
-            HStack {
-              Text("Start Next Game")
-              Image(systemName: "arrow.right")
-            }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.accentColor.opacity(0.2))
-            .foregroundStyle(Color.accentColor)
-            .cornerRadius(12)
+            Image(systemName: "ellipsis.circle")
           }
-          .padding(.horizontal)
-          .padding(.top, 8)
+          .accessibilityLabel("More actions")
         }
       }
-      .padding(.vertical)
+      .animation(.snappy, value: canStartNextGame)
+      .sheet(isPresented: $showEditSheet) {
+        ActiveMatchEditSheet(match: match)
+          .presentationDetents([.medium])
+      }
     }
   }
 }
 
-// MARK: - Scoring Buttons Section
+// MARK: - Apple Sports–style header
 
-struct ActiveMatchScoringButtonsSection: View {
+struct ActiveMatchHeaderView: View {
   var match: ScoreKeepMatch
 
-  private let spacing: CGFloat = 12
-  private let padding: CGFloat = 16
-
-  @State private var showUndoSheet: Bool = false
+  /// Pills are sized to a uniform width so the two halves are visually balanced
+  /// regardless of label length ("Us" vs "Opp" vs longer participant names).
+  private let pillWidth: CGFloat = 56
 
   var body: some View {
-    VStack(spacing: spacing) {
-      ScoreKeepTeamScoringButton(
-        team: .them,
-        match: match,
-        onLongPress: { showUndoSheet = true }
-      )
+    VStack(spacing: 6) {
+      HStack(alignment: .center, spacing: 8) {
+        ActiveMatchHeaderTeamView(
+          match: match, team: .us, alignment: .leading, pillWidth: pillWidth
+        )
 
-      ScoreKeepTeamScoringButton(
-        team: .us,
-        match: match,
-        onLongPress: { showUndoSheet = true }
-      )
-    }
-    .padding(padding)
-    .sheet(isPresented: $showUndoSheet) {
-      ActiveMatchEditSheet(match: match)
-        .presentationDetents([.medium])
+        ActiveMatchHeaderCenterView(match: match)
+
+        ActiveMatchHeaderTeamView(
+          match: match, team: .them, alignment: .trailing, pillWidth: pillWidth
+        )
+      }
     }
   }
 }
 
-// MARK: - Team Scoring Button
+private struct ActiveMatchHeaderTeamView: View {
+  var match: ScoreKeepMatch
+  var team: ScoreKeepTeam
+  var alignment: HorizontalAlignment
+  var pillWidth: CGFloat
+
+  private var participant: ScoreKeepMatchParticipant { match.participant(for: team) }
+  private var keyColor: Color { participant.resolvedColor.color }
+  private var shortLabel: String { participant.resolvedShortLabel }
+
+  private var game: ScoreKeepGame? { match.latestGame }
+
+  private var normalizedScore: Int {
+    guard let game else { return 0 }
+    return match.sport.normalizedScoreFor(team, game: game)
+  }
+
+  private var normalizedScoreLabel: String {
+    guard let game else { return "0" }
+    return match.sport.normalizedScoreLabelFor(team, game: game)
+  }
+
+  private var transitionValue: Double {
+    if normalizedScoreLabel == "Ad" { return Double(normalizedScore) + 5 }
+    return Double(normalizedScore)
+  }
+
+  private var isWinner: Bool { game?.winner == team }
+  private var isServing: Bool { game?.servingTeam == team && game?.hasEnded == false }
+
+  var body: some View {
+    HStack(spacing: 8) {
+      if alignment == .leading {
+        teamPill
+        Spacer(minLength: 4)
+        if isServing { serveIcon }
+        scoreText
+      } else {
+        scoreText
+        if isServing { serveIcon }
+        Spacer(minLength: 4)
+        teamPill
+      }
+    }
+    .frame(maxWidth: .infinity)
+  }
+
+  private var teamPill: some View {
+    HStack(spacing: 4) {
+      if isWinner {
+        Image(systemName: "checkmark.circle.fill")
+          .font(.system(size: 10, weight: .bold))
+      }
+      Text(shortLabel)
+        .lineLimit(1)
+    }
+    .font(.caption)
+    .fontWeight(.heavy)
+    .textCase(.uppercase)
+    .foregroundStyle(.white)
+    .padding(.horizontal, 10)
+    .padding(.vertical, 5)
+    .frame(minWidth: pillWidth)
+    .background(keyColor, in: Capsule())
+    .shadow(color: keyColor.opacity(0.25), radius: 4, y: 2)
+  }
+
+  private var scoreText: some View {
+    Text(normalizedScoreLabel)
+      .font(.system(size: 56, weight: .bold, design: .rounded))
+      .foregroundStyle(keyColor)
+      .contentTransition(.numericText(value: transitionValue))
+      .monospacedDigit()
+      .lineLimit(1)
+      .minimumScaleFactor(0.6)
+      .fixedSize(horizontal: true, vertical: false)
+  }
+
+  private var serveIcon: some View {
+    Image(systemName: match.sport.ballIcon)
+      .font(.system(size: 14, weight: .bold))
+      .foregroundStyle(keyColor.opacity(0.85))
+      .transition(.scale.combined(with: .opacity))
+  }
+}
+
+private struct ActiveMatchHeaderCenterView: View {
+  var match: ScoreKeepMatch
+
+  private var game: ScoreKeepGame? { match.latestGame }
+
+  private var titleText: String {
+    if match.hasWinner { return "Final" }
+    if let game, game.hasEnded { return "Game \(game.number) Over" }
+    if let game { return "Game \(game.number)" }
+    return ""
+  }
+
+  var body: some View {
+    VStack(spacing: 2) {
+      Text(titleText)
+        .font(.caption2)
+        .fontWeight(.semibold)
+        .textCase(.uppercase)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+
+      if let game, !match.hasWinner {
+        TimelineView(.periodic(from: game.startedAt, by: 1)) { context in
+          Text(
+            context.date,
+            format: .stopwatch(startingAt: game.startedAt, maxPrecision: .seconds(1))
+          )
+        }
+        .font(.system(.caption2, design: .rounded).monospacedDigit())
+        .foregroundStyle(.tertiary)
+      }
+
+      if match.isMultiSet, let set = match.latestSet {
+        Text("Set \(set.number)")
+          .font(.caption2)
+          .fontWeight(.medium)
+          .foregroundStyle(.tertiary)
+      }
+    }
+    .fixedSize()
+    .padding(.horizontal, 4)
+  }
+}
+
+// MARK: - Set/game table (clean tabular, no color backgrounds)
+
+struct ActiveMatchSetTableView: View {
+  var match: ScoreKeepMatch
+
+  private enum TableMode { case perSet, summaryOnly }
+
+  private var mode: TableMode { match.isMultiSet ? .perSet : .summaryOnly }
+
+  private var setColumns: [SetColumn] {
+    match.sets.map { set in
+      SetColumn(
+        id: set.number,
+        isCurrent: set.isLatestInMatch && !set.hasEnded,
+        us: set.gamesUs,
+        them: set.gamesThem,
+        tiebreakUs: set.tiebreakGame?.scoreUs,
+        tiebreakThem: set.tiebreakGame?.scoreThem
+      )
+    }
+  }
+
+  var body: some View {
+    VStack(spacing: 0) {
+      switch mode {
+      case .summaryOnly:
+        // Single-set match: a single "Games" column showing totals per team.
+        let games = match.latestSet
+        TableRow(
+          match: match, team: .us,
+          columnHeaders: [],
+          columnValues: [],
+          summaryValue: games?.gamesUs ?? 0,
+          summaryHeader: "Games"
+        )
+        Divider().padding(.leading, 14)
+        TableRow(
+          match: match, team: .them,
+          columnHeaders: [],
+          columnValues: [],
+          summaryValue: games?.gamesThem ?? 0,
+          summaryHeader: nil
+        )
+
+      case .perSet:
+        let columns = setColumns
+        TableRow(
+          match: match, team: .us,
+          columnHeaders: columns.map(\.headerLabel),
+          columnValues: columns.map { ($0.us, $0.tiebreakUs, $0.isCurrent) },
+          summaryValue: nil,
+          summaryHeader: "Sets"
+        )
+        Divider().padding(.leading, 14)
+        TableRow(
+          match: match, team: .them,
+          columnHeaders: columns.map(\.headerLabel),
+          columnValues: columns.map { ($0.them, $0.tiebreakThem, $0.isCurrent) },
+          summaryValue: nil,
+          summaryHeader: nil
+        )
+      }
+    }
+    .padding(.vertical, 4)
+    .background(
+      RoundedRectangle(cornerRadius: 14, style: .continuous)
+        .fill(Color(.secondarySystemGroupedBackground))
+    )
+  }
+}
+
+private struct SetColumn: Identifiable {
+  let id: Int
+  let isCurrent: Bool
+  let us: Int
+  let them: Int
+  let tiebreakUs: Int?
+  let tiebreakThem: Int?
+
+  var headerLabel: String { "S\(id)" }
+}
+
+private struct TableRow: View {
+  var match: ScoreKeepMatch
+  var team: ScoreKeepTeam
+  var columnHeaders: [String]
+  var columnValues: [(value: Int, tiebreak: Int?, isCurrent: Bool)]
+  var summaryValue: Int?
+  var summaryHeader: String?
+
+  private var participant: ScoreKeepMatchParticipant { match.participant(for: team) }
+  private var color: Color { participant.resolvedColor.color }
+  private var isMatchWinner: Bool { match.winner == team }
+
+  var body: some View {
+    HStack(spacing: 0) {
+      HStack(spacing: 8) {
+        Circle()
+          .fill(color)
+          .frame(width: 9, height: 9)
+        Text(participant.resolvedName)
+          .font(.subheadline)
+          .fontWeight(isMatchWinner ? .semibold : .regular)
+          .foregroundStyle(.primary)
+          .lineLimit(1)
+      }
+      .padding(.leading, 14)
+      .padding(.vertical, 10)
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      HStack(spacing: 0) {
+        ForEach(Array(zip(columnHeaders.indices, columnValues)), id: \.0) { index, cell in
+          tableCell(
+            header: columnHeaders[index],
+            value: cell.value,
+            tiebreak: cell.tiebreak,
+            isCurrent: cell.isCurrent
+          )
+        }
+        if let summaryValue, let summaryHeader {
+          tableCell(header: summaryHeader, value: summaryValue, tiebreak: nil, isCurrent: false)
+        } else if let summaryValue {
+          tableCell(header: "", value: summaryValue, tiebreak: nil, isCurrent: false)
+        }
+      }
+      .padding(.trailing, 12)
+    }
+  }
+
+  @ViewBuilder
+  private func tableCell(header: String, value: Int, tiebreak: Int?, isCurrent: Bool) -> some View {
+    VStack(spacing: 2) {
+      // Header is rendered transparently on the .them row so columns line up
+      Text(header.isEmpty ? " " : header)
+        .font(.system(.caption2, design: .rounded))
+        .fontWeight(.semibold)
+        .foregroundStyle(team == .us ? .secondary : Color.clear)
+        .opacity(team == .us ? 1 : 0)
+        .frame(height: 12)
+      HStack(alignment: .firstTextBaseline, spacing: 1) {
+        Text("\(value)")
+          .font(.system(.title3, design: .rounded))
+          .fontWeight(isCurrent ? .semibold : .regular)
+          .foregroundStyle(.primary)
+          .monospacedDigit()
+          .contentTransition(.numericText(value: Double(value)))
+        if let tiebreak {
+          Text("\(tiebreak)")
+            .font(.system(.caption2, design: .rounded))
+            .baselineOffset(6)
+            .foregroundStyle(.secondary)
+            .monospacedDigit()
+        }
+      }
+    }
+    .frame(minWidth: 36)
+    .padding(.horizontal, 6)
+    .padding(.vertical, 4)
+  }
+}
+
+// MARK: - Side-by-side scoring buttons
+
+struct ActiveMatchScoringButtonsRow: View {
+  var match: ScoreKeepMatch
+  var onLongPress: () -> Void
+
+  var body: some View {
+    HStack(spacing: 12) {
+      ScoreKeepTeamScoringButton(team: .us, match: match, onLongPress: onLongPress)
+      ScoreKeepTeamScoringButton(team: .them, match: match, onLongPress: onLongPress)
+    }
+  }
+}
 
 struct ScoreKeepTeamScoringButton: View {
   var team: ScoreKeepTeam
@@ -185,259 +456,105 @@ struct ScoreKeepTeamScoringButton: View {
 
   @State private var longPressTriggered = false
 
-  var keyColor: Color {
-    match.participant(for: team).resolvedColor.color
+  private var participant: ScoreKeepMatchParticipant {
+    match.participant(for: team)
   }
 
-  var game: ScoreKeepGame {
-    match.latestGame!
-  }
+  private var keyColor: Color { participant.resolvedColor.color }
+  private var game: ScoreKeepGame? { match.latestGame }
+  private var isDisabled: Bool { game?.hasEnded ?? true }
+  private var isServing: Bool { game?.servingTeam == team && game?.hasEnded == false }
 
   var body: some View {
-    Button(
-      action: {
-        if longPressTriggered { return }
-        match.scorePoint(team)
-      },
-      label: {
-        ScoreKeepTeamScoreView(match: match, team: team, game: game)
-          .foregroundStyle(keyColor)
-      }
-    )
-    .buttonStyle(ScoreKeepButtonStyle(keyColor: keyColor))
+    Button {
+      if longPressTriggered { return }
+      guard let game, !game.hasEnded else { return }
+      withAnimation(.snappy) { match.scorePoint(team) }
+    } label: {
+      ScoreKeepTeamScoringButtonLabel(
+        match: match, team: team, isServing: isServing
+      )
+    }
+    .buttonStyle(ScoreKeepFilledButtonStyle(keyColor: keyColor))
     .simultaneousGesture(
-      LongPressGesture(minimumDuration: 1)
+      LongPressGesture(minimumDuration: 0.6)
         .onEnded { _ in
           longPressTriggered = true
           onLongPress?()
-
-          DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             longPressTriggered = false
           }
         }
     )
-    .disabled(game.hasEnded)
-    .sensoryFeedback(
-      .impact(weight: .medium), trigger: game.scoreFor(team),
-      condition: { old, new in
-        return old != new
-      }
-    )
+    .disabled(isDisabled)
+    .sensoryFeedback(.impact(weight: .medium), trigger: game?.scoreFor(team) ?? 0) { old, new in
+      old != new
+    }
     .sensoryFeedback(.selection, trigger: longPressTriggered)
   }
 }
 
-struct ScoreKeepButtonStyle: ButtonStyle {
+private struct ScoreKeepTeamScoringButtonLabel: View {
+  var match: ScoreKeepMatch
+  var team: ScoreKeepTeam
+  var isServing: Bool
+
+  private var participant: ScoreKeepMatchParticipant { match.participant(for: team) }
+  private var keyColor: Color { participant.resolvedColor.color }
+
+  var body: some View {
+    VStack(spacing: 12) {
+      // Top: serve indicator (reserves space when not serving so layout doesn't jump)
+      ZStack {
+        if isServing {
+          Image(systemName: match.sport.ballIcon)
+            .font(.system(size: 22, weight: .bold))
+            .foregroundStyle(.white)
+            .transition(.scale.combined(with: .opacity))
+        }
+      }
+      .frame(height: 28)
+
+      Image(systemName: "plus")
+        .font(.system(size: 36, weight: .bold))
+        .foregroundStyle(.white)
+
+      Text(participant.resolvedShortLabel)
+        .font(.caption)
+        .fontWeight(.heavy)
+        .textCase(.uppercase)
+        .foregroundStyle(keyColor)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 5)
+        .background(.white, in: Capsule())
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .padding(.vertical, 24)
+    .contentShape(.rect)
+  }
+}
+
+struct ScoreKeepFilledButtonStyle: ButtonStyle {
   var keyColor: Color
 
   func makeBody(configuration: Configuration) -> some View {
-    ScoreKeepButtonStyleView(configuration: configuration, keyColor: keyColor)
-  }
-
-  struct ScoreKeepButtonStyleView: View {
-    let configuration: ButtonStyle.Configuration
-    let keyColor: Color
-
-    @Environment(\.isEnabled) private var isEnabled: Bool
-
-    var body: some View {
-      configuration.label
-        .background(keyColor.opacity(0.2))
-        .cornerRadius(20)
-        .overlay(
-          RoundedRectangle(cornerRadius: 20)
-            .strokeBorder(keyColor.opacity(0.3), lineWidth: 2)
-        )
-        .opacity(isEnabled ? 1 : 0.6)
-        .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-    }
+    ScoreKeepFilledButtonStyleBody(configuration: configuration, keyColor: keyColor)
   }
 }
 
-struct ScoreKeepTeamScoreView: View {
-  var match: ScoreKeepMatch
-  var team: ScoreKeepTeam
-  var game: ScoreKeepGame
+private struct ScoreKeepFilledButtonStyleBody: View {
+  let configuration: ButtonStyle.Configuration
+  let keyColor: Color
 
-  var score: Int {
-    game.scoreFor(team)
-  }
-
-  var normalizedScore: Int {
-    match.sport.normalizedScoreFor(team, game: game)
-  }
-
-  var normalizedScoreLabel: String {
-    match.sport.normalizedScoreLabelFor(team, game: game)
-  }
-
-  var keyColor: Color {
-    match.participant(for: team).resolvedColor.color
-  }
+  @Environment(\.isEnabled) private var isEnabled: Bool
 
   var body: some View {
-    HStack(alignment: .center, spacing: 0) {
-      VStack(alignment: .leading, spacing: 8) {
-        if game.winner == team {
-          Image(systemName: "checkmark.circle.fill")
-            .resizable()
-            .frame(width: 32, height: 32)
-        } else {
-          ScoreKeepTeamServeIndicatorView(team: team, match: match, game: game)
-        }
-
-        Text(match.participant(for: team).resolvedShortLabel)
-          .textCase(.uppercase)
-          .font(.caption)
-          .fontWeight(.bold)
-          .foregroundColor(.white)
-          .padding(.horizontal, 8)
-          .padding(.vertical, 4)
-          .background(keyColor)
-          .cornerRadius(8)
-      }
-
-      Spacer()
-
-      HStack(spacing: 0) {
-        if score < 10 && match.sport != .tennis {
-          Text("0")
-            .font(.system(size: 80, weight: .bold))
-            .opacity(0.5)
-        }
-        Text(normalizedScoreLabel)
-          .font(.system(size: 80, weight: .bold))
-          .contentTransition(.numericText(value: Double(normalizedScore)))
-      }
-      .fontDesign(.rounded)
-    }
-    .padding(16)
-    .monospacedDigit()
-    .contentShape(.rect)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-  }
-}
-
-struct ScoreKeepTeamServeIndicatorView: View {
-  var team: ScoreKeepTeam
-  var match: ScoreKeepMatch
-  var game: ScoreKeepGame
-
-  var body: some View {
-    if team == game.servingTeam {
-      HStack(alignment: .bottom, spacing: 4) {
-        Image(systemName: match.sport.ballIcon)
-          .resizable()
-          .scaledToFit()
-          .frame(width: 32, height: 32)
-
-        if match.sport.gameServiceRotation == .lastWinner {
-          let streak = game.serveStreakFor(team)
-          if streak > 0 {
-            Text("\(streak)")
-              .font(.system(size: 18, weight: .semibold, design: .rounded))
-              .frame(height: 18)
-          }
-        }
-      }
-    } else {
-      Spacer().frame(height: 32)
-    }
-  }
-}
-
-// MARK: - Score Summary Table
-
-struct ScoreKeepMatchSummaryScoreTableView: View {
-  var match: ScoreKeepMatch
-
-  var body: some View {
-    VStack(spacing: 2) {
-      ScoreKeepMatchSummaryScoreTableRowView(match: match, team: .us)
-      ScoreKeepMatchSummaryScoreTableRowView(match: match, team: .them)
-    }
-    .monospacedDigit()
-  }
-}
-
-struct ScoreKeepMatchSummaryScoreTableRowView: View {
-  @Bindable var match: ScoreKeepMatch
-  var team: ScoreKeepTeam
-
-  @State private var latestGame: ScoreKeepGame?
-
-  private var latestSet: ScoreKeepSet? {
-    latestGame?.set
-  }
-
-  private let cornerRadiusOutside: CGFloat = 12
-  private let innerPadding: CGFloat = 8
-  private let outerPadding: CGFloat = 12
-  private let verticalPadding: CGFloat = 8
-  private let backgroundOpacity = 0.2
-
-  private func fontWeight(winner: Bool = false) -> Font.Weight {
-    return winner ? .bold : .regular
-  }
-
-  var body: some View {
-    let participant = match.participant(for: team)
-    let color = participant.resolvedColor.color
-    let label = participant.resolvedName
-    let hasWinner = match.hasWinner
-
-    HStack(spacing: 0) {
-      let fontWeight = fontWeight(winner: match.winner == team)
-
-      Text(label)
-        .fontWeight(fontWeight)
-        .foregroundColor(color)
-        .padding(.vertical, verticalPadding)
-        .padding(.leading, outerPadding)
-        .padding(.trailing, innerPadding)
-
-      Spacer()
-
-      // Show sets if multi-set match
-      if match.isMultiSet {
-        ForEach(match.sets) { set in
-          let score = set.gamesFor(team)
-
-          Text("\(score)")
-            .fontWeight(fontWeight)
-            .foregroundColor(color)
-            .padding(.vertical, verticalPadding)
-            .padding(.horizontal, innerPadding)
-        }
-      }
-
-      // Show current game score
-      if !hasWinner {
-        if let game = latestGame {
-          let score = match.sport.normalizedScoreFor(team, game: game)
-
-          Text("\(score < 10 && match.sport != .tennis ? "0" : "")\(score)")
-            .fontWeight(fontWeight)
-            .foregroundColor(color)
-            .padding(.vertical, verticalPadding)
-            .padding(.leading, innerPadding)
-            .padding(.trailing, outerPadding)
-        }
-      }
-    }
-    .background {
-      RoundedRectangle(cornerRadius: cornerRadiusOutside)
-        .fill(color.opacity(backgroundOpacity))
-        .strokeBorder(color.opacity(match.winner == team ? 1 : 0), lineWidth: 2)
-    }
-    .foregroundColor(color)
-    .onAppear {
-      self.latestGame = match.latestGame
-    }
-    .onChange(of: match.latestGame) {
-      self.latestGame = match.latestGame
-    }
+    configuration.label
+      .background(keyColor, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+      .shadow(color: keyColor.opacity(0.35), radius: 12, y: 6)
+      .opacity(isEnabled ? 1 : 0.45)
+      .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+      .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
   }
 }
 
@@ -452,21 +569,27 @@ struct ActiveMatchEditSheet: View {
       List {
         Section {
           Button {
-            match.undo()
+            withAnimation { match.undo() }
             dismiss()
           } label: {
-            Label("Undo last score", systemImage: "arrow.uturn.backward")
+            Label("Undo last point", systemImage: "arrow.uturn.backward")
           }
           .disabled(!match.canUndo)
+
+          Button {
+            withAnimation { match.redo() }
+            dismiss()
+          } label: {
+            Label("Redo last point", systemImage: "arrow.uturn.forward")
+          }
+          .disabled(!match.canRedo)
         }
       }
       .navigationTitle("Actions")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
-          Button("Done") {
-            dismiss()
-          }
+          Button("Done") { dismiss() }
         }
       }
     }
@@ -543,15 +666,59 @@ struct ActiveMatchWarmupView: View {
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Tennis, multi-set") {
   ActiveMatchView()
     .environment(
       ScoreKeepMatch(
-        .volleyball,
-        environment: .indoor,
+        from: ScoreKeepMatchTemplate(
+          .tennis,
+          name: "Tennis",
+          color: .neutral,
+          environment: .outdoor,
+          rules: ScoreKeepMatchRules(
+            winAt: 2,
+            setRules: ScoreKeepSetRules(
+              winAt: 6,
+              winBy: 2,
+              maximum: 7,
+              gameRules: ScoreKeepGameRules(winAt: 4, winBy: 2)
+            )
+          )
+        ),
+        sets: [
+          ScoreKeepSet(
+            number: 1,
+            games: [
+              ScoreKeepGame(us: 4, them: 2, endedAt: .now.advanced(by: -200)),
+              ScoreKeepGame(us: 4, them: 1, endedAt: .now.advanced(by: -150)),
+            ],
+            endedAt: .now.advanced(by: -150)
+          ),
+          ScoreKeepSet(
+            number: 2,
+            games: [
+              ScoreKeepGame(us: 1, them: 4, endedAt: .now.advanced(by: -80)),
+              ScoreKeepGame(us: 2, them: 1),
+            ]
+          ),
+        ]
+      )
+    )
+}
+
+#Preview("Volleyball, single set") {
+  ActiveMatchView()
+    .environment(
+      ScoreKeepMatch(
+        from: ScoreKeepMatchTemplate(
+          .volleyball,
+          name: "Indoor volleyball",
+          environment: .indoor
+        ),
         sets: [
           ScoreKeepSet(
             games: [
+              ScoreKeepGame(us: 25, them: 19, endedAt: .now.advanced(by: -100)),
               ScoreKeepGame(us: 12, them: 8),
             ]
           ),
