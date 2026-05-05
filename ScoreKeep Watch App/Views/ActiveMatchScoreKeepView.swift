@@ -523,18 +523,75 @@ struct GameScoreTeamScoreView: View {
         ScoreDisplayStyle(rawValue: rawStyle) ?? .default
     }
 
+    /// Whether panel styles that have a "two-digit display fixture"
+    /// (flipboard cards, Nixie tubes) should always show a leading "0" slot.
+    /// True for tennis (its 15/30/40/Ad labels are already two-char, so love
+    /// should match) and for any game whose target/maximum reaches double
+    /// digits.
+    private var showsLeadingDigitSlot: Bool {
+        if match.sport == .tennis { return true }
+        let winAt = game.rules?.winAt ?? 0
+        let maximum = game.rules?.maximum ?? 0
+        return winAt >= 10 || maximum >= 10
+    }
+
     var body: some View {
         ZStack(alignment: .leading) {
-            // Scoreboard style: LED panel fills the entire button area, top to
-            // bottom and out to the right edge. The team chip on the left is
-            // layered on top, with the LED's left-edge gradient keeping it
-            // legible.
-            if style == .scoreboard {
+            // Panel styles fill the entire button area — LED scoreboard, 7-
+            // and 14-segment displays. The team chip layers on top.
+            switch style {
+            case .scoreboard:
                 LEDScoreNumberView(
                     label: normalizedScoreLabel,
                     color: keyColor,
                     layout: .fillContainer(rightPadding: 2)
                 )
+            case .sevenSegment:
+                SegmentScoreNumberView(
+                    label: normalizedScoreLabel,
+                    color: keyColor,
+                    variant: .seven,
+                    showLeadingDigitSlot: showsLeadingDigitSlot,
+                    layout: .fillContainer
+                )
+            case .fourteenSegment:
+                SegmentScoreNumberView(
+                    label: normalizedScoreLabel,
+                    color: keyColor,
+                    variant: .fourteen,
+                    showLeadingDigitSlot: showsLeadingDigitSlot,
+                    layout: .fillContainer
+                )
+            case .flipboard:
+                FlipboardScoreNumberView(
+                    label: normalizedScoreLabel,
+                    color: keyColor,
+                    showLeadingDigitSlot: showsLeadingDigitSlot,
+                    layout: .fillContainer
+                )
+            case .nixie:
+                NixieScoreNumberView(
+                    label: normalizedScoreLabel,
+                    color: keyColor,
+                    showLeadingDigitSlot: showsLeadingDigitSlot,
+                    layout: .fillContainer
+                )
+            case .odometer:
+                OdometerScoreNumberView(
+                    label: normalizedScoreLabel,
+                    color: keyColor,
+                    showLeadingDigitSlot: showsLeadingDigitSlot,
+                    layout: .fillContainer
+                )
+            case .pixel:
+                PixelArcadeScoreNumberView(
+                    label: normalizedScoreLabel,
+                    color: keyColor,
+                    showLeadingDigitSlot: showsLeadingDigitSlot,
+                    layout: .fillContainer
+                )
+            case .rounded, .standard:
+                EmptyView()
             }
 
             HStack(alignment: .center, spacing: 0) {
@@ -559,7 +616,7 @@ struct GameScoreTeamScoreView: View {
 
                 Spacer()
 
-                if style != .scoreboard {
+                if !style.isPanel {
                     GameScoreNumberView(
                         label: normalizedScoreLabel,
                         transitionValue: transitionValue,

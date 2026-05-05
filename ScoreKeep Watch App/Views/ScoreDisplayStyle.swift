@@ -9,6 +9,12 @@ enum ScoreDisplayStyle: String, CaseIterable, Identifiable {
     case rounded
     case standard
     case scoreboard
+    case sevenSegment
+    case fourteenSegment
+    case flipboard
+    case nixie
+    case odometer
+    case pixel
 
     var id: String { rawValue }
 
@@ -17,6 +23,21 @@ enum ScoreDisplayStyle: String, CaseIterable, Identifiable {
         case .rounded: "Rounded"
         case .standard: "Standard"
         case .scoreboard: "Scoreboard"
+        case .sevenSegment: "7-Segment"
+        case .fourteenSegment: "14-Segment"
+        case .flipboard: "Flipboard"
+        case .nixie: "Nixie Tube"
+        case .odometer: "Odometer"
+        case .pixel: "Pixel"
+        }
+    }
+
+    /// Whether this style takes over the entire score-button area (LED panel,
+    /// segment displays) versus being rendered inline next to the team chip.
+    var isPanel: Bool {
+        switch self {
+        case .rounded, .standard: return false
+        case .scoreboard, .sevenSegment, .fourteenSegment, .flipboard, .nixie, .odometer, .pixel: return true
         }
     }
 
@@ -59,6 +80,18 @@ struct GameScoreNumberView: View {
             numericView(design: .default)
         case .scoreboard:
             LEDScoreNumberView(label: label, color: color, layout: .compact)
+        case .sevenSegment:
+            SegmentScoreNumberView(label: label, color: color, variant: .seven, layout: .compact)
+        case .fourteenSegment:
+            SegmentScoreNumberView(label: label, color: color, variant: .fourteen, layout: .compact)
+        case .flipboard:
+            FlipboardScoreNumberView(label: label, color: color, layout: .compact)
+        case .nixie:
+            NixieScoreNumberView(label: label, color: color, layout: .compact)
+        case .odometer:
+            OdometerScoreNumberView(label: label, color: color, layout: .compact)
+        case .pixel:
+            PixelArcadeScoreNumberView(label: label, color: color, layout: .compact)
         }
     }
 
