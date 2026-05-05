@@ -516,46 +516,60 @@ struct GameScoreTeamScoreView: View {
         match.participant(for: team).resolvedColor.color
     }
 
+    @AppStorage(ScoreDisplayStyle.storageKey)
+    private var rawStyle: String = ScoreDisplayStyle.default.rawValue
+
+    private var style: ScoreDisplayStyle {
+        ScoreDisplayStyle(rawValue: rawStyle) ?? .default
+    }
+
     var body: some View {
-        HStack(alignment: .center, spacing: 0) {
-            VStack(alignment: .leading, spacing: 6) {
-                if game.winner == team {
-                    Image(systemName: "checkmark.circle.fill")
-                        .resizable()
-                        .frame(width: 20, height: 20)
-                } else {
-                    GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
-                }
-
-                Text(match.participant(for: team).resolvedShortLabel)
-                    .textCase(.uppercase)
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                    .padding([.leading, .trailing], 4)
-                    .background(keyColor)
-                    .cornerRadius(8)
+        ZStack(alignment: .leading) {
+            // Scoreboard style: LED panel fills the entire button area, top to
+            // bottom and out to the right edge. The team chip on the left is
+            // layered on top, with the LED's left-edge gradient keeping it
+            // legible.
+            if style == .scoreboard {
+                LEDScoreNumberView(
+                    label: normalizedScoreLabel,
+                    color: keyColor,
+                    layout: .fillContainer(rightPadding: 2)
+                )
             }
 
-            Spacer()
+            HStack(alignment: .center, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    if game.winner == team {
+                        Image(systemName: "checkmark.circle.fill")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                    } else {
+                        GameScoreTeamServeIndicatorView(team: team, match: match, game: game)
+                    }
 
-            HStack(spacing: 0) {
-                if score < 10 && match.sport != .tennis {
-                    Text("0")
-                        .font(.system(size: 60, weight: .bold))
-                        .opacity(0.5)
+                    Text(match.participant(for: team).resolvedShortLabel)
+                        .textCase(.uppercase)
+                        .font(.caption2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.black)
+                        .padding([.leading, .trailing], 4)
+                        .background(keyColor)
+                        .cornerRadius(8)
                 }
-                Text(normalizedScoreLabel)
-                    .font(.system(size: 60, weight: .bold))
-                    .contentTransition(.numericText(value: transitionValue))
+
+                Spacer()
+
+                if style != .scoreboard {
+                    GameScoreNumberView(
+                        label: normalizedScoreLabel,
+                        transitionValue: transitionValue,
+                        color: keyColor
+                    )
+                }
             }
-            .fontDesign(.rounded)
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .monospacedDigit()
         // Allows the whole button to be pressable
         .contentShape(.rect)
         // Fill the container
