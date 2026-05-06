@@ -167,6 +167,7 @@ struct StartView: View {
             }
             .navigationDestination(for: NavigationLocation.MatchHistoryDetail.self) { destination in
                 MatchHistoryDetailView(match: destination.match)
+                    .environment(navigation)
             }
             .navigationDestination(for: NavigationLocation.TemplateCreate.self) {
                 createMatchTemplateDestination in

@@ -127,8 +127,20 @@ struct ActiveMatchControlsView: View {
 
 // MARK: - Score header
 
+/// What the big numbers and team status icon should reflect.
+/// - `currentGame` (default): the active match's latest game — points label,
+///   winner check during the dead time between games, ball during live play.
+/// - `matchOutcome`: history mode. Treat the match as over and pick the
+///   "headline" score that the match was decided at (sets / games / points)
+///   plus only a winner indicator.
+enum ActiveMatchControlsScoreSummaryStyle {
+    case currentGame
+    case matchOutcome
+}
+
 struct ActiveMatchControlsScoreHeaderView: View {
     var match: ScoreKeepMatch
+    var summaryStyle: ActiveMatchControlsScoreSummaryStyle = .currentGame
 
     var body: some View {
         HStack(spacing: 0) {
@@ -166,29 +178,64 @@ struct ActiveMatchControlsScoreHeaderView: View {
 
     @ViewBuilder
     private func teamStatusIcon(_ team: ScoreKeepTeam) -> some View {
-        let game = match.latestGame
         let color = match.participant(for: team).resolvedColor.color
 
-        if let game, game.winner == team {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(color)
-                .transition(.scale.combined(with: .opacity))
-        } else if let game, !game.hasEnded, game.servingTeam == team {
-            Image(systemName: match.sport.ballIcon)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(color)
-                .transition(.scale.combined(with: .opacity))
+        switch summaryStyle {
+        case .currentGame:
+            let game = match.latestGame
+            if let game, game.winner == team {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(color)
+                    .transition(.scale.combined(with: .opacity))
+            } else if let game, !game.hasEnded, game.servingTeam == team {
+                Image(systemName: match.sport.ballIcon)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(color)
+                    .transition(.scale.combined(with: .opacity))
+            }
+        case .matchOutcome:
+            if match.winner == team {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(color)
+            }
+        }
+    }
+
+    private func headlineScore(
+        for team: ScoreKeepTeam
+    ) -> (label: String, transitionValue: Double) {
+        switch summaryStyle {
+        case .currentGame:
+            let game = match.latestGame
+            let normalizedScore = game.map { match.sport.normalizedScoreFor(team, game: $0) } ?? 0
+            let label = game.map { match.sport.normalizedScoreLabelFor(team, game: $0) } ?? "0"
+            let transition = label == "Ad" ? Double(normalizedScore) + 5 : Double(normalizedScore)
+            return (label, transition)
+        case .matchOutcome:
+            if match.isMultiSet {
+                let count = match.setsFor(team)
+                return (String(count), Double(count))
+            }
+            if let latestSet = match.latestSet, latestSet.isMultiGame {
+                let count = latestSet.gamesFor(team)
+                return (String(count), Double(count))
+            }
+            if let latestGame = match.latestGame {
+                let normalizedScore = match.sport.normalizedScoreFor(team, game: latestGame)
+                let label = match.sport.normalizedScoreLabelFor(team, game: latestGame)
+                let transition = label == "Ad" ? Double(normalizedScore) + 5 : Double(normalizedScore)
+                return (label, transition)
+            }
+            return ("0", 0)
         }
     }
 
     @ViewBuilder
     private func scoreText(_ team: ScoreKeepTeam) -> some View {
-        let game = match.latestGame
-        let normalizedScore = game.map { match.sport.normalizedScoreFor(team, game: $0) } ?? 0
-        let label = game.map { match.sport.normalizedScoreLabelFor(team, game: $0) } ?? "0"
+        let (label, transitionValue) = headlineScore(for: team)
         let color = match.participant(for: team).resolvedColor.color
-        let transitionValue = label == "Ad" ? Double(normalizedScore) + 5 : Double(normalizedScore)
 
         Text(label)
             .font(.system(size: 34, weight: .bold, design: .rounded))
@@ -571,9 +618,7 @@ struct ActiveMatchControlsRulesView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Rules")
-                .font(.caption2)
-                .fontWeight(.semibold)
-                .textCase(.uppercase)
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 1) {
