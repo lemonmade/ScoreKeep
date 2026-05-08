@@ -69,13 +69,14 @@ struct MatchHistoryDetailSummaryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 2) {
-                    ActiveMatchControlsScoreHeaderView(
+                    MatchScoreboardHeaderView(
                         match: match,
-                        summaryStyle: .matchOutcome
+                        summaryStyle: .matchOutcome,
+                        size: .compact
                     )
 
                     if showsScoreTable {
-                        ActiveMatchControlsScoreTableView(match: match)
+                        MatchScoreboardTableView(match: match, size: .compact)
                             .padding(.top, 2)
                     }
                 }

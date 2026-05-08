@@ -14,36 +14,44 @@ struct MatchHistoryListView: View {
     @State private var shareError: Error?
 
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(matches) { match in
-                    NavigationLink {
-                        MatchHistoryDetailView(match: match)
-                    } label: {
-                        MatchHistorySummaryView(match: match)
-                    }
-                    .swipeActions {
-                        Button {
-                            Task {
-                                do {
-                                    let response = try await web.share(match: match)
-                                    shareURL = response.url
-                                    isPresentingShare = true
-                                    //                                    print("Share response: \(response.url.absoluteString)")
-                                } catch {
-                                    shareError = error
-                                    print("Share error: \(shareError?.localizedDescription ?? "")")
-                                    // Optional: show an alert
+        NavigationStack {
+            Group {
+                if matches.isEmpty {
+                    ContentUnavailableView(
+                        "No matches yet",
+                        systemImage: "clock.arrow.circlepath",
+                        description: Text("Finished matches will appear here.")
+                    )
+                } else {
+                    List {
+                        ForEach(matches) { match in
+                            NavigationLink {
+                                MatchHistoryDetailView(match: match)
+                            } label: {
+                                MatchHistorySummaryView(match: match)
+                            }
+                            .swipeActions {
+                                Button {
+                                    Task {
+                                        do {
+                                            let response = try await web.share(match: match)
+                                            shareURL = response.url
+                                            isPresentingShare = true
+                                        } catch {
+                                            shareError = error
+                                            print("Share error: \(shareError?.localizedDescription ?? "")")
+                                        }
+                                    }
+                                } label: {
+                                    Label("Share", systemImage: "square.and.arrow.up")
+                                }
+
+                                Button(role: .destructive) {
+                                    context.delete(match)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
                                 }
                             }
-                        } label: {
-                            Label("Share", systemImage: "square.and.arrow.up")
-                        }
-
-                        Button(role: .destructive) {
-                            context.delete(match)
-                        } label: {
-                            Label("Delete", systemImage: "trash")
                         }
                     }
                 }
@@ -54,7 +62,6 @@ struct MatchHistoryListView: View {
                     ActivityView(activityItems: [shareURL])
                         .ignoresSafeArea()
                 } else {
-                    // Safety fallback if URL disappeared
                     Text("Nothing to share")
                 }
             }

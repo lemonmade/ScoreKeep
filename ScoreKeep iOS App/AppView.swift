@@ -30,11 +30,11 @@ struct AppView: View {
                 .tabItem {
                     Label("Start", systemImage: "play.square.stack.fill")
                 }
-            // MatchHistoryListView()
-            //     .tag(AppTab.history)
-            //     .tabItem {
-            //         Label("History", systemImage: "clock.arrow.circlepath")
-            //     }
+            MatchHistoryListView()
+                .tag(AppTab.history)
+                .tabItem {
+                    Label("History", systemImage: "clock.arrow.circlepath")
+                }
         }
         .environment(navigation)
     }

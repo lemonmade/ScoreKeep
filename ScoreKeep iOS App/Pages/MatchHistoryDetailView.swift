@@ -20,19 +20,43 @@ struct MatchHistoryDetailView: View {
     @State private var isPresentingShare = false
     @State private var shareError: Error?
 
+    /// Mirror the watch's behaviour: only show the per-set/per-game table when
+    /// it adds context beyond the headline scoreboard.
+    private var showsScoreTable: Bool {
+        let isMultiGameOrMore = match.isMultiSet || (match.latestSet?.isMultiGame ?? false)
+        guard isMultiGameOrMore else { return false }
+
+        if !match.isMultiSet {
+            let maxGames = match.rules.setRules.maximumGameCount ?? 0
+            return maxGames >= 2 && maxGames <= 5
+        }
+
+        return true
+    }
+
     var body: some View {
         List {
             Section {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 16) {
+                    MatchScoreboardHeaderView(
+                        match: match,
+                        summaryStyle: .matchOutcome
+                    )
+
+                    if showsScoreTable {
+                        MatchScoreboardTableView(match: match)
+                    }
+
                     VStack(alignment: .leading, spacing: 2) {
                         MatchHistoryDetailDateView(match: match)
 
                         MatchHistoryDetailDurationView(match: match)
                     }
-
-                    MatchSummaryScoreTableView(match: match)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 }
-                .listStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 4)
                 .listRowInsets(.none)
                 .listRowBackground(Color.clear)
             }

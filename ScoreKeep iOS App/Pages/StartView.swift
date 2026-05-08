@@ -6,7 +6,6 @@
 //
 
 import ScoreKeepCore
-import ScoreKeepUI
 import SwiftData
 import SwiftUI
 
@@ -14,7 +13,6 @@ struct StartView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \ScoreKeepMatchTemplate.lastUsedAt, order: .reverse) private var templates:
         [ScoreKeepMatchTemplate]
-    @Query(sort: \ScoreKeepMatch.endedAt, order: .reverse) private var matches: [ScoreKeepMatch]
 
     @State private var activeMatch: ScoreKeepMatch?
     @State private var showingTemplateCreator = false
@@ -23,10 +21,6 @@ struct StartView: View {
     @State private var templateToEdit: ScoreKeepMatchTemplate?
 
     private let defaultTemplates: [ScoreKeepMatchTemplate] = createDefaultTemplates()
-
-    private var maxRecentMatches: Int {
-        return min(5, matches.count)
-    }
 
     private var unusedDefaultTemplates: [ScoreKeepMatchTemplate] {
         return defaultTemplates.filter { defaultTemplate in
@@ -82,28 +76,6 @@ struct StartView: View {
                                 .cornerRadius(16)
                             }
                             .padding(.horizontal)
-                        }
-                    }
-
-                    // Recent matches
-                    if !matches.isEmpty {
-                        VStack(alignment: .leading, spacing: 12) {
-                            RecentMatchHeaderView(
-                                moreLinkVisibility: matches.count > maxRecentMatches ? .visible : .hidden
-                            )
-                            .padding(.horizontal)
-
-                            VStack(spacing: 8) {
-                                ForEach(matches[0..<maxRecentMatches]) { match in
-                                    NavigationLink {
-                                        MatchHistoryDetailView(match: match)
-                                    } label: {
-                                        MatchHistorySummaryView(match: match)
-                                            .padding(.horizontal)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
                         }
                     }
                 }
@@ -300,33 +272,6 @@ private func createDefaultTemplates() -> [ScoreKeepMatchTemplate] {
     )
 
     return [volleyball, tennis, ultimate, squash, pickleball]
-}
-
-struct RecentMatchHeaderView: View {
-    @Environment(AppNavigation.self) private var navigation
-
-    var moreLinkVisibility: Visibility = .visible
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text("Recent matches")
-                .foregroundStyle(.primary)
-
-            if moreLinkVisibility != .hidden {
-                Button {
-                    navigation.tab = .history
-                } label: {
-                    HStack(spacing: 4) {
-                        Text("More")
-                        Image(systemName: "chevron.right")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 12, height: 12)
-                    }
-                }
-            }
-        }
-    }
 }
 
 #Preview {
