@@ -7,6 +7,7 @@
 
 import HealthKit
 import ScoreKeepCore
+import ScoreKeepUI
 import SwiftData
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct StartView: View {
     private let navigation = NavigationManager()
 
     @Environment(WorkoutManager.self) private var workoutManager
+    @State private var showingDebug = false
     @Query(sort: \ScoreKeepMatchTemplate.lastUsedAt, order: .reverse) private
         var templates: [ScoreKeepMatchTemplate]
 
@@ -132,9 +134,16 @@ struct StartView: View {
             .navigationBarTitle("ScoreKeep")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink(value: NavigationLocation.Settings()) {
+                    Button {
+                        navigation.navigate(to: NavigationLocation.Settings())
+                    } label: {
                         Label("Settings", systemImage: "gear")
                     }
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.6).onEnded { _ in
+                            if DebugMode.isEnabled { showingDebug = true }
+                        }
+                    )
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     MatchHistoryNavigationLinkView()
@@ -165,6 +174,9 @@ struct StartView: View {
                     .environment(navigation)
             }
             .environment(navigation)
+            .sheet(isPresented: $showingDebug) {
+                DebugSheetView()
+            }
         }
         .onAppear {
             workoutManager.requestAuthorization()

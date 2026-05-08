@@ -19,6 +19,7 @@ struct StartView: View {
     @State private var activeMatch: ScoreKeepMatch?
     @State private var showingTemplateCreator = false
     @State private var showingSettings = false
+    @State private var showingDebug = false
     @State private var templateToEdit: ScoreKeepMatchTemplate?
 
     private let defaultTemplates: [ScoreKeepMatchTemplate] = createDefaultTemplates()
@@ -116,6 +117,11 @@ struct StartView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.6).onEnded { _ in
+                            if DebugMode.isEnabled { showingDebug = true }
+                        }
+                    )
                 }
             }
             .sheet(item: $activeMatch) { match in
@@ -128,6 +134,9 @@ struct StartView: View {
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showingDebug) {
+                DebugSheetView()
             }
             .sheet(item: $templateToEdit) { template in
                 MatchTemplateCreateView(template: template)

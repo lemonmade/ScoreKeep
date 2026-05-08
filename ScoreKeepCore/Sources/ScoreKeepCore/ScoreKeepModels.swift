@@ -74,10 +74,16 @@ public enum ScoreKeepSport: String, Codable {
 
         switch self {
         case .tennis:
-            // 15-30-40 mapping only for canonical tennis games (winAt 4, winBy 2).
-            // Tiebreaks (winAt 7), no-ad (winBy 1), and custom values (e.g. games to 5)
-            // all show raw point counts.
-            guard let rules = game.rules, rules.winAt == 4, rules.winBy == 2 else {
+            // Tiebreak games and any game whose rules explicitly use a non-4 winAt
+            // (e.g. games-to-5 customisations) show raw point counts. Everything
+            // else — including games whose rules can't be resolved at all (detached
+            // game, missing inverse relationship loaded from history) — applies the
+            // canonical 15-30-40 mapping, since that's what users expect from a
+            // tennis game by default.
+            if game.isTiebreak {
+                return score
+            }
+            if let winAt = game.rules?.winAt, winAt != 4 {
                 return score
             }
 
@@ -98,12 +104,18 @@ public enum ScoreKeepSport: String, Codable {
             return "\(normalizedScore)"
         }
 
-        // "Ad" only applies in canonical tennis games. Tiebreaks and no-ad games never show Ad.
-        guard let rules = game.rules, rules.winAt == 4, rules.winBy == 2 else {
+        // "Ad" only applies when the game uses ad-scoring (winBy == 2). Tiebreaks
+        // never show Ad. No-ad games still get 15-30-40 (handled above) but never Ad.
+        // When rules can't be resolved, default to canonical (winBy == 2).
+        if game.isTiebreak {
+            return "\(normalizedScore)"
+        }
+        let winAt = game.rules?.winAt ?? 4
+        let winBy = game.rules?.winBy ?? 2
+        if winAt != 4 || winBy != 2 {
             return "\(normalizedScore)"
         }
 
-        let winAt = 4
         let score = game.scoreFor(team)
 
         if score < winAt || (game.scoreFor(team.opposingTeam) < (winAt - 1)) {
@@ -453,6 +465,11 @@ public class ScoreKeepMatch {
             startedAt: startedAt,
             startingServe: latestStartingServe?.opposingTeam ?? self.startingServe,
         )
+        // Set the inverse explicitly. SwiftData usually does this automatically
+        // via @Relationship, but with CloudKit persistence we've seen the inverse
+        // come back nil after sync — leaving game.rules unable to resolve and
+        // win conditions silently bypassed. Setting both sides is cheap insurance.
+        set.match = self
 
         var sets = self.sets
         sets.append(set)
@@ -479,13 +496,10 @@ public class ScoreKeepSet {
 
     public var createdAt: Date = Date.now
     public var startedAt: Date = Date.now
-    public var endedAt: Date?  {
-        didSet {
-            if let endedAt, let match, !match.hasMoreGames {
-                match.endedAt = endedAt
-            }
-        }
-    }
+    // SwiftData @Model strips `didSet` observers — assignments through the
+    // synthesized accessors don't fire them. End-of-set/end-of-match
+    // propagation is done explicitly by the callers that set this.
+    public var endedAt: Date?
 
     public var hasEnded: Bool { endedAt != nil }
 
@@ -566,6 +580,8 @@ public class ScoreKeepSet {
             startedAt: startedAt,
             startingServe: startingServe ?? latestStartingServe?.opposingTeam ?? initialStartingServe,
         )
+        // Set the inverse explicitly — see the matching note in ScoreKeepMatch.addSet.
+        game.set = self
 
         var games = self.games
         games.append(game)
@@ -585,13 +601,10 @@ public class ScoreKeepGame {
 
     public var createdAt: Date = Date.now
     public var startedAt: Date = Date.now
-    public var endedAt: Date? {
-        didSet {
-            if let endedAt, let set, !set.hasMoreGames {
-                set.endedAt = endedAt
-            }
-        }
-    }
+    // SwiftData @Model strips `didSet` observers — assignments through the
+    // synthesized accessors don't fire them. End-of-set/end-of-match
+    // propagation is done explicitly by the callers that set this.
+    public var endedAt: Date?
 
     public var _scores: [ScoreKeepGameScore]?
     public var scores: [ScoreKeepGameScore] {
@@ -677,7 +690,11 @@ public class ScoreKeepGame {
     /// True when this game is the final game of a set whose rules declare a separate
     /// `lastGameRules` (i.e. a tiebreak game in tennis).
     public var isTiebreak: Bool {
-        isLastInSet && (set?.rules?.lastGameRules != nil)
+        // Guard on `winAt != nil` because SwiftData round-trips a nil optional
+        // Codable struct as `Optional(empty)`. A meaningful tiebreak rule will
+        // always have a winAt set.
+        guard isLastInSet, let last = set?.rules?.lastGameRules else { return false }
+        return last.winAt != nil
     }
 
     public init(
@@ -732,8 +749,21 @@ public class ScoreKeepGame {
         guard let rules else { return }
 
         if rules.hasWinner(self) {
-            self.endedAt = .now
+            endGameAndPropagate(at: .now)
         }
+    }
+
+    /// Mark this game ended and cascade to its set/match if their respective
+    /// rules say no further play is possible. Inlined because @Model strips
+    /// `didSet`, so we can't rely on property observers.
+    private func endGameAndPropagate(at timestamp: Date) {
+        self.endedAt = timestamp
+
+        guard let set, !set.hasMoreGames else { return }
+        if set.endedAt == nil { set.endedAt = timestamp }
+
+        guard let match = set.match, !match.hasMoreGames else { return }
+        if match.endedAt == nil { match.endedAt = timestamp }
     }
 
     public var canUndo: Bool {
@@ -774,7 +804,7 @@ public class ScoreKeepGame {
         _scores = scores
 
         if let rules, rules.hasWinner(self) {
-            self.endedAt = .now
+            endGameAndPropagate(at: .now)
         }
     }
 
@@ -1151,7 +1181,14 @@ public struct ScoreKeepMatchRules: Codable, Equatable {
     }
 
     public func setRulesFor(_ set: ScoreKeepSet) -> ScoreKeepSetRules {
-        return set.isLastInMatch ? (lastSetRules ?? setRules) : setRules
+        // SwiftData with @Model's synthesized accessors round-trips a nil
+        // optional Codable struct as `Optional(empty)` after the parent model's
+        // relationships are accessed. Guarding on `lastSetRules.winAt` filters
+        // those phantom empty values so we fall through to `setRules` correctly.
+        if set.isLastInMatch, let last = lastSetRules, last.winAt != nil {
+            return last
+        }
+        return setRules
     }
 
     public var primaryLabel: String {
@@ -1275,8 +1312,11 @@ public struct ScoreKeepSetRules: Codable, Equatable {
     }
 
     public func gameRulesFor(game: ScoreKeepGame) -> ScoreKeepGameRules {
-        let rules = game.isLastInSet ? (lastGameRules ?? gameRules) : gameRules
-        return rules
+        // See note in ScoreKeepMatchRules.setRulesFor about phantom Optional(empty).
+        if game.isLastInSet, let last = lastGameRules, last.winAt != nil {
+            return last
+        }
+        return gameRules
     }
 
     public var primaryLabel: String {

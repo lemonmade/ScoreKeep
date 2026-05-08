@@ -1130,9 +1130,9 @@ struct TennisScoreLabelTests {
         #expect(match.sport.normalizedScoreLabelFor(.them, game: game) == "40")
     }
 
-    @Test("No-ad tennis (winBy=1): no 15-30-40 mapping, no Ad")
+    @Test("No-ad tennis (winBy=1): keeps 15-30-40 mapping but never shows Ad")
     @MainActor
-    func noAdSkipsTennisMapping() {
+    func noAdKeepsMappingButNoAdvantage() {
         let noAdRules = ScoreKeepMatchRules(
             winAt: 1, winBy: 1, maximum: 1,
             setRules: ScoreKeepSetRules(
@@ -1145,8 +1145,9 @@ struct TennisScoreLabelTests {
 
         for _ in 0..<3 { game.scorePoint(.us) }
         for _ in 0..<3 { game.scorePoint(.them) }
-        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "3")
-        #expect(match.sport.normalizedScoreLabelFor(.them, game: game) == "3")
+        // No-ad still uses 15-30-40 visually — that's how the score is conventionally shown.
+        #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "40")
+        #expect(match.sport.normalizedScoreLabelFor(.them, game: game) == "40")
     }
 
     @Test("Games-to-five tennis (winAt=5): no 15-30-40 mapping")
@@ -1165,6 +1166,19 @@ struct TennisScoreLabelTests {
         game.scorePoint(.us)
         game.scorePoint(.us)
         #expect(match.sport.normalizedScoreLabelFor(.us, game: game) == "2")
+    }
+
+    @Test("Detached tennis game (no resolvable rules) still shows 15-30-40")
+    @MainActor
+    func detachedTennisGameUsesCanonicalMapping() {
+        // A bare game with no parent set/match — `game.rules` returns nil. The
+        // history detail view can hit this if the inverse relationship isn't
+        // hydrated. We default to canonical tennis mapping so users see 15/30/40
+        // instead of raw 1/2/3.
+        let game = ScoreKeepGame(number: 1, us: 2, them: 1)
+        #expect(game.rules == nil)
+        #expect(ScoreKeepSport.tennis.normalizedScoreLabelFor(.us, game: game) == "30")
+        #expect(ScoreKeepSport.tennis.normalizedScoreLabelFor(.them, game: game) == "15")
     }
 }
 
