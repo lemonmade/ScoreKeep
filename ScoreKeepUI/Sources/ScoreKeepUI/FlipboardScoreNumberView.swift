@@ -1,6 +1,6 @@
 //
 //  FlipboardScoreNumberView.swift
-//  ScoreKeep Watch App
+//  ScoreKeepUI
 //
 //  Solari-style "flipboard" score display — each digit is a rounded card with
 //  a horizontal seam through the middle. On change, the old card flips
@@ -10,7 +10,7 @@
 
 import SwiftUI
 
-struct FlipboardScoreNumberView: View {
+public struct FlipboardScoreNumberView: View {
     let label: String
     let color: Color
     /// When true, always render a left-hand "tens" card — for single-digit
@@ -21,9 +21,21 @@ struct FlipboardScoreNumberView: View {
     var showLeadingDigitSlot: Bool = true
     var layout: Layout = .compact
 
-    enum Layout: Equatable {
+    public enum Layout: Equatable {
         case compact
         case fillContainer
+    }
+
+    public init(
+        label: String,
+        color: Color,
+        showLeadingDigitSlot: Bool = true,
+        layout: Layout = .compact
+    ) {
+        self.label = label
+        self.color = color
+        self.showLeadingDigitSlot = showLeadingDigitSlot
+        self.layout = layout
     }
 
     private var resolved: ResolvedDigits {
@@ -41,7 +53,7 @@ struct FlipboardScoreNumberView: View {
         return ResolvedDigits(left: nil, right: nil)
     }
 
-    var body: some View {
+    public var body: some View {
         switch layout {
         case .compact:
             compactBody
@@ -126,45 +138,52 @@ private struct DigitCardContent: View {
     let char: Character
     let color: Color
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         GeometryReader { geo in
             let h = geo.size.height
             let w = geo.size.width
             let cornerRadius: CGFloat = min(w, h) * 0.13
             let seamHeight: CGFloat = max(1, h * 0.022)
+            let isLight = colorScheme == .light
+
+            // Light mode flips the card to a pale "Solari" tile with a darker
+            // colored digit and a faint seam; dark mode keeps the glowing
+            // digit on a black tile.
+            let cardColors: [Color] = isLight
+                ? [Color(white: 0.97), Color(white: 0.89)]
+                : [Color.black.opacity(0.62), Color.black.opacity(0.42)]
+            let seamColor = Color.black.opacity(isLight ? 0.12 : 0.7)
 
             ZStack {
-                // Card body — dark base with a subtle vertical gradient and a
-                // faint colored border so it reads as a physical panel rather
-                // than a flat fill.
+                // Card body — gradient base with a faint colored border so it
+                // reads as a physical panel rather than a flat fill.
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color.black.opacity(0.62),
-                                Color.black.opacity(0.42),
-                            ],
+                            colors: cardColors,
                             startPoint: .top,
                             endPoint: .bottom
                         )
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius)
-                            .stroke(color.opacity(0.45), lineWidth: 0.8)
+                            .stroke(color.opacity(isLight ? 0.35 : 0.45), lineWidth: 0.8)
                     )
 
                 // The digit itself.
                 Text(String(char))
                     .font(.system(size: h * 0.78, weight: .heavy, design: .rounded))
                     .foregroundStyle(color)
-                    .brightness(0.18)
-                    .shadow(color: color.opacity(0.6), radius: 3)
+                    .brightness(isLight ? -0.1 : 0.18)
+                    .shadow(color: color.opacity(isLight ? 0 : 0.6), radius: isLight ? 0 : 3)
                     .lineLimit(1)
                     .minimumScaleFactor(0.4)
 
                 // Middle seam — the visual cue that this is a hinged card.
                 Rectangle()
-                    .fill(Color.black.opacity(0.7))
+                    .fill(seamColor)
                     .frame(height: seamHeight)
                     .frame(maxWidth: .infinity)
             }
@@ -176,16 +195,18 @@ private struct DigitCardContent: View {
 // MARK: - Flip transition
 
 extension AnyTransition {
-    static let flipboardFlip: AnyTransition = .asymmetric(
-        insertion: .modifier(
-            active: FlipboardCardModifier(rotation: -90, opacity: 0),
-            identity: FlipboardCardModifier(rotation: 0, opacity: 1)
-        ),
-        removal: .modifier(
-            active: FlipboardCardModifier(rotation: 90, opacity: 0),
-            identity: FlipboardCardModifier(rotation: 0, opacity: 1)
+    static var flipboardFlip: AnyTransition {
+        .asymmetric(
+            insertion: .modifier(
+                active: FlipboardCardModifier(rotation: -90, opacity: 0),
+                identity: FlipboardCardModifier(rotation: 0, opacity: 1)
+            ),
+            removal: .modifier(
+                active: FlipboardCardModifier(rotation: 90, opacity: 0),
+                identity: FlipboardCardModifier(rotation: 0, opacity: 1)
+            )
         )
-    )
+    }
 }
 
 private struct FlipboardCardModifier: ViewModifier {

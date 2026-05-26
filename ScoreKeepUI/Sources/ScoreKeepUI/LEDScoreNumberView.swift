@@ -1,16 +1,18 @@
 //
 //  LEDScoreNumberView.swift
-//  ScoreKeep Watch App
+//  ScoreKeepUI
 //
 
 import SwiftUI
 
-struct LEDScoreNumberView: View {
+public struct LEDScoreNumberView: View {
     let label: String
     let color: Color
     var layout: Layout = .compact
 
-    enum Layout: Equatable {
+    @Environment(\.colorScheme) private var colorScheme
+
+    public enum Layout: Equatable {
         /// Fixed-size grid centered around the digits, all four corners cut for
         /// a "rounded panel" feel. Used in the Settings preview and anywhere
         /// the LED display is intrinsically sized.
@@ -24,6 +26,12 @@ struct LEDScoreNumberView: View {
         case fillContainer(rightPadding: Int)
     }
 
+    public init(label: String, color: Color, layout: Layout = .compact) {
+        self.label = label
+        self.color = color
+        self.layout = layout
+    }
+
     private let dotSize: CGFloat = 7
     private let dotSpacing: CGFloat = 2
 
@@ -31,7 +39,7 @@ struct LEDScoreNumberView: View {
     private static let glyphRows = 7
     private static let glyphGap = 1
 
-    var body: some View {
+    public var body: some View {
         switch layout {
         case .compact:
             compactGrid
@@ -170,6 +178,11 @@ struct LEDScoreNumberView: View {
         info: LayoutInfo
     ) -> DotState {
         if isActiveDot(row: row, col: col, resolved: resolved, info: info) {
+            if colorScheme == .light {
+                // Reflective look: solid, slightly darkened color, no glow — so
+                // lit dots read with strong contrast against a light surface.
+                return DotState(opacity: 1.0, saturation: 1.08, brightness: -0.12, glow: 0)
+            }
             return DotState(opacity: 1.0, saturation: 1.0, brightness: 0.22, glow: 0.95)
         }
         return ambientState(row: row, col: col)
@@ -208,6 +221,17 @@ struct LEDScoreNumberView: View {
     /// a real LED panel without competing with the lit digits.
     private func ambientState(row: Int, col: Int) -> DotState {
         let h = (row &* 31 &+ col &* 7) & 0xFF
+        if colorScheme == .light {
+            // Off dots become a desaturated neutral gray that's clearly visible
+            // on a light surface, so the contrast between lit and unlit pixels
+            // stays high (the dark-mode 0.07–0.13 color dots wash out on white).
+            let buckets: [DotState] = [
+                DotState(opacity: 0.16, saturation: 0, brightness: -0.1, glow: 0),
+                DotState(opacity: 0.19, saturation: 0, brightness: -0.1, glow: 0),
+                DotState(opacity: 0.22, saturation: 0, brightness: -0.1, glow: 0),
+            ]
+            return buckets[h % buckets.count]
+        }
         let buckets: [DotState] = [
             DotState(opacity: 0.07, saturation: 0.65, brightness: 0, glow: 0),
             DotState(opacity: 0.10, saturation: 0.80, brightness: 0, glow: 0),

@@ -6,6 +6,7 @@
 //
 
 import ScoreKeepCore
+import ScoreKeepUI
 import SwiftUI
 
 struct ActiveMatchView: View {
@@ -46,6 +47,21 @@ struct ActiveMatchScoringView: View {
     return latestGame.hasEnded && !match.hasWinner && match.hasMoreGames
   }
 
+  /// Only show the per-set/per-game table when it adds context beyond the
+  /// headline scoreboard — multi-set matches, or short single-set formats
+  /// (best-of-2…5 games) where each game's score is worth surfacing.
+  private var showsScoreTable: Bool {
+    let isMultiGameOrMore = match.isMultiSet || (match.latestSet?.isMultiGame ?? false)
+    guard isMultiGameOrMore else { return false }
+
+    if !match.isMultiSet {
+      let maxGames = match.rules.setRules.maximumGameCount ?? 0
+      return maxGames >= 2 && maxGames <= 5
+    }
+
+    return true
+  }
+
   var body: some View {
     NavigationStack {
       VStack(spacing: 20) {
@@ -53,8 +69,10 @@ struct ActiveMatchScoringView: View {
           .padding(.horizontal, 20)
           .padding(.top, 8)
 
-        ActiveMatchSetTableView(match: match)
-          .padding(.horizontal, 20)
+        if showsScoreTable {
+          MatchScoreboardTableView(match: match)
+            .padding(.horizontal, 20)
+        }
 
         if canStartNextGame {
           Button {
@@ -175,20 +193,29 @@ private struct ActiveMatchHeaderTeamView: View {
   private var isServing: Bool { game?.servingTeam == team && game?.hasEnded == false }
 
   var body: some View {
-    HStack(spacing: 8) {
-      if alignment == .leading {
-        teamPill
-        Spacer(minLength: 4)
-        if isServing { serveIcon }
-        scoreText
-      } else {
-        scoreText
-        if isServing { serveIcon }
-        Spacer(minLength: 4)
-        teamPill
+    VStack(spacing: 10) {
+      scoreText
+
+      HStack(spacing: 6) {
+        if alignment == .leading {
+          teamPill
+          serveIndicatorSlot
+        } else {
+          serveIndicatorSlot
+          teamPill
+        }
       }
     }
     .frame(maxWidth: .infinity)
+  }
+
+  /// Fixed-size slot so the serve ball appearing/disappearing never shifts the
+  /// pill or the score above it.
+  private var serveIndicatorSlot: some View {
+    ZStack {
+      if isServing { serveIcon }
+    }
+    .frame(width: 18, height: 18)
   }
 
   private var teamPill: some View {
@@ -212,14 +239,12 @@ private struct ActiveMatchHeaderTeamView: View {
   }
 
   private var scoreText: some View {
-    Text(normalizedScoreLabel)
-      .font(.system(size: 56, weight: .bold, design: .rounded))
-      .foregroundStyle(keyColor)
-      .contentTransition(.numericText(value: transitionValue))
-      .monospacedDigit()
-      .lineLimit(1)
-      .minimumScaleFactor(0.6)
-      .fixedSize(horizontal: true, vertical: false)
+    GameScoreNumberView(
+      label: normalizedScoreLabel,
+      transitionValue: transitionValue,
+      color: keyColor
+    )
+    .foregroundStyle(keyColor)
   }
 
   private var serveIcon: some View {
@@ -271,167 +296,6 @@ private struct ActiveMatchHeaderCenterView: View {
     }
     .fixedSize()
     .padding(.horizontal, 4)
-  }
-}
-
-// MARK: - Set/game table (clean tabular, no color backgrounds)
-
-struct ActiveMatchSetTableView: View {
-  var match: ScoreKeepMatch
-
-  private enum TableMode { case perSet, summaryOnly }
-
-  private var mode: TableMode { match.isMultiSet ? .perSet : .summaryOnly }
-
-  private var setColumns: [SetColumn] {
-    match.sets.map { set in
-      SetColumn(
-        id: set.number,
-        isCurrent: set.isLatestInMatch && !set.hasEnded,
-        us: set.gamesUs,
-        them: set.gamesThem,
-        tiebreakUs: set.tiebreakGame?.scoreUs,
-        tiebreakThem: set.tiebreakGame?.scoreThem
-      )
-    }
-  }
-
-  var body: some View {
-    VStack(spacing: 0) {
-      switch mode {
-      case .summaryOnly:
-        // Single-set match: a single "Games" column showing totals per team.
-        let games = match.latestSet
-        TableRow(
-          match: match, team: .us,
-          columnHeaders: [],
-          columnValues: [],
-          summaryValue: games?.gamesUs ?? 0,
-          summaryHeader: "Games"
-        )
-        Divider().padding(.leading, 14)
-        TableRow(
-          match: match, team: .them,
-          columnHeaders: [],
-          columnValues: [],
-          summaryValue: games?.gamesThem ?? 0,
-          summaryHeader: nil
-        )
-
-      case .perSet:
-        let columns = setColumns
-        TableRow(
-          match: match, team: .us,
-          columnHeaders: columns.map(\.headerLabel),
-          columnValues: columns.map { ($0.us, $0.tiebreakUs, $0.isCurrent) },
-          summaryValue: nil,
-          summaryHeader: "Sets"
-        )
-        Divider().padding(.leading, 14)
-        TableRow(
-          match: match, team: .them,
-          columnHeaders: columns.map(\.headerLabel),
-          columnValues: columns.map { ($0.them, $0.tiebreakThem, $0.isCurrent) },
-          summaryValue: nil,
-          summaryHeader: nil
-        )
-      }
-    }
-    .padding(.vertical, 4)
-    .background(
-      RoundedRectangle(cornerRadius: 14, style: .continuous)
-        .fill(Color(.secondarySystemGroupedBackground))
-    )
-  }
-}
-
-private struct SetColumn: Identifiable {
-  let id: Int
-  let isCurrent: Bool
-  let us: Int
-  let them: Int
-  let tiebreakUs: Int?
-  let tiebreakThem: Int?
-
-  var headerLabel: String { "S\(id)" }
-}
-
-private struct TableRow: View {
-  var match: ScoreKeepMatch
-  var team: ScoreKeepTeam
-  var columnHeaders: [String]
-  var columnValues: [(value: Int, tiebreak: Int?, isCurrent: Bool)]
-  var summaryValue: Int?
-  var summaryHeader: String?
-
-  private var participant: ScoreKeepMatchParticipant { match.participant(for: team) }
-  private var color: Color { participant.resolvedColor.color }
-  private var isMatchWinner: Bool { match.winner == team }
-
-  var body: some View {
-    HStack(spacing: 0) {
-      HStack(spacing: 8) {
-        Circle()
-          .fill(color)
-          .frame(width: 9, height: 9)
-        Text(participant.resolvedName)
-          .font(.subheadline)
-          .fontWeight(isMatchWinner ? .semibold : .regular)
-          .foregroundStyle(.primary)
-          .lineLimit(1)
-      }
-      .padding(.leading, 14)
-      .padding(.vertical, 10)
-      .frame(maxWidth: .infinity, alignment: .leading)
-
-      HStack(spacing: 0) {
-        ForEach(Array(zip(columnHeaders.indices, columnValues)), id: \.0) { index, cell in
-          tableCell(
-            header: columnHeaders[index],
-            value: cell.value,
-            tiebreak: cell.tiebreak,
-            isCurrent: cell.isCurrent
-          )
-        }
-        if let summaryValue, let summaryHeader {
-          tableCell(header: summaryHeader, value: summaryValue, tiebreak: nil, isCurrent: false)
-        } else if let summaryValue {
-          tableCell(header: "", value: summaryValue, tiebreak: nil, isCurrent: false)
-        }
-      }
-      .padding(.trailing, 12)
-    }
-  }
-
-  @ViewBuilder
-  private func tableCell(header: String, value: Int, tiebreak: Int?, isCurrent: Bool) -> some View {
-    VStack(spacing: 2) {
-      // Header is rendered transparently on the .them row so columns line up
-      Text(header.isEmpty ? " " : header)
-        .font(.system(.caption2, design: .rounded))
-        .fontWeight(.semibold)
-        .foregroundStyle(team == .us ? .secondary : Color.clear)
-        .opacity(team == .us ? 1 : 0)
-        .frame(height: 12)
-      HStack(alignment: .firstTextBaseline, spacing: 1) {
-        Text("\(value)")
-          .font(.system(.title3, design: .rounded))
-          .fontWeight(isCurrent ? .semibold : .regular)
-          .foregroundStyle(.primary)
-          .monospacedDigit()
-          .contentTransition(.numericText(value: Double(value)))
-        if let tiebreak {
-          Text("\(tiebreak)")
-            .font(.system(.caption2, design: .rounded))
-            .baselineOffset(6)
-            .foregroundStyle(.secondary)
-            .monospacedDigit()
-        }
-      }
-    }
-    .frame(minWidth: 36)
-    .padding(.horizontal, 6)
-    .padding(.vertical, 4)
   }
 }
 

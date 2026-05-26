@@ -1,11 +1,11 @@
 //
 //  ScoreDisplayStyle.swift
-//  ScoreKeep Watch App
+//  ScoreKeepUI
 //
 
 import SwiftUI
 
-enum ScoreDisplayStyle: String, CaseIterable, Identifiable {
+public enum ScoreDisplayStyle: String, CaseIterable, Identifiable, Sendable {
     case rounded
     case standard
     case scoreboard
@@ -16,9 +16,9 @@ enum ScoreDisplayStyle: String, CaseIterable, Identifiable {
     case odometer
     case pixel
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .rounded: "Rounded"
         case .standard: "Standard"
@@ -34,23 +34,23 @@ enum ScoreDisplayStyle: String, CaseIterable, Identifiable {
 
     /// Whether this style takes over the entire score-button area (LED panel,
     /// segment displays) versus being rendered inline next to the team chip.
-    var isPanel: Bool {
+    public var isPanel: Bool {
         switch self {
         case .rounded, .standard: return false
         case .scoreboard, .sevenSegment, .fourteenSegment, .flipboard, .nixie, .odometer, .pixel: return true
         }
     }
 
-    static let storageKey = "scoreDisplayStyle"
-    static let `default`: ScoreDisplayStyle = .standard
+    public static let storageKey = "scoreDisplayStyle"
+    public static let `default`: ScoreDisplayStyle = .standard
 }
 
-/// Brand-level color tokens used across the watch app.
-enum ScoreKeepBrand {
+/// Brand-level color tokens used across the apps.
+public enum ScoreKeepBrand {
     /// Purple matching the app icon background. Used by Settings previews and
     /// other neutral surfaces where we want the app's identity color rather
     /// than a team-specific color.
-    static let iconPurple = Color(red: 0.30, green: 0.21, blue: 0.92)
+    public static let iconPurple = Color(red: 0.30, green: 0.21, blue: 0.92)
 }
 
 /// Renders a score number in the user's selected display style. Used wherever
@@ -58,7 +58,7 @@ enum ScoreKeepBrand {
 /// The active match button bypasses this wrapper for the scoreboard style and
 /// uses `LEDScoreNumberView` directly with `.fillContainer` layout so it can
 /// span the full button area.
-struct GameScoreNumberView: View {
+public struct GameScoreNumberView: View {
     let label: String
     let transitionValue: Double
     let color: Color
@@ -67,12 +67,24 @@ struct GameScoreNumberView: View {
     @AppStorage(ScoreDisplayStyle.storageKey)
     private var rawStyle: String = ScoreDisplayStyle.default.rawValue
 
+    public init(
+        label: String,
+        transitionValue: Double,
+        color: Color,
+        styleOverride: ScoreDisplayStyle? = nil
+    ) {
+        self.label = label
+        self.transitionValue = transitionValue
+        self.color = color
+        self.styleOverride = styleOverride
+    }
+
     private var style: ScoreDisplayStyle {
         if let styleOverride { return styleOverride }
         return ScoreDisplayStyle(rawValue: rawStyle) ?? .default
     }
 
-    var body: some View {
+    public var body: some View {
         switch style {
         case .rounded:
             numericView(design: .rounded)

@@ -1,6 +1,6 @@
 //
 //  NixieScoreNumberView.swift
-//  ScoreKeep Watch App
+//  ScoreKeepUI
 //
 //  Nixie-tube-style score display. Each digit slot is a "glass tube" that
 //  shows all of the cathode glyphs (0–9, plus A/d for tennis Ad) faintly
@@ -11,7 +11,7 @@
 
 import SwiftUI
 
-struct NixieScoreNumberView: View {
+public struct NixieScoreNumberView: View {
     let label: String
     let color: Color
     /// When true, single-digit labels are padded with a leading "0" tube so
@@ -20,9 +20,21 @@ struct NixieScoreNumberView: View {
     var showLeadingDigitSlot: Bool = true
     var layout: Layout = .compact
 
-    enum Layout: Equatable {
+    public enum Layout: Equatable {
         case compact
         case fillContainer
+    }
+
+    public init(
+        label: String,
+        color: Color,
+        showLeadingDigitSlot: Bool = true,
+        layout: Layout = .compact
+    ) {
+        self.label = label
+        self.color = color
+        self.showLeadingDigitSlot = showLeadingDigitSlot
+        self.layout = layout
     }
 
     private var resolved: ResolvedDigits {
@@ -40,7 +52,7 @@ struct NixieScoreNumberView: View {
         return ResolvedDigits(left: nil, right: nil)
     }
 
-    var body: some View {
+    public var body: some View {
         switch layout {
         case .compact:
             compactBody
@@ -106,6 +118,8 @@ private struct NixieDigitTube: View {
     let char: Character
     let color: Color
 
+    @Environment(\.colorScheme) private var colorScheme
+
     /// All glyphs that can ever appear in this tube (digits + tennis A/d).
     /// Rendering them all at low opacity behind the active digit gives the
     /// "ghost cathodes" depth illusion.
@@ -118,20 +132,20 @@ private struct NixieDigitTube: View {
             let w = geo.size.width
             let h = geo.size.height
             let cornerRadius: CGFloat = w * 0.22
+            let isLight = colorScheme == .light
 
             ZStack {
                 tubeHousing(width: w, height: h, cornerRadius: cornerRadius)
 
                 // Inner ambient glow — picks up the team color and bleeds it
                 // into the tube interior so the whole tube reads as "lit".
+                // Toned down in light mode so the pale tube doesn't muddy.
                 RoundedRectangle(cornerRadius: max(0, cornerRadius - 2), style: .continuous)
                     .fill(
                         RadialGradient(
-                            colors: [
-                                color.opacity(0.32),
-                                color.opacity(0.12),
-                                .clear,
-                            ],
+                            colors: isLight
+                                ? [color.opacity(0.12), color.opacity(0.04), .clear]
+                                : [color.opacity(0.32), color.opacity(0.12), .clear],
                             center: .center,
                             startRadius: 0,
                             endRadius: w * 0.75
@@ -145,19 +159,20 @@ private struct NixieDigitTube: View {
                 ForEach(Self.cathodeGlyphs, id: \.self) { glyph in
                     glyphText(glyph, height: h)
                         .foregroundStyle(color)
-                        .opacity(0.045)
+                        .opacity(isLight ? 0.06 : 0.045)
                         .blur(radius: 0.6)
                 }
 
-                // Lit cathode: the active digit with brightness boost and
-                // stacked color shadows for the warm halo.
+                // Lit cathode: the active digit. Dark mode gets a brightness
+                // boost and stacked color shadows for the warm halo; light
+                // mode darkens it slightly and drops the glow for contrast.
                 ZStack {
                     glyphText(char, height: h)
                         .foregroundStyle(color)
-                        .brightness(0.30)
-                        .shadow(color: color.opacity(0.95), radius: 2.5)
-                        .shadow(color: color.opacity(0.70), radius: 6)
-                        .shadow(color: color.opacity(0.45), radius: 12)
+                        .brightness(isLight ? -0.12 : 0.30)
+                        .shadow(color: color.opacity(isLight ? 0 : 0.95), radius: isLight ? 0 : 2.5)
+                        .shadow(color: color.opacity(isLight ? 0 : 0.70), radius: isLight ? 0 : 6)
+                        .shadow(color: color.opacity(isLight ? 0 : 0.45), radius: isLight ? 0 : 12)
                 }
                 .id(char)
                 .transition(.opacity.combined(with: .scale(scale: 0.88)))
@@ -179,17 +194,16 @@ private struct NixieDigitTube: View {
         height: CGFloat,
         cornerRadius: CGFloat
     ) -> some View {
-        ZStack {
-            // Dark glass body — slight horizontal gradient hints at the
-            // cylindrical curvature of a real tube.
+        let isLight = colorScheme == .light
+        return ZStack {
+            // Glass body — slight horizontal gradient hints at the cylindrical
+            // curvature of a real tube. Pale glass in light mode, dark in dark.
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [
-                            Color.black.opacity(0.85),
-                            Color.black.opacity(0.62),
-                            Color.black.opacity(0.85),
-                        ],
+                        colors: isLight
+                            ? [Color(white: 0.97), Color(white: 0.90), Color(white: 0.97)]
+                            : [Color.black.opacity(0.85), Color.black.opacity(0.62), Color.black.opacity(0.85)],
                         startPoint: .leading,
                         endPoint: .trailing
                     )
@@ -200,11 +214,9 @@ private struct NixieDigitTube: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(
                     LinearGradient(
-                        colors: [
-                            color.opacity(0.45),
-                            Color.white.opacity(0.18),
-                            color.opacity(0.30),
-                        ],
+                        colors: isLight
+                            ? [color.opacity(0.35), Color.black.opacity(0.06), color.opacity(0.22)]
+                            : [color.opacity(0.45), Color.white.opacity(0.18), color.opacity(0.30)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),

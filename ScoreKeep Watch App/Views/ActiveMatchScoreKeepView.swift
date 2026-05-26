@@ -5,8 +5,9 @@
 //  Created by Chris Sauve on 2024-12-18.
 //
 
-import SwiftUI
 import ScoreKeepCore
+import ScoreKeepUI
+import SwiftUI
 
 struct ActiveMatchScoreKeepView: View {
     @Environment(ScoreKeepMatch.self) private var match

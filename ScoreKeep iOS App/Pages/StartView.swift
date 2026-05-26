@@ -6,6 +6,7 @@
 //
 
 import ScoreKeepCore
+import ScoreKeepUI
 import SwiftData
 import SwiftUI
 
@@ -59,23 +60,9 @@ struct StartView: View {
                             TemplateGridView(
                                 templates: unusedDefaultTemplates,
                                 onStart: { template in startNewMatch(from: template) },
-                                onEdit: { template in templateToEdit = template }
+                                onEdit: { template in templateToEdit = template },
+                                onCreate: { showingTemplateCreator = true }
                             )
-
-                            Button {
-                                showingTemplateCreator = true
-                            } label: {
-                                HStack {
-                                    Image(systemName: "plus.circle.fill")
-                                    Text("Create Custom Template")
-                                }
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color(.systemGray6))
-                                .foregroundStyle(.primary)
-                                .cornerRadius(16)
-                            }
-                            .padding(.horizontal)
                         }
                     }
                 }
@@ -139,6 +126,7 @@ struct TemplateGridView: View {
     var templates: [ScoreKeepMatchTemplate]
     var onStart: (ScoreKeepMatchTemplate) -> Void
     var onEdit: (ScoreKeepMatchTemplate) -> Void
+    var onCreate: (() -> Void)? = nil
 
     let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -154,70 +142,42 @@ struct TemplateGridView: View {
                     onEdit: { onEdit(template) }
                 )
             }
+
+            if let onCreate {
+                CreateTemplateCardView(onCreate: onCreate)
+            }
         }
         .padding(.horizontal)
     }
 }
+
+/// Fixed height shared by template cards and the create card so every cell in
+/// the grid is exactly the same size regardless of how much text a template
+/// has (aspect-ratio sizing let content stretch some cards taller than others).
+private let templateCardHeight: CGFloat = 152
 
 struct TemplateCardView: View {
     var template: ScoreKeepMatchTemplate
     var onStart: () -> Void
     var onEdit: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var textColor: Color {
-        // Calculate luminance to determine if we should use light or dark text
-        let color = template.color.color
-        let uiColor = UIColor(color)
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-
-        uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-
-        // Calculate relative luminance
-        let luminance = 0.2126 * red + 0.7152 * green + 0.0722 * blue
-
-        // Use white text for dark colors, black text for light colors
-        return luminance > 0.5 ? Color.black : Color.white
-    }
-
     var body: some View {
         Button {
             onStart()
         } label: {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Spacer()
-                    Button {
-                        onEdit()
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(textColor.opacity(0.8))
-                            .padding(8)
-                            .background(
-                                Circle()
-                                    .fill(textColor.opacity(0.2))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Spacer()
+                Spacer(minLength: 0)
 
                 Image(systemName: template.sport.figureIcon)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 36, height: 36)
                     .fontWeight(.bold)
-                    .foregroundStyle(textColor)
+                    .foregroundStyle(template.color.iconForegroundStyle)
 
                 Text(template.name)
                     .font(.headline)
-                    .foregroundStyle(textColor)
+                    .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
 
@@ -227,13 +187,57 @@ struct TemplateCardView: View {
                     Text(template.environment == .indoor ? "Indoor" : "Outdoor")
                 }
                 .font(.caption)
-                .foregroundStyle(textColor.opacity(0.8))
+                .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .aspectRatio(1, contentMode: .fit)
-            .background(template.color.color)
+            .padding(EdgeInsets(top: 6, leading: 16, bottom: 16, trailing: 16))
+            .frame(height: templateCardHeight)
+            .background(template.color.backgroundFillStyle)
             .cornerRadius(20)
+            .overlay(alignment: .topTrailing) {
+                Button {
+                    onEdit()
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(template.color.color.opacity(0.7))
+                        .padding(9)
+                        .background(
+                            Circle()
+                                .fill(Color.primary.opacity(0.06))
+                        )
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 10)
+                .padding(.trailing, 8)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct CreateTemplateCardView: View {
+    var onCreate: () -> Void
+
+    var body: some View {
+        Button(action: onCreate) {
+            VStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 28, weight: .bold))
+                Text("New Template")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .frame(height: templateCardHeight)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(
+                        Color.primary.opacity(0.18),
+                        style: StrokeStyle(lineWidth: 2, dash: [6, 5])
+                    )
+            )
         }
         .buttonStyle(.plain)
     }

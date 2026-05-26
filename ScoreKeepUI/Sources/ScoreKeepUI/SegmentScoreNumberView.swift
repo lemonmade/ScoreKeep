@@ -1,6 +1,6 @@
 //
 //  SegmentScoreNumberView.swift
-//  ScoreKeep Watch App
+//  ScoreKeepUI
 //
 //  Classic 7-segment ("calculator / clock") and 14-segment ("alphanumeric"
 //  with diagonals) score display styles. Both variants render the same digit
@@ -11,12 +11,12 @@
 
 import SwiftUI
 
-enum SegmentScoreVariant: Equatable {
+public enum SegmentScoreVariant: Equatable {
     case seven
     case fourteen
 }
 
-struct SegmentScoreNumberView: View {
+public struct SegmentScoreNumberView: View {
     let label: String
     let color: Color
     let variant: SegmentScoreVariant
@@ -30,9 +30,23 @@ struct SegmentScoreNumberView: View {
     var showLeadingDigitSlot: Bool = true
     var layout: Layout = .compact
 
-    enum Layout: Equatable {
+    public enum Layout: Equatable {
         case compact
         case fillContainer
+    }
+
+    public init(
+        label: String,
+        color: Color,
+        variant: SegmentScoreVariant,
+        showLeadingDigitSlot: Bool = true,
+        layout: Layout = .compact
+    ) {
+        self.label = label
+        self.color = color
+        self.variant = variant
+        self.showLeadingDigitSlot = showLeadingDigitSlot
+        self.layout = layout
     }
 
     /// Sentinel character that doesn't match any glyph in the lit-table —
@@ -55,7 +69,7 @@ struct SegmentScoreNumberView: View {
         return ResolvedDigits(left: nil, right: nil)
     }
 
-    var body: some View {
+    public var body: some View {
         switch layout {
         case .compact:
             compactBody
@@ -217,20 +231,26 @@ private struct SegmentShapeView: View {
     let digitSize: CGSize
     let isLit: Bool
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         let placement = SegmentLayout.placement(
             for: segment,
             in: digitSize,
             thickness: thickness
         )
+        let isLight = colorScheme == .light
+        // Light mode: lit segments are solid, slightly darkened color with no
+        // glow; unlit segments are a faint neutral gray (visible but clearly
+        // "off"). Dark mode keeps the emissive glow.
         Capsule()
             .fill(color)
             .frame(width: max(thickness, placement.length), height: thickness)
-            .saturation(isLit ? 1.0 : 0.85)
-            .brightness(isLit ? 0.22 : 0)
-            .opacity(isLit ? 1.0 : 0.07)
-            .shadow(color: color.opacity(isLit ? 0.85 : 0), radius: isLit ? 3.5 : 0)
-            .shadow(color: color.opacity(isLit ? 0.5 : 0), radius: isLit ? 8 : 0)
+            .saturation(isLit ? (isLight ? 1.08 : 1.0) : (isLight ? 0 : 0.85))
+            .brightness(isLit ? (isLight ? -0.12 : 0.22) : (isLight ? -0.1 : 0))
+            .opacity(isLit ? 1.0 : (isLight ? 0.16 : 0.07))
+            .shadow(color: color.opacity(isLit && !isLight ? 0.85 : 0), radius: isLit && !isLight ? 3.5 : 0)
+            .shadow(color: color.opacity(isLit && !isLight ? 0.5 : 0), radius: isLit && !isLight ? 8 : 0)
             .rotationEffect(.radians(placement.rotationRadians))
             .position(placement.center)
     }

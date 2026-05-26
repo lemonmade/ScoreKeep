@@ -1,6 +1,6 @@
 //
 //  PixelArcadeScoreNumberView.swift
-//  ScoreKeep Watch App
+//  ScoreKeepUI
 //
 //  Classic 80s-arcade score display: 5×7 chunky pixel digits drawn as solid
 //  square sprites, with a CRT scan-line overlay across the digit area.
@@ -10,15 +10,29 @@
 
 import SwiftUI
 
-struct PixelArcadeScoreNumberView: View {
+public struct PixelArcadeScoreNumberView: View {
     let label: String
     let color: Color
     var showLeadingDigitSlot: Bool = true
     var layout: Layout = .compact
 
-    enum Layout: Equatable {
+    @Environment(\.colorScheme) private var colorScheme
+
+    public enum Layout: Equatable {
         case compact
         case fillContainer
+    }
+
+    public init(
+        label: String,
+        color: Color,
+        showLeadingDigitSlot: Bool = true,
+        layout: Layout = .compact
+    ) {
+        self.label = label
+        self.color = color
+        self.showLeadingDigitSlot = showLeadingDigitSlot
+        self.layout = layout
     }
 
     private var resolved: ResolvedDigits {
@@ -36,7 +50,7 @@ struct PixelArcadeScoreNumberView: View {
         return ResolvedDigits(left: nil, right: nil)
     }
 
-    var body: some View {
+    public var body: some View {
         switch layout {
         case .compact:
             compactBody
@@ -99,7 +113,7 @@ struct PixelArcadeScoreNumberView: View {
             VStack(spacing: 1) {
                 ForEach(0..<Int(geo.size.height / 2), id: \.self) { _ in
                     Rectangle()
-                        .fill(Color.black.opacity(0.32))
+                        .fill(Color.black.opacity(colorScheme == .light ? 0.08 : 0.32))
                         .frame(height: 1)
                 }
             }
@@ -121,6 +135,8 @@ private struct PixelDigit: View {
     let color: Color
     let pixelSize: CGFloat
 
+    @Environment(\.colorScheme) private var colorScheme
+
     static let glyphWidth = 5
     static let glyphHeight = 7
 
@@ -140,11 +156,12 @@ private struct PixelDigit: View {
     @ViewBuilder
     private func pixelView(row: Int, col: Int) -> some View {
         let isLit = isPixelLit(char: char, row: row, col: col)
+        let isLight = colorScheme == .light
         Rectangle()
             .fill(color)
             .opacity(isLit ? 1.0 : 0)
-            .brightness(isLit ? 0.20 : 0)
-            .shadow(color: color.opacity(isLit ? 0.7 : 0), radius: isLit ? 1.2 : 0)
+            .brightness(isLit ? (isLight ? -0.12 : 0.20) : 0)
+            .shadow(color: color.opacity(isLit && !isLight ? 0.7 : 0), radius: isLit && !isLight ? 1.2 : 0)
             .frame(width: pixelSize, height: pixelSize)
     }
 

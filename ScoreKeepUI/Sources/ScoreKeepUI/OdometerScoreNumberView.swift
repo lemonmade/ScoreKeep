@@ -1,6 +1,6 @@
 //
 //  OdometerScoreNumberView.swift
-//  ScoreKeep Watch App
+//  ScoreKeepUI
 //
 //  Mechanical odometer / drum-roll style score display. Each digit slot is a
 //  vertical drum showing 0–9 stacked; on score change the drum rolls to
@@ -10,15 +10,27 @@
 
 import SwiftUI
 
-struct OdometerScoreNumberView: View {
+public struct OdometerScoreNumberView: View {
     let label: String
     let color: Color
     var showLeadingDigitSlot: Bool = true
     var layout: Layout = .compact
 
-    enum Layout: Equatable {
+    public enum Layout: Equatable {
         case compact
         case fillContainer
+    }
+
+    public init(
+        label: String,
+        color: Color,
+        showLeadingDigitSlot: Bool = true,
+        layout: Layout = .compact
+    ) {
+        self.label = label
+        self.color = color
+        self.showLeadingDigitSlot = showLeadingDigitSlot
+        self.layout = layout
     }
 
     private var resolved: ResolvedDigits {
@@ -36,7 +48,7 @@ struct OdometerScoreNumberView: View {
         return ResolvedDigits(left: nil, right: nil)
     }
 
-    var body: some View {
+    public var body: some View {
         switch layout {
         case .compact:
             compactBody
@@ -101,6 +113,8 @@ struct OdometerScoreNumberView: View {
 private struct OdometerDigitReel: View {
     let digit: Int
     let color: Color
+
+    @Environment(\.colorScheme) private var colorScheme
 
     /// Continuous "rolling" counter — strip is rendered with `stripCells`
     /// repeating cycles of 0–9, and `position` indexes a particular cell.
@@ -178,20 +192,19 @@ private struct OdometerDigitReel: View {
         Text("\(digit)")
             .font(.system(size: height * 0.78, weight: .heavy, design: .rounded))
             .foregroundStyle(color)
-            .brightness(0.10)
+            .brightness(colorScheme == .light ? -0.1 : 0.10)
             .lineLimit(1)
             .minimumScaleFactor(0.5)
     }
 
     private func drumBody(cornerRadius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let isLight = colorScheme == .light
+        return RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .fill(
                 LinearGradient(
-                    colors: [
-                        Color.black.opacity(0.78),
-                        Color.black.opacity(0.55),
-                        Color.black.opacity(0.78),
-                    ],
+                    colors: isLight
+                        ? [Color(white: 0.97), Color(white: 0.88), Color(white: 0.97)]
+                        : [Color.black.opacity(0.78), Color.black.opacity(0.55), Color.black.opacity(0.78)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -203,9 +216,12 @@ private struct OdometerDigitReel: View {
     }
 
     private func drumShading() -> some View {
-        VStack(spacing: 0) {
+        // Edge shading that fakes the drum's curvature. Strong dark bands in
+        // dark mode; gentle in light so a pale drum doesn't get dark caps.
+        let shade = Color.black.opacity(colorScheme == .light ? 0.16 : 0.55)
+        return VStack(spacing: 0) {
             LinearGradient(
-                colors: [Color.black.opacity(0.55), Color.clear],
+                colors: [shade, Color.clear],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -215,7 +231,7 @@ private struct OdometerDigitReel: View {
             Spacer(minLength: 0)
 
             LinearGradient(
-                colors: [Color.clear, Color.black.opacity(0.55)],
+                colors: [Color.clear, shade],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -232,19 +248,20 @@ private struct StaticOdometerCell: View {
     let char: Character
     let color: Color
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         GeometryReader { geo in
             let cornerRadius = min(geo.size.width, geo.size.height) * 0.13
+            let isLight = colorScheme == .light
 
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color.black.opacity(0.78),
-                                Color.black.opacity(0.55),
-                                Color.black.opacity(0.78),
-                            ],
+                            colors: isLight
+                                ? [Color(white: 0.97), Color(white: 0.88), Color(white: 0.97)]
+                                : [Color.black.opacity(0.78), Color.black.opacity(0.55), Color.black.opacity(0.78)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -257,7 +274,7 @@ private struct StaticOdometerCell: View {
                 Text(String(char))
                     .font(.system(size: geo.size.height * 0.78, weight: .heavy, design: .rounded))
                     .foregroundStyle(color)
-                    .brightness(0.10)
+                    .brightness(isLight ? -0.1 : 0.10)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             }

@@ -3,6 +3,7 @@
 //  ScoreKeep Watch App
 //
 
+import ScoreKeepUI
 import SwiftUI
 
 struct SettingsView: View {
